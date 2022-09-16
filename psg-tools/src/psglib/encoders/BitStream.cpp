@@ -34,7 +34,7 @@ bool BitStream::Write(uint32_t data, unsigned size)
 {
     if (m_ostream)
     {
-        auto maxSize = sizeof(data) * 8;
+        auto maxSize = unsigned(sizeof(data) * 8);
         size = std::min(size, maxSize);
         data <<= (maxSize - size);
 
