@@ -14,13 +14,13 @@
 const std::filesystem::path k_favoritesPath = "favorites.m3u";
 const std::string k_supportedFileTypes = "sqt|ym|stp|vgz|vgm|asc|stc|pt2|pt3|psg|vtx";
 
-std::shared_ptr<Filelist> m_filelist;
-std::shared_ptr<Filelist> m_favorites;
+//std::shared_ptr<Filelist> m_filelist;
+//std::shared_ptr<Filelist> m_favorites;
 
-std::shared_ptr<Output>   m_output;
-std::shared_ptr<Player>   m_player;
+//std::shared_ptr<Output>   m_output;
+//std::shared_ptr<Player>   m_player;
 
-Output::Enables m_enables;
+//Output::Enables m_enables;
 
 static BOOL WINAPI console_ctrl_handler(DWORD dwCtrlType)
 {
@@ -297,6 +297,174 @@ void ConvertInputFiles(const std::filesystem::path& outputPath)
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+class MyPSG : public PSG
+{
+public:
+    MyPSG(const Chip& chip, Output& output)
+        : m_chip(chip)
+        , m_output(output)
+        , m_player(output)
+    {
+        for (auto& enable : m_enables) enable = true;
+    }
+
+
+public:
+    void PlayFileList(const Filelist& filelist, Filelist& favorites)
+    {
+        bool goToPrev = false;
+        std::filesystem::path path;
+        
+        while (goToPrev ? filelist.GetPrevFile(path) : filelist.GetNextFile(path))
+        {
+            Stream stream;
+            stream.dchip = m_chip;
+
+            if (Decode(path, stream))
+            {
+                goToPrev = PlayStream(stream, filelist, favorites);
+            }
+            else
+            {
+                std::cout << "Could not decode file: " << path << std::endl;
+            }
+            path.clear();
+        }
+    }
+
+
+
+
+protected:
+    void OnFrameDecoded(Stream& stream, FrameId frameId) override
+    {
+
+    }
+
+    void OnFrameEncoded(Stream& stream, FrameId frameId) override
+    {
+
+    }
+
+    void OnFramePlaying(Stream& stream, FrameId frameId)
+    {
+
+    }
+
+private:
+    bool PlayStream(const Stream& stream, const Filelist& filelist, Filelist& favorites)
+    {
+        m_staticHeight = 0;
+        m_dynamicHeight = 0;
+
+        if (m_player.Init(stream))
+        {
+            m_printStatic = true;
+            FrameId frameId = -1;
+
+            m_player.Play();
+            while (m_player.IsPlaying())
+            {
+                m_output.SetEnables(m_enables);
+                gui::Update();
+
+                if (m_player.GetFrameId() != frameId)
+                {
+                    frameId = m_player.GetFrameId();
+
+                    terminal::cursor::move_up(m_dynamicHeight);
+                    m_dynamicHeight = 0;
+
+                    if (m_printStatic)
+                    {
+                        gui::Clear(m_staticHeight);
+                        m_staticHeight = 0;
+
+                        auto index = filelist.GetCurrFileIndex();
+                        auto amount = filelist.GetNumberOfFiles();
+                        auto favorite = favorites.ContainsFile(stream.file);
+
+                        m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
+                        m_staticHeight += gui::PrintStreamInfo(stream, m_output);
+                        m_printStatic = false;
+                    }
+
+                    m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+                    m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+                }
+
+                if (gui::GetKeyState(VK_UP).pressed)
+                {
+                    if (!m_player.IsPaused())
+                    {
+                        m_player.Stop();
+                        return true;
+                    }
+                }
+
+                if (gui::GetKeyState(VK_DOWN).pressed)
+                {
+                    if (!m_player.IsPaused())
+                    {
+                        m_player.Stop();
+                        return false;
+                    }
+                }
+
+                if (gui::GetKeyState(VK_RETURN).pressed)
+                {
+                    if (m_player.IsPaused())
+                        m_player.Play();
+                    else
+                        m_player.Stop();
+                }
+
+                if (gui::GetKeyState('F').pressed)
+                {
+                    if (favorites.ContainsFile(stream.file)
+                        ? favorites.EraseFile(stream.file)
+                        : favorites.InsertFile(stream.file))
+                    {
+                        favorites.ExportPlaylist(k_favoritesPath);
+                        m_printStatic = true;
+                    }
+                }
+
+                for (int key = '1'; key <= '5'; ++key)
+                {
+                    if (gui::GetKeyState(key).pressed)
+                    {
+                        m_enables[key - '1'] ^= true;
+                    }
+                }
+
+                Sleep(1);
+            }
+
+            gui::Clear(m_dynamicHeight);
+        }
+        else
+        {
+            std::cout << "Could not init player with module" << std::endl;
+        }
+        return false;
+    }
+
+private:
+    Chip m_chip;
+    Output& m_output;
+    Output::Enables m_enables;
+
+    Player m_player;
+    size_t m_staticHeight;
+    size_t m_dynamicHeight;
+    bool m_printStatic;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
