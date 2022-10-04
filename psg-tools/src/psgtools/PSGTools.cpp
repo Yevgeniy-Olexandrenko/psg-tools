@@ -396,6 +396,10 @@ void PSGPlayer::Play()
         Stream stream;
         stream.dchip = m_chip;
 
+        m_sHeight = 0;
+        m_dHeight = 0;
+        m_sPrint = true;
+
         if (Decode(path, stream))
         {
             result = PlayStream(stream);
@@ -409,30 +413,52 @@ void PSGPlayer::Play()
 
 void PSGPlayer::OnFrameDecoded(Stream& stream, FrameId frameId)
 {
-    //
+    PrintStreamDecoding(stream);
 }
 
-void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
+void PSGPlayer::PrintStreamDecoding(const Stream& stream)
 {
-    terminal::cursor::move_up(int(m_dynamicHeight));
-    m_dynamicHeight = 0;
+    terminal::cursor::move_up(int(m_dHeight));
+    m_dHeight = 0;
 
-    if (m_printStatic)
+    if (m_sPrint)
     {
-        gui::Clear(m_staticHeight);
-        m_staticHeight = 0;
+        gui::Clear(m_sHeight);
+        m_sHeight = 0;
 
         auto index = m_filelist.GetCurrFileIndex();
         auto amount = m_filelist.GetNumberOfFiles();
         auto favorite = m_favorites.ContainsFile(stream.file);
 
-        m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
-        m_staticHeight += gui::PrintStreamInfo(stream, m_output);
-        m_printStatic = false;
+        m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
+        m_sHeight += gui::PrintBriefStreamInfo(stream);
+        m_sPrint = false;
     }
 
-    m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
-    m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+    m_dHeight += gui::PrintDecodingProgress(stream);
+}
+
+void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
+{
+    terminal::cursor::move_up(int(m_dHeight));
+    m_dHeight = 0;
+
+    if (m_sPrint)
+    {
+        gui::Clear(m_sHeight);
+        m_sHeight = 0;
+
+        auto index = m_filelist.GetCurrFileIndex();
+        auto amount = m_filelist.GetNumberOfFiles();
+        auto favorite = m_favorites.ContainsFile(stream.file);
+
+        m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
+        m_sHeight += gui::PrintFullStreamInfo(stream, m_output);
+        m_sPrint = false;
+    }
+
+    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+    m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
 PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
@@ -468,7 +494,7 @@ PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
             : m_favorites.InsertFile(stream.file))
         {
             m_favorites.ExportPlaylist(c_favoritesPath);
-            m_printStatic = true;
+            m_sPrint = true;
         }
     }
 
@@ -487,15 +513,15 @@ PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
 {
     auto result{ PlayStreamResult::Nothing };
 
-    m_staticHeight  = 0;
-    m_dynamicHeight = 0;
-
+    m_sPrint = true;
+    m_sHeight += m_dHeight;
+    m_dHeight = 0;
+   
     if (m_player.Init(stream))
     {
-        m_printStatic = true;
-        FrameId frameId = -1;
-
         m_player.Play();
+        FrameId frameId = -1;
+       
         while (m_player.IsPlaying() && result == PlayStreamResult::Nothing)
         {
             if (m_player.GetFrameId() != frameId)
@@ -514,8 +540,9 @@ PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
 
             Sleep(1);
         }
+
         m_player.Stop();
-        gui::Clear(m_dynamicHeight);
+        gui::Clear(m_dHeight);
     }
     else
     {

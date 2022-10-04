@@ -17,6 +17,7 @@ protected:
 	void OnFrameDecoded(Stream& stream, FrameId frameId) override;
 
 private:
+    void PrintStreamDecoding(const Stream& stream);
     void PrintStreamPlayback(const Stream& stream, FrameId frameId);
     PlayStreamResult HandleUserInput(const Stream& stream);
     PlayStreamResult PlayStream(const Stream& stream);
@@ -32,9 +33,9 @@ private:
     Player m_player;
     Output::Enables m_enables;
 
-    bool m_printStatic;
-    size_t m_staticHeight;
-    size_t m_dynamicHeight;
+    bool m_sPrint;
+    size_t m_sHeight;
+    size_t m_dHeight;
 };
 
 class PSGConverter : public PSGHandler

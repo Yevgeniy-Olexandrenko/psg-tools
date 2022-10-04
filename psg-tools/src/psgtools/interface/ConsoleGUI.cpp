@@ -174,7 +174,18 @@ namespace gui
         return 0;
     };
 
-	size_t PrintStreamInfo(const Stream& stream, const Output& output)
+    size_t PrintBriefStreamInfo(const Stream& stream)
+    {
+        size_t height = 0;
+        height += printModuleProperty("Title", stream, Stream::Property::Title);
+        height += printModuleProperty("Artist", stream, Stream::Property::Artist);
+        height += printModuleProperty("Comment", stream, Stream::Property::Comment);
+        height += printModuleProperty("Type", stream, Stream::Property::Type);
+        height += printModuleProperty("Chip", stream, Stream::Property::Chip);
+        return height;
+    }
+
+	size_t PrintFullStreamInfo(const Stream& stream, const Output& output)
 	{
         size_t height = 0;
         height += printModuleProperty("Title", stream, Stream::Property::Title);
@@ -185,7 +196,6 @@ namespace gui
         height += printModuleProperty("Frames", stream, Stream::Property::Frames);
         height += printModuleProperty("Duration", stream, Stream::Property::Duration);
         height += printOutputProperty("Output", output);
-        height += 1; std::cout << std::endl;
         return height;
 	}
 
@@ -571,6 +581,31 @@ namespace gui
 
 	////////////////////////////////////////////////////////////////////////////
 
+    size_t PrintProgress(int index, size_t count, int spinner, const std::string& value)
+    {
+        static const std::string c_spinner = R"(_\|/)";
+        char spin = c_spinner[spinner >> 2 & 3];
+
+        auto range = size_t(terminal_width() - 1 - 2 - 2 - 10 - 2 - 2 - 1);
+        auto size1 = size_t(float(index * range) / count + 0.5f);
+        auto size2 = size_t(range - size1);
+
+        std::cout << ' ' << color::bright_blue << std::string(2 + size1, '-');
+        std::cout << color::bright_cyan    << "[ ";
+        std::cout << color::bright_magenta << spin << ' ';
+        std::cout << color::bright_white   << value;
+        std::cout << color::bright_cyan    << " ]";
+        std::cout << color::bright_blue    << std::string(size2 + 2, '-');
+        std::cout << color::reset << std::endl;
+        return 1;
+    }
+
+    size_t PrintDecodingProgress(const Stream& stream)
+    {
+        size_t playbackFrames = stream.framesCount();
+        return PrintProgress(1, 2, playbackFrames / 25, "Decoding");
+    }
+
 	size_t PrintPlaybackProgress(const Stream& stream, int frameId)
 	{
         int hh = 0, mm = 0, ss = 0;
@@ -578,23 +613,10 @@ namespace gui
         size_t remainingFrames = (playbackFrames - frameId);
         stream.play.ComputeDuration(remainingFrames, hh, mm, ss);
 
-        static const std::string k_spinner = R"(_\|/)";
-        char spin = k_spinner[frameId >> 2 & 3];
-
-        auto range = size_t(terminal_width() - 1 - 2 - 2 - 10 - 2 - 2 - 1);
-        auto size1 = size_t(float(frameId * range) / playbackFrames + 0.5f);
-        auto size2 = size_t(range - size1);
-
-        std::cout << ' ' << color::bright_blue << std::string(2 + size1, '-');
-        std::cout << color::bright_cyan << "[ ";
-        std::cout << color::bright_magenta << spin << ' ';
-        std::cout << color::bright_white <<
-            std::setfill('0') << std::setw(2) << hh << ':' <<
-            std::setfill('0') << std::setw(2) << mm << ':' <<
-            std::setfill('0') << std::setw(2) << ss;
-        std::cout << color::bright_cyan << " ]";
-        std::cout << color::bright_blue << std::string(size2 + 2, '-');
-        std::cout << color::reset << std::endl;
-		return 1;
+        std::stringstream sstream;
+        if (hh < 10) sstream << '0'; sstream << hh << ':';
+        if (mm < 10) sstream << '0'; sstream << mm << ':';
+        if (ss < 10) sstream << '0'; sstream << ss;
+        return PrintProgress(frameId, playbackFrames, frameId, sstream.str());
 	}
 }
