@@ -522,7 +522,7 @@ PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
         m_player.Play();
         FrameId frameId = -1;
        
-        while (m_player.IsPlaying() && result == PlayStreamResult::Nothing)
+        while (result == PlayStreamResult::Nothing)
         {
             if (m_player.GetFrameId() != frameId)
             {
@@ -533,7 +533,9 @@ PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
             m_output.SetEnables(m_enables);
             gui::Update();
 
-            if (m_termination)
+            if (!m_player.IsPlaying())
+                result = PlayStreamResult::GoToNext;
+            else if (m_termination)
                 result = PlayStreamResult::Termination;
             else
                 result = HandleUserInput(stream);
