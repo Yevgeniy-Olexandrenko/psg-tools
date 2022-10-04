@@ -7,32 +7,12 @@
 
 #undef max
 
-#include "PSGLib.h"
-#include "Filelist.h"
+#include "PSGTools.h"
 #include "interface/ConsoleGUI.h"
-
-const std::filesystem::path k_favoritesPath = "favorites.m3u";
-const std::string k_supportedFileTypes = "sqt|ym|stp|vgz|vgm|asc|stc|pt2|pt3|psg|vtx";
-
-//std::shared_ptr<Filelist> m_filelist;
-//std::shared_ptr<Filelist> m_favorites;
-
-//std::shared_ptr<Output>   m_output;
-//std::shared_ptr<Player>   m_player;
-
-//Output::Enables m_enables;
-
-static BOOL WINAPI console_ctrl_handler(DWORD dwCtrlType)
-{
-    if (m_player)
-    {
-        m_player->Stop();
-    }
-    return TRUE;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 struct FrameRefs
 {
     const Frame* prev = nullptr;
@@ -108,6 +88,7 @@ void ComputeFrameRefs(const Stream& stream)
         debug_out.close();
     }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -128,347 +109,196 @@ void PrintWellcome()
     std::cout << color::reset << std::endl;
 }
 
-void PlayInputFiles()
-{
-    ////////////////////////////////////////////////////////////////////////////
-#if 0
-    const int k_comPortIndex = 4;
-    m_output.reset(new Streamer(k_comPortIndex));
-#else
-    m_output.reset(new Emulator());
-#endif
-    m_player.reset(new Player(*m_output));
-#if 0
-    m_filelist->RandomShuffle();
-#endif
-    ////////////////////////////////////////////////////////////////////////////
-
-    bool goToPrev = false;
-    std::filesystem::path path;
-    for (auto& enable : m_enables) enable = true;
-
-    while (goToPrev ? m_filelist->GetPrevFile(path) : m_filelist->GetNextFile(path))
-    {
-        Stream stream;
-#if 1
-        stream.dchip.first.model(Chip::Model::AY8930);
-        //stream.dchip.second.model(Chip::Model::AY8910);
-        //stream.dchip.output(Chip::Output::Stereo);
-        //stream.dchip.stereo(Chip::Stereo::CAB);
-        //stream.dchip.clockValue(1000000);
-#endif
-        if (PSG::Decode(path, stream))
-        {
-            //ComputeFrameRefs(stream);
-
-
-            goToPrev = false; // if decoding OK, move to next by default
-
-            size_t staticHeight  = 0;
-            size_t dynamicHeight = 0;
-
-            if (m_player->Init(stream))
-            {
-                bool printStatic = true;
-                FrameId frameId  = -1;
-
-                m_player->Play();
-                while (m_player->IsPlaying())
-                {
-                    m_output->SetEnables(m_enables);
-                    gui::Update();
-
-                    if (m_player->GetFrameId() != frameId)
-                    {
-                        frameId = m_player->GetFrameId();
-
-                        terminal::cursor::move_up(dynamicHeight);
-                        dynamicHeight = 0;
-
-                        if (printStatic)
-                        {
-                            gui::Clear(staticHeight);
-                            staticHeight = 0;
-
-                            auto index = m_filelist->GetCurrFileIndex();
-                            auto amount = m_filelist->GetNumberOfFiles();
-                            auto favorite = m_favorites->ContainsFile(stream.file);
-
-                            staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
-                            staticHeight += gui::PrintStreamInfo(stream, *m_output);
-                            printStatic = false;
-                        }
-
-                        dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
-                        dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
-                    }
-
-                    if (gui::GetKeyState(VK_UP).pressed)
-                    {
-                        if (!m_player->IsPaused())
-                        {
-                            m_player->Stop();
-                            goToPrev = true;
-                            break;
-                        }
-                    }
-
-                    if (gui::GetKeyState(VK_DOWN).pressed)
-                    {
-                        if (!m_player->IsPaused())
-                        {
-                            m_player->Stop();
-                            goToPrev = false;
-                            break;
-                        }
-                    }
-
-                    if (gui::GetKeyState(VK_RETURN).pressed)
-                    {
-                        if (m_player->IsPaused())
-                            m_player->Play();
-                        else
-                            m_player->Stop();
-                    }
-
-                    if (gui::GetKeyState('F').pressed)
-                    {
-                        if (m_favorites->ContainsFile (stream.file)
-                            ? m_favorites->EraseFile  (stream.file)
-                            : m_favorites->InsertFile (stream.file))
-                        {
-                            m_favorites->ExportPlaylist(k_favoritesPath);
-                            printStatic = true;   
-                        }
-                    }
-
-                    for (int key = '1'; key <= '5'; ++key)
-                    {
-                        if (gui::GetKeyState(key).pressed)
-                        {
-                            m_enables[key - '1'] ^= true;
-                        }
-                    }
-
-                    Sleep(1);
-                }
-
-                gui::Clear(dynamicHeight);
-            }
-            else
-            {
-                std::cout << "Could not init player with module" << std::endl;
-            }
-        }
-        else
-        {
-            std::cout << "Could not decode file: " << path << std::endl;
-        }
-        path.clear();
-    }
-}
-
-void ConvertInputFiles(const std::filesystem::path& outputPath)
-{
-    std::filesystem::path path;
-    while (m_filelist->GetNextFile(path))
-    {
-        Stream stream;
-#if 0
-        stream.chip.first.model(Chip::Model::AY8930);
-        //stream.chip.second.model(Chip::Model::YM2149);
-        //stream.chip.output(Chip::Output::Stereo);
-        //stream.chip.clockValue(1500000);
-#endif
-        if (PSG::Decode(path, stream))
-        {
-            if (PSG::Encode(outputPath, stream))
-            {
-                std::cout << "Done file encoding: " << outputPath << std::endl;
-            }
-            else
-            {
-                std::cout << "Could not encode file: " << outputPath << std::endl;
-            }
-        }
-        else
-        {
-            std::cout << "Could not decode file: " << path << std::endl;
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-class MyPSG : public PSG
-{
-public:
-    MyPSG(const Chip& chip, Output& output)
-        : m_chip(chip)
-        , m_output(output)
-        , m_player(output)
-    {
-        for (auto& enable : m_enables) enable = true;
-    }
-
-
-public:
-    void PlayFileList(const Filelist& filelist, Filelist& favorites)
-    {
-        bool goToPrev = false;
-        std::filesystem::path path;
-        
-        while (goToPrev ? filelist.GetPrevFile(path) : filelist.GetNextFile(path))
-        {
-            Stream stream;
-            stream.dchip = m_chip;
-
-            if (Decode(path, stream))
-            {
-                goToPrev = PlayStream(stream, filelist, favorites);
-            }
-            else
-            {
-                std::cout << "Could not decode file: " << path << std::endl;
-            }
-            path.clear();
-        }
-    }
-
-
-
-
-protected:
-    void OnFrameDecoded(Stream& stream, FrameId frameId) override
-    {
-
-    }
-
-    void OnFrameEncoded(Stream& stream, FrameId frameId) override
-    {
-
-    }
-
-    void OnFramePlaying(Stream& stream, FrameId frameId)
-    {
-
-    }
-
-private:
-    bool PlayStream(const Stream& stream, const Filelist& filelist, Filelist& favorites)
-    {
-        m_staticHeight = 0;
-        m_dynamicHeight = 0;
-
-        if (m_player.Init(stream))
-        {
-            m_printStatic = true;
-            FrameId frameId = -1;
-
-            m_player.Play();
-            while (m_player.IsPlaying())
-            {
-                m_output.SetEnables(m_enables);
-                gui::Update();
-
-                if (m_player.GetFrameId() != frameId)
-                {
-                    frameId = m_player.GetFrameId();
-
-                    terminal::cursor::move_up(m_dynamicHeight);
-                    m_dynamicHeight = 0;
-
-                    if (m_printStatic)
-                    {
-                        gui::Clear(m_staticHeight);
-                        m_staticHeight = 0;
-
-                        auto index = filelist.GetCurrFileIndex();
-                        auto amount = filelist.GetNumberOfFiles();
-                        auto favorite = favorites.ContainsFile(stream.file);
-
-                        m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
-                        m_staticHeight += gui::PrintStreamInfo(stream, m_output);
-                        m_printStatic = false;
-                    }
-
-                    m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
-                    m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
-                }
-
-                if (gui::GetKeyState(VK_UP).pressed)
-                {
-                    if (!m_player.IsPaused())
-                    {
-                        m_player.Stop();
-                        return true;
-                    }
-                }
-
-                if (gui::GetKeyState(VK_DOWN).pressed)
-                {
-                    if (!m_player.IsPaused())
-                    {
-                        m_player.Stop();
-                        return false;
-                    }
-                }
-
-                if (gui::GetKeyState(VK_RETURN).pressed)
-                {
-                    if (m_player.IsPaused())
-                        m_player.Play();
-                    else
-                        m_player.Stop();
-                }
-
-                if (gui::GetKeyState('F').pressed)
-                {
-                    if (favorites.ContainsFile(stream.file)
-                        ? favorites.EraseFile(stream.file)
-                        : favorites.InsertFile(stream.file))
-                    {
-                        favorites.ExportPlaylist(k_favoritesPath);
-                        m_printStatic = true;
-                    }
-                }
-
-                for (int key = '1'; key <= '5'; ++key)
-                {
-                    if (gui::GetKeyState(key).pressed)
-                    {
-                        m_enables[key - '1'] ^= true;
-                    }
-                }
-
-                Sleep(1);
-            }
-
-            gui::Clear(m_dynamicHeight);
-        }
-        else
-        {
-            std::cout << "Could not init player with module" << std::endl;
-        }
-        return false;
-    }
-
-private:
-    Chip m_chip;
-    Output& m_output;
-    Output::Enables m_enables;
-
-    Player m_player;
-    size_t m_staticHeight;
-    size_t m_dynamicHeight;
-    bool m_printStatic;
-};
+//void PlayInputFiles()
+//{
+//    ////////////////////////////////////////////////////////////////////////////
+//#if 0
+//    const int k_comPortIndex = 4;
+//    m_output.reset(new Streamer(k_comPortIndex));
+//#else
+//    m_output.reset(new Emulator());
+//#endif
+//    m_player.reset(new Player(*m_output));
+//#if 0
+//    m_filelist->RandomShuffle();
+//#endif
+//    ////////////////////////////////////////////////////////////////////////////
+//
+//    bool goToPrev = false;
+//    std::filesystem::path path;
+//    for (auto& enable : m_enables) enable = true;
+//
+//    while (goToPrev ? m_filelist->GetPrevFile(path) : m_filelist->GetNextFile(path))
+//    {
+//        Stream stream;
+//#if 1
+//        stream.dchip.first.model(Chip::Model::AY8930);
+//        //stream.dchip.second.model(Chip::Model::AY8910);
+//        //stream.dchip.output(Chip::Output::Stereo);
+//        //stream.dchip.stereo(Chip::Stereo::CAB);
+//        //stream.dchip.clockValue(1000000);
+//#endif
+//        if (PSG::Decode(path, stream))
+//        {
+//            //ComputeFrameRefs(stream);
+//
+//
+//            goToPrev = false; // if decoding OK, move to next by default
+//
+//            size_t staticHeight  = 0;
+//            size_t dynamicHeight = 0;
+//
+//            if (m_player->Init(stream))
+//            {
+//                bool printStatic = true;
+//                FrameId frameId  = -1;
+//
+//                m_player->Play();
+//                while (m_player->IsPlaying())
+//                {
+//                    m_output->SetEnables(m_enables);
+//                    gui::Update();
+//
+//                    if (m_player->GetFrameId() != frameId)
+//                    {
+//                        frameId = m_player->GetFrameId();
+//
+//                        terminal::cursor::move_up(dynamicHeight);
+//                        dynamicHeight = 0;
+//
+//                        if (printStatic)
+//                        {
+//                            gui::Clear(staticHeight);
+//                            staticHeight = 0;
+//
+//                            auto index = m_filelist->GetCurrFileIndex();
+//                            auto amount = m_filelist->GetNumberOfFiles();
+//                            auto favorite = m_favorites->ContainsFile(stream.file);
+//
+//                            staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
+//                            staticHeight += gui::PrintStreamInfo(stream, *m_output);
+//                            printStatic = false;
+//                        }
+//
+//                        dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+//                        dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+//                    }
+//
+//                    if (gui::GetKeyState(VK_UP).pressed)
+//                    {
+//                        if (!m_player->IsPaused())
+//                        {
+//                            m_player->Stop();
+//                            goToPrev = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    if (gui::GetKeyState(VK_DOWN).pressed)
+//                    {
+//                        if (!m_player->IsPaused())
+//                        {
+//                            m_player->Stop();
+//                            goToPrev = false;
+//                            break;
+//                        }
+//                    }
+//
+//                    if (gui::GetKeyState(VK_RETURN).pressed)
+//                    {
+//                        if (m_player->IsPaused())
+//                            m_player->Play();
+//                        else
+//                            m_player->Stop();
+//                    }
+//
+//                    if (gui::GetKeyState('F').pressed)
+//                    {
+//                        if (m_favorites->ContainsFile (stream.file)
+//                            ? m_favorites->EraseFile  (stream.file)
+//                            : m_favorites->InsertFile (stream.file))
+//                        {
+//                            m_favorites->ExportPlaylist(k_favoritesPath);
+//                            printStatic = true;   
+//                        }
+//                    }
+//
+//                    for (int key = '1'; key <= '5'; ++key)
+//                    {
+//                        if (gui::GetKeyState(key).pressed)
+//                        {
+//                            m_enables[key - '1'] ^= true;
+//                        }
+//                    }
+//
+//                    Sleep(1);
+//                }
+//
+//                gui::Clear(dynamicHeight);
+//            }
+//            else
+//            {
+//                std::cout << "Could not init player with module" << std::endl;
+//            }
+//        }
+//        else
+//        {
+//            std::cout << "Could not decode file: " << path << std::endl;
+//        }
+//        path.clear();
+//    }
+//}
+//
+//void ConvertInputFiles(const std::filesystem::path& outputPath)
+//{
+//    std::filesystem::path path;
+//    while (m_filelist->GetNextFile(path))
+//    {
+//        Stream stream;
+//#if 0
+//        stream.chip.first.model(Chip::Model::AY8930);
+//        //stream.chip.second.model(Chip::Model::YM2149);
+//        //stream.chip.output(Chip::Output::Stereo);
+//        //stream.chip.clockValue(1500000);
+//#endif
+//        if (PSG::Decode(path, stream))
+//        {
+//            if (PSG::Encode(outputPath, stream))
+//            {
+//                std::cout << "Done file encoding: " << outputPath << std::endl;
+//            }
+//            else
+//            {
+//                std::cout << "Could not encode file: " << outputPath << std::endl;
+//            }
+//        }
+//        else
+//        {
+//            std::cout << "Could not decode file: " << path << std::endl;
+//        }
+//    }
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
+
+static const std::filesystem::path c_favoritesPath = "favorites.m3u";
+static Termination m_termination = false;
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    m_termination = true;
+    Sleep(10000);
+    return TRUE;
+}
 
 int main(int argc, char* argv[])
 {
+    
+
     bool isConverting = false;
+    bool isRandomShuffle = false;
+    bool isStreamer = false;
+
     std::filesystem::path inputPath;
     std::filesystem::path outputPath;
 
@@ -476,7 +306,7 @@ int main(int argc, char* argv[])
     if (argc > 1)
         inputPath = argv[1];
     else
-        inputPath = k_favoritesPath;
+        inputPath = c_favoritesPath;
     
     // setup output path
     if (argc > 2)
@@ -486,22 +316,228 @@ int main(int argc, char* argv[])
     }
 
     // setup file lists
-    m_filelist.reset(new Filelist(k_supportedFileTypes, inputPath));
-    m_favorites.reset(new Filelist(k_supportedFileTypes, k_favoritesPath));
+    Filelist filelist(PSGHandler::DecodeFileTypes, inputPath);
+    Filelist favorites(PSGHandler::DecodeFileTypes, c_favoritesPath);
+
+    // setup destination chip config
+    Chip chip;
+#if 0
+    chip.first.model(Chip::Model::AY8930);
+    chip.second.model(Chip::Model::AY8910);
+    chip.output(Chip::Output::Stereo);
+    chip.stereo(Chip::Stereo::CAB);
+    chip.clockValue(1000000);
+#endif
 
     PrintWellcome();
-    SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
+    SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    if (!m_filelist->IsEmpty())
+    if (!filelist.IsEmpty())
     {
         if (isConverting)
         {
-            ConvertInputFiles(outputPath);
+            //ConvertInputFiles(outputPath);
         }
         else
         {
-            PlayInputFiles();
+            // setup output device
+            std::shared_ptr<Output> output;
+            if (isStreamer)
+            {
+                const int k_comPortIndex = 4;
+                output.reset(new Streamer(k_comPortIndex));
+            }
+            else
+            {
+                output.reset(new Emulator());
+            }
+
+            // setup and start playback
+            if (isRandomShuffle) filelist.RandomShuffle();
+            PSGPlayer psgPlayer(chip, *output, filelist, favorites, m_termination);
+            psgPlayer.Play();
         }
     }
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+PSGPlayer::PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
+    : m_chip(chip)
+    , m_output(output)
+    , m_filelist(filelist)
+    , m_favorites(favorites)
+    , m_termination(termination)
+    , m_player(output)
+{
+    for (auto& enable : m_enables) enable = true;
+}
+
+void PSGPlayer::Play()
+{
+    PlayStreamResult result{ PlayStreamResult::GoToNext };
+
+    while (true)
+    {
+        std::filesystem::path path;
+        bool newFileAvailable = false;
+
+        if (result == PlayStreamResult::GoToPrevious)
+        {
+            newFileAvailable = m_filelist.GetPrevFile(path);
+        }
+        else if (result == PlayStreamResult::GoToNext)
+        {
+            newFileAvailable = m_filelist.GetNextFile(path);
+        }
+        if (!newFileAvailable) break;
+
+        Stream stream;
+        stream.dchip = m_chip;
+
+        if (Decode(path, stream))
+        {
+            result = PlayStream(stream);
+        }
+        else
+        {
+            std::cout << "Could not decode file: " << path << std::endl;
+        }
+    }
+}
+
+void PSGPlayer::OnFrameDecoded(Stream& stream, FrameId frameId)
+{
+    //
+}
+
+PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
+{
+    PlayStreamResult result{ PlayStreamResult::GoToNext };
+
+    m_staticHeight  = 0;
+    m_dynamicHeight = 0;
+
+    if (m_player.Init(stream))
+    {
+        m_printStatic = true;
+        FrameId frameId = -1;
+
+        m_player.Play();
+        while (m_player.IsPlaying())
+        {
+            m_output.SetEnables(m_enables);
+            gui::Update();
+
+            if (m_player.GetFrameId() != frameId)
+            {
+                frameId = m_player.GetFrameId();
+
+                terminal::cursor::move_up(int(m_dynamicHeight));
+                m_dynamicHeight = 0;
+
+                if (m_printStatic)
+                {
+                    gui::Clear(m_staticHeight);
+                    m_staticHeight = 0;
+
+                    auto index = m_filelist.GetCurrFileIndex();
+                    auto amount = m_filelist.GetNumberOfFiles();
+                    auto favorite = m_favorites.ContainsFile(stream.file);
+
+                    m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
+                    m_staticHeight += gui::PrintStreamInfo(stream, m_output);
+                    m_printStatic = false;
+                }
+
+                m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+                m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+            }
+
+            if (m_termination)
+            {
+                result = PlayStreamResult::Termination;
+                break;
+            }
+
+            if (gui::GetKeyState(VK_UP).pressed)
+            {
+                if (!m_player.IsPaused())
+                {
+                    result = PlayStreamResult::GoToPrevious;
+                    break;
+                }
+            }
+
+            if (gui::GetKeyState(VK_DOWN).pressed)
+            {
+                if (!m_player.IsPaused())
+                {
+                    result = PlayStreamResult::GoToNext;
+                    break;
+                }
+            }
+
+            if (gui::GetKeyState(VK_RETURN).pressed)
+            {
+                if (m_player.IsPaused())
+                    m_player.Play();
+                else
+                    m_player.Stop();
+            }
+
+            if (gui::GetKeyState('F').pressed)
+            {
+                if (m_favorites.ContainsFile (stream.file) ?
+                    m_favorites.EraseFile    (stream.file) : 
+                    m_favorites.InsertFile   (stream.file) )
+                {
+                    m_favorites.ExportPlaylist(c_favoritesPath);
+                    m_printStatic = true;
+                }
+            }
+
+            for (int key = '1'; key <= '5'; ++key)
+            {
+                if (gui::GetKeyState(key).pressed)
+                {
+                    m_enables[key - '1'] ^= true;
+                }
+            }
+
+            Sleep(1);
+        }
+
+        m_player.Stop();
+        gui::Clear(m_dynamicHeight);
+    }
+    else
+    {
+        std::cout << "Could not init player with module" << std::endl;
+    }
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+PSGConverter::PSGConverter(Chip& chip, Filelist& filelist, Termination& termination)
+    : m_chip(chip)
+    , m_filelist(filelist)
+    , m_termination(termination)
+{
+}
+
+void PSGConverter::Convert()
+{
+}
+
+void PSGConverter::OnFrameDecoded(Stream& stream, FrameId frameId)
+{
+}
+
+void PSGConverter::OnFrameEncoded(Stream& stream, FrameId frameId)
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////

@@ -149,6 +149,7 @@
     <ClInclude Include="..\src\psgtools\interface\ConsoleGUI.h" />
     <ClInclude Include="..\src\psgtools\interface\KeyboardInput.h" />
     <ClInclude Include="..\src\psgtools\interface\PrintBuffer.h" />
+    <ClInclude Include="..\src\psgtools\PSGTools.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

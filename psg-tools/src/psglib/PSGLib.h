@@ -6,9 +6,13 @@
 #include "output/Emulator/Emulator.h"
 #include "output/Streamer/Streamer.h"
 
-class PSG
+class PSGHandler
 {
 public:
+	static const std::string DecodeFileTypes;
+	static const std::string EncodeFileTypes;
+
+protected:
 	bool Decode(const std::filesystem::path& path, Stream& stream);
 	bool Encode(const std::filesystem::path& path, Stream& stream);
 
