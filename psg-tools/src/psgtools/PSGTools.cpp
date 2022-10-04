@@ -412,9 +412,80 @@ void PSGPlayer::OnFrameDecoded(Stream& stream, FrameId frameId)
     //
 }
 
+void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
+{
+    terminal::cursor::move_up(int(m_dynamicHeight));
+    m_dynamicHeight = 0;
+
+    if (m_printStatic)
+    {
+        gui::Clear(m_staticHeight);
+        m_staticHeight = 0;
+
+        auto index = m_filelist.GetCurrFileIndex();
+        auto amount = m_filelist.GetNumberOfFiles();
+        auto favorite = m_favorites.ContainsFile(stream.file);
+
+        m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
+        m_staticHeight += gui::PrintStreamInfo(stream, m_output);
+        m_printStatic = false;
+    }
+
+    m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+    m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+}
+
+PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
+{
+    if (gui::GetKeyState(VK_UP).pressed)
+    {
+        if (!m_player.IsPaused())
+        {
+            return PlayStreamResult::GoToPrevious;
+        }
+    }
+
+    if (gui::GetKeyState(VK_DOWN).pressed)
+    {
+        if (!m_player.IsPaused())
+        {
+            return PlayStreamResult::GoToNext;
+        }
+    }
+
+    if (gui::GetKeyState(VK_RETURN).pressed)
+    {
+        if (m_player.IsPaused())
+            m_player.Play();
+        else
+            m_player.Stop();
+    }
+
+    if (gui::GetKeyState('F').pressed)
+    {
+        if (m_favorites.ContainsFile(stream.file)
+            ? m_favorites.EraseFile (stream.file)
+            : m_favorites.InsertFile(stream.file))
+        {
+            m_favorites.ExportPlaylist(c_favoritesPath);
+            m_printStatic = true;
+        }
+    }
+
+    for (int key = '1'; key <= '5'; ++key)
+    {
+        if (gui::GetKeyState(key).pressed)
+        {
+            m_enables[key - '1'] ^= true;
+        }
+    }
+
+    return PlayStreamResult::Nothing;
+}
+
 PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
 {
-    PlayStreamResult result{ PlayStreamResult::GoToNext };
+    auto result{ PlayStreamResult::Nothing };
 
     m_staticHeight  = 0;
     m_dynamicHeight = 0;
@@ -425,90 +496,24 @@ PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
         FrameId frameId = -1;
 
         m_player.Play();
-        while (m_player.IsPlaying())
+        while (m_player.IsPlaying() && result == PlayStreamResult::Nothing)
         {
-            m_output.SetEnables(m_enables);
-            gui::Update();
-
             if (m_player.GetFrameId() != frameId)
             {
                 frameId = m_player.GetFrameId();
-
-                terminal::cursor::move_up(int(m_dynamicHeight));
-                m_dynamicHeight = 0;
-
-                if (m_printStatic)
-                {
-                    gui::Clear(m_staticHeight);
-                    m_staticHeight = 0;
-
-                    auto index = m_filelist.GetCurrFileIndex();
-                    auto amount = m_filelist.GetNumberOfFiles();
-                    auto favorite = m_favorites.ContainsFile(stream.file);
-
-                    m_staticHeight += gui::PrintInputFile(stream, index, amount, favorite);
-                    m_staticHeight += gui::PrintStreamInfo(stream, m_output);
-                    m_printStatic = false;
-                }
-
-                m_dynamicHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
-                m_dynamicHeight += gui::PrintPlaybackProgress(stream, frameId);
+                PrintStreamPlayback(stream, frameId);
             }
+
+            m_output.SetEnables(m_enables);
+            gui::Update();
 
             if (m_termination)
-            {
                 result = PlayStreamResult::Termination;
-                break;
-            }
-
-            if (gui::GetKeyState(VK_UP).pressed)
-            {
-                if (!m_player.IsPaused())
-                {
-                    result = PlayStreamResult::GoToPrevious;
-                    break;
-                }
-            }
-
-            if (gui::GetKeyState(VK_DOWN).pressed)
-            {
-                if (!m_player.IsPaused())
-                {
-                    result = PlayStreamResult::GoToNext;
-                    break;
-                }
-            }
-
-            if (gui::GetKeyState(VK_RETURN).pressed)
-            {
-                if (m_player.IsPaused())
-                    m_player.Play();
-                else
-                    m_player.Stop();
-            }
-
-            if (gui::GetKeyState('F').pressed)
-            {
-                if (m_favorites.ContainsFile (stream.file) ?
-                    m_favorites.EraseFile    (stream.file) : 
-                    m_favorites.InsertFile   (stream.file) )
-                {
-                    m_favorites.ExportPlaylist(c_favoritesPath);
-                    m_printStatic = true;
-                }
-            }
-
-            for (int key = '1'; key <= '5'; ++key)
-            {
-                if (gui::GetKeyState(key).pressed)
-                {
-                    m_enables[key - '1'] ^= true;
-                }
-            }
+            else
+                result = HandleUserInput(stream);
 
             Sleep(1);
         }
-
         m_player.Stop();
         gui::Clear(m_dynamicHeight);
     }

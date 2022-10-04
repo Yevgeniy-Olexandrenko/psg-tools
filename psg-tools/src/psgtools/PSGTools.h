@@ -7,7 +7,7 @@ using Termination = std::atomic<bool>;
 
 class PSGPlayer : public PSGHandler
 {
-    enum class PlayStreamResult { GoToNext, GoToPrevious, Termination };
+    enum class PlayStreamResult { Nothing, GoToNext, GoToPrevious, Termination };
 
 public:
     PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
@@ -17,7 +17,10 @@ protected:
 	void OnFrameDecoded(Stream& stream, FrameId frameId) override;
 
 private:
+    void PrintStreamPlayback(const Stream& stream, FrameId frameId);
+    PlayStreamResult HandleUserInput(const Stream& stream);
     PlayStreamResult PlayStream(const Stream& stream);
+    
 
 private:
     Chip& m_chip;
