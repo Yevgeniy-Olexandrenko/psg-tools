@@ -32,7 +32,10 @@ Filelist::Filelist(const std::string& exts)
 Filelist::Filelist(const std::string& exts, const FilePath& path)
     : Filelist(exts)
 {
-    for (auto path : glob::glob(path.string()))
+    auto items = glob::glob(path.string());
+    if (items.size() == 1) m_path = items[0];
+
+    for (auto path : items)
     {
         if (path.is_relative())
         {
@@ -62,6 +65,11 @@ Filelist::Filelist(const std::string& exts, const FilePath& path)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+Filelist::FilePath Filelist::GetPath() const
+{
+    return m_path;
+}
 
 bool Filelist::IsEmpty() const
 {

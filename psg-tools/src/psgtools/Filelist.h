@@ -13,6 +13,7 @@ public:
 	Filelist(const std::string& exts, const FilePath& path);
 
 public:
+	FilePath GetPath() const;
 	bool     IsEmpty() const;
 	uint32_t GetNumberOfFiles() const;
 	int32_t  GetCurrFileIndex() const;
@@ -35,6 +36,7 @@ private:
 	bool ExportPlaylistAYL(const FilePath& path);
 
 private:
+	FilePath m_path;
 	std::vector<FilePath> m_exts;
 	std::vector<FilePath> m_files;
 	std::set<PathHash> m_hashes;

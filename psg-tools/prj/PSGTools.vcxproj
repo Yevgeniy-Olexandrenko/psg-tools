@@ -74,10 +74,12 @@
     <ClCompile Include="..\src\psglib\stream\Player.cpp" />
     <ClCompile Include="..\src\psglib\stream\Stream.cpp" />
     <ClCompile Include="..\src\psgtools\components\glob\glob.cpp" />
+    <ClCompile Include="..\src\psgtools\ConvertFiles.cpp" />
     <ClCompile Include="..\src\psgtools\Filelist.cpp" />
     <ClCompile Include="..\src\psgtools\interface\ConsoleGUI.cpp" />
     <ClCompile Include="..\src\psgtools\interface\KeyboardInput.cpp" />
     <ClCompile Include="..\src\psgtools\interface\PrintBuffer.cpp" />
+    <ClCompile Include="..\src\psgtools\PlayFiles.cpp" />
     <ClCompile Include="..\src\psgtools\PSGTools.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -145,10 +147,12 @@
     <ClInclude Include="..\src\psgtools\components\terminal\terminal_color.hpp" />
     <ClInclude Include="..\src\psgtools\components\terminal\terminal_cursor.hpp" />
     <ClInclude Include="..\src\psgtools\components\terminal\terminal_size.hpp" />
+    <ClInclude Include="..\src\psgtools\ConvertFiles.h" />
     <ClInclude Include="..\src\psgtools\Filelist.h" />
     <ClInclude Include="..\src\psgtools\interface\ConsoleGUI.h" />
     <ClInclude Include="..\src\psgtools\interface\KeyboardInput.h" />
     <ClInclude Include="..\src\psgtools\interface\PrintBuffer.h" />
+    <ClInclude Include="..\src\psgtools\PlayFiles.h" />
     <ClInclude Include="..\src\psgtools\PSGTools.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

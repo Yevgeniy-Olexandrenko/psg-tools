@@ -254,7 +254,7 @@ void Stream::AddFrame(const Frame& frame)
 {
 	if (framesCount() < 100000)
 	{
-		FrameId id = m_frames.size();
+		auto id = FrameId(m_frames.size());
 		m_frames.push_back(frame);
 		m_frames.back().SetId(id);
 

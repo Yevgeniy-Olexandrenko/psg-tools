@@ -252,6 +252,12 @@
     <ClCompile Include="..\src\psglib\processing\Processing.cpp">
       <Filter>Sources\psglib\processing</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\psgtools\PlayFiles.cpp">
+      <Filter>Sources\psgtools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psgtools\ConvertFiles.cpp">
+      <Filter>Sources\psgtools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\psglib\stream\Chip.h">
@@ -459,6 +465,12 @@
       <Filter>Sources\psglib\processing</Filter>
     </ClInclude>
     <ClInclude Include="..\src\psgtools\PSGTools.h">
+      <Filter>Sources\psgtools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psgtools\PlayFiles.h">
+      <Filter>Sources\psgtools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psgtools\ConvertFiles.h">
       <Filter>Sources\psgtools</Filter>
     </ClInclude>
   </ItemGroup>
