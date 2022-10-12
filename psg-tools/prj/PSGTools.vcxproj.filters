@@ -70,6 +70,9 @@
     <Filter Include="Sources\psglib\processing">
       <UniqueIdentifier>{dce4e53e-a839-44c2-9245-e2a50ee7ad8c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\psgtools\components\argparse">
+      <UniqueIdentifier>{452dbeaf-37b7-448b-8ea3-22571db662a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\psglib\stream\Chip.cpp">
@@ -164,9 +167,6 @@
     </ClCompile>
     <ClCompile Include="..\src\psglib\decoders\Decoder.cpp">
       <Filter>Sources\psglib\decoders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\psgtools\components\glob\glob.cpp">
-      <Filter>Sources\psgtools\components\glob</Filter>
     </ClCompile>
     <ClCompile Include="..\src\psgtools\Filelist.cpp">
       <Filter>Sources\psgtools</Filter>
@@ -362,9 +362,6 @@
     <ClInclude Include="..\src\psglib\decoders\Decoder.h">
       <Filter>Sources\psglib\decoders</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\psgtools\components\glob\glob.h">
-      <Filter>Sources\psgtools\components\glob</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\psgtools\components\terminal\terminal.hpp">
       <Filter>Sources\psgtools\components\terminal</Filter>
     </ClInclude>
@@ -473,5 +470,25 @@
     <ClInclude Include="..\src\psgtools\ConvertFiles.h">
       <Filter>Sources\psgtools</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\psgtools\components\glob\glob.hpp">
+      <Filter>Sources\psgtools\components\glob</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psgtools\components\argparse\argparse.hpp">
+      <Filter>Sources\psgtools\components\argparse</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\psgtools\components\glob\LICENSE">
+      <Filter>Sources\psgtools\components\glob</Filter>
+    </None>
+    <None Include="..\src\psgtools\components\glob\README.md">
+      <Filter>Sources\psgtools\components\glob</Filter>
+    </None>
+    <None Include="..\src\psgtools\components\argparse\LICENSE">
+      <Filter>Sources\psgtools\components\argparse</Filter>
+    </None>
+    <None Include="..\src\psgtools\components\argparse\README.md">
+      <Filter>Sources\psgtools\components\argparse</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <set>
-#include "glob.h"
+#include <glob.hpp>
 
 class Filelist
 {

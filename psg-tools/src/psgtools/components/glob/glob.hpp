@@ -1,16 +1,20 @@
 
+#pragma once
 #include <cassert>
+#include <filesystem>
 #include <functional>
-#include <glob.h>
 #include <iostream>
 #include <map>
 #include <regex>
+#include <string>
+#include <vector>
 namespace fs = std::filesystem;
 
 namespace glob {
 
 namespace {
 
+static inline 
 bool string_replace(std::string &str, const std::string &from, const std::string &to) {
   std::size_t start_pos = str.find(from);
   if (start_pos == std::string::npos)
@@ -19,6 +23,7 @@ bool string_replace(std::string &str, const std::string &from, const std::string
   return true;
 }
 
+static inline 
 std::string translate(const std::string &pattern) {
   std::size_t i = 0, n = pattern.size();
   std::string result_string;
@@ -84,7 +89,7 @@ std::string translate(const std::string &pattern) {
 
         // Escape set operations (&&, ~~ and ||).
         std::string result;
-        std::regex_replace(std::back_inserter(result),          // ressult
+        std::regex_replace(std::back_inserter(result),          // result
                            stuff.begin(), stuff.end(),          // string
                            std::regex(std::string{R"([&~|])"}), // pattern
                            std::string{R"(\\\1)"});             // repl
@@ -106,9 +111,9 @@ std::string translate(const std::string &pattern) {
       static std::string special_characters = "()[]{}?*+-|^$\\.&~# \t\n\r\v\f";
       static std::map<int, std::string> special_characters_map;
       if (special_characters_map.empty()) {
-        for (auto &c : special_characters) {
+        for (auto &sc : special_characters) {
           special_characters_map.insert(
-              std::make_pair(static_cast<int>(c), std::string{"\\"} + std::string(1, c)));
+              std::make_pair(static_cast<int>(sc), std::string{"\\"} + std::string(1, sc)));
         }
       }
 
@@ -122,31 +127,40 @@ std::string translate(const std::string &pattern) {
   return std::string{"(("} + result_string + std::string{R"()|[\r\n])$)"};
 }
 
+static inline 
 std::regex compile_pattern(const std::string &pattern) {
   return std::regex(translate(pattern), std::regex::ECMAScript);
 }
 
-bool fnmatch_case(const fs::path &name, const std::string &pattern) {
+static inline 
+bool fnmatch(const fs::path &name, const std::string &pattern) {
   return std::regex_match(name.string(), compile_pattern(pattern));
 }
 
+static inline 
 std::vector<fs::path> filter(const std::vector<fs::path> &names,
                              const std::string &pattern) {
   // std::cout << "Pattern: " << pattern << "\n";
   std::vector<fs::path> result;
   for (auto &name : names) {
     // std::cout << "Checking for " << name.string() << "\n";
-    if (fnmatch_case(name, pattern)) {
+    if (fnmatch(name, pattern)) {
       result.push_back(name);
     }
   }
   return result;
 }
 
+static inline 
 fs::path expand_tilde(fs::path path) {
   if (path.empty()) return path;
-
+#ifdef _WIN32
+  char* home;
+  size_t sz;
+  _dupenv_s(&home, &sz, "USERPROFILE");
+#else
   const char * home = std::getenv("HOME");
+#endif
   if (home == nullptr) {
     throw std::invalid_argument("error: Unable to expand `~` - HOME environment variable not set.");
   }
@@ -160,15 +174,21 @@ fs::path expand_tilde(fs::path path) {
   }
 }
 
+static inline 
 bool has_magic(const std::string &pathname) {
   static const auto magic_check = std::regex("([*?[])");
   return std::regex_search(pathname, magic_check);
 }
 
-bool is_hidden(const std::string &pathname) { return pathname[0] == '.'; }
+static inline 
+bool is_hidden(const std::string &pathname) {
+  return std::regex_match(pathname, std::regex("^(.*\\/)*\\.[^\\.\\/]+\\/*$"));
+}
 
+static inline 
 bool is_recursive(const std::string &pattern) { return pattern == "**"; }
 
+static inline 
 std::vector<fs::path> iter_directory(const fs::path &dirname, bool dironly) {
   std::vector<fs::path> result;
 
@@ -190,7 +210,7 @@ std::vector<fs::path> iter_directory(const fs::path &dirname, bool dironly) {
           }
         }
       }
-    } catch (std::exception& e) {
+    } catch (std::exception&) {
       // not a directory
       // do nothing
     }
@@ -200,6 +220,7 @@ std::vector<fs::path> iter_directory(const fs::path &dirname, bool dironly) {
 }
 
 // Recursively yields relative pathnames inside a literal directory.
+static inline 
 std::vector<fs::path> rlistdir(const fs::path &dirname, bool dironly) {
   std::vector<fs::path> result;
   auto names = iter_directory(dirname, dironly);
@@ -216,11 +237,12 @@ std::vector<fs::path> rlistdir(const fs::path &dirname, bool dironly) {
 
 // This helper function recursively yields relative pathnames inside a literal
 // directory.
-std::vector<fs::path> glob2(const fs::path &dirname, const fs::path &pattern,
+static inline 
+std::vector<fs::path> glob2(const fs::path &dirname, [[maybe_unused]] const std::string &pattern,
                             bool dironly) {
   // std::cout << "In glob2\n";
   std::vector<fs::path> result;
-  assert(is_recursive(pattern.string()));
+  assert(is_recursive(pattern));
   for (auto &dir : rlistdir(dirname, dironly)) {
     result.push_back(dir);
   }
@@ -230,8 +252,8 @@ std::vector<fs::path> glob2(const fs::path &dirname, const fs::path &pattern,
 // These 2 helper functions non-recursively glob inside a literal directory.
 // They return a list of basenames.  _glob1 accepts a pattern while _glob0
 // takes a literal basename (so it only has to check for its existence).
-
-std::vector<fs::path> glob1(const fs::path &dirname, const fs::path &pattern,
+static inline 
+std::vector<fs::path> glob1(const fs::path &dirname, const std::string &pattern,
                             bool dironly) {
   // std::cout << "In glob1\n";
   auto names = iter_directory(dirname, dironly);
@@ -248,9 +270,10 @@ std::vector<fs::path> glob1(const fs::path &dirname, const fs::path &pattern,
       // }
     }
   }
-  return filter(filtered_names, pattern.string());
+  return filter(filtered_names, pattern);
 }
 
+static inline 
 std::vector<fs::path> glob0(const fs::path &dirname, const fs::path &basename,
                             bool /*dironly*/) {
   // std::cout << "In glob0\n";
@@ -268,11 +291,11 @@ std::vector<fs::path> glob0(const fs::path &dirname, const fs::path &basename,
   return result;
 }
 
-std::vector<fs::path> glob(const fs::path &inpath, bool recursive = false,
+static inline 
+std::vector<fs::path> glob(const std::string &pathname, bool recursive = false,
                            bool dironly = false) {
   std::vector<fs::path> result;
 
-  const auto pathname = inpath.string();
   auto path = fs::path(pathname);
 
   if (pathname[0] == '~') {
@@ -300,20 +323,20 @@ std::vector<fs::path> glob(const fs::path &inpath, bool recursive = false,
 
   if (dirname.empty()) {
     if (recursive && is_recursive(basename.string())) {
-      return glob2(dirname, basename, dironly);
+      return glob2(dirname, basename.string(), dironly);
     } else {
-      return glob1(dirname, basename, dironly);
+      return glob1(dirname, basename.string(), dironly);
     }
   }
 
   std::vector<fs::path> dirs;
   if (dirname != fs::path(pathname) && has_magic(dirname.string())) {
-    dirs = glob(dirname, recursive, true);
+    dirs = glob(dirname.string(), recursive, true);
   } else {
     dirs = {dirname};
   }
 
-  std::function<std::vector<fs::path>(const fs::path &, const fs::path &, bool)>
+  std::function<std::vector<fs::path>(const fs::path &, const std::string &, bool)>
       glob_in_dir;
   if (has_magic(basename.string())) {
     if (recursive && is_recursive(basename.string())) {
@@ -326,7 +349,7 @@ std::vector<fs::path> glob(const fs::path &inpath, bool recursive = false,
   }
 
   for (auto &d : dirs) {
-    for (auto &name : glob_in_dir(d, basename, dironly)) {
+    for (auto &name : glob_in_dir(d, basename.string(), dironly)) {
       fs::path subresult = name;
       if (name.parent_path().empty()) {
         subresult = d / name;
@@ -340,14 +363,17 @@ std::vector<fs::path> glob(const fs::path &inpath, bool recursive = false,
 
 } // namespace end
 
+static inline 
 std::vector<fs::path> glob(const std::string &pathname) {
   return glob(pathname, false);
 }
 
+static inline 
 std::vector<fs::path> rglob(const std::string &pathname) {
   return glob(pathname, true);
 }
 
+static inline 
 std::vector<std::filesystem::path> glob(const std::vector<std::string> &pathnames) {
   std::vector<std::filesystem::path> result;
   for (auto &pathname : pathnames) {
@@ -358,6 +384,7 @@ std::vector<std::filesystem::path> glob(const std::vector<std::string> &pathname
   return result;
 }
 
+static inline 
 std::vector<std::filesystem::path> rglob(const std::vector<std::string> &pathnames) {
   std::vector<std::filesystem::path> result;
   for (auto &pathname : pathnames) {
@@ -368,11 +395,13 @@ std::vector<std::filesystem::path> rglob(const std::vector<std::string> &pathnam
   return result;
 }
 
+static inline 
 std::vector<std::filesystem::path>
 glob(const std::initializer_list<std::string> &pathnames) {
   return glob(std::vector<std::string>(pathnames));
 }
 
+static inline 
 std::vector<std::filesystem::path>
 rglob(const std::initializer_list<std::string> &pathnames) {
   return rglob(std::vector<std::string>(pathnames));
