@@ -5,12 +5,12 @@
 
 using Termination = std::atomic<bool>;
 
-class PSGPlayer : public PSGHandler
+class PlayFiles : public PSGHandler
 {
     enum class PlayStreamResult { Nothing, GoToNext, GoToPrevious, Termination };
 
 public:
-    PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
+    PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
     void Play();
 
 protected:

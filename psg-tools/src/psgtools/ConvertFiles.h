@@ -5,10 +5,10 @@
 
 using Termination = std::atomic<bool>;
 
-class PSGConverter : public PSGHandler
+class ConvertFiles : public PSGHandler
 {
 public:
-    PSGConverter(Chip& chip, Filelist& filelist, Termination& termination);
+    ConvertFiles(Chip& chip, Filelist& filelist, Termination& termination);
     void Convert();
 
 protected:

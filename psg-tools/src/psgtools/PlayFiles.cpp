@@ -2,7 +2,7 @@
 #include "interface/ConsoleGUI.h"
 #include <chrono>
 
-PSGPlayer::PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
+PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
     : m_chip(chip)
     , m_output(output)
     , m_filelist(filelist)
@@ -13,7 +13,7 @@ PSGPlayer::PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& f
     for (auto& enable : m_enables) enable = true;
 }
 
-void PSGPlayer::Play()
+void PlayFiles::Play()
 {
     PlayStreamResult result{ PlayStreamResult::GoToNext };
 
@@ -43,7 +43,7 @@ void PSGPlayer::Play()
         if (Decode(path, stream))
         {
             auto t2 = std::chrono::high_resolution_clock::now();
-            m_dbgDecodeTime = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            m_dbgDecodeTime = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
             result = PlayStream(stream);
         }
@@ -54,12 +54,12 @@ void PSGPlayer::Play()
     }
 }
 
-void PSGPlayer::OnFrameDecoded(Stream& stream, FrameId frameId)
+void PlayFiles::OnFrameDecoded(Stream& stream, FrameId frameId)
 {
     PrintStreamDecoding(stream);
 }
 
-void PSGPlayer::PrintStreamDecoding(const Stream& stream)
+void PlayFiles::PrintStreamDecoding(const Stream& stream)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -81,7 +81,7 @@ void PSGPlayer::PrintStreamDecoding(const Stream& stream)
     m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
-void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
+void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -111,7 +111,7 @@ void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
-PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
+PlayFiles::PlayStreamResult PlayFiles::HandleUserInput(const Stream& stream)
 {
     if (gui::GetKeyState(VK_UP).pressed)
     {
@@ -159,7 +159,7 @@ PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
     return PlayStreamResult::Nothing;
 }
 
-PSGPlayer::PlayStreamResult PSGPlayer::PlayStream(const Stream& stream)
+PlayFiles::PlayStreamResult PlayFiles::PlayStream(const Stream& stream)
 {
     auto result{ PlayStreamResult::Nothing };
 

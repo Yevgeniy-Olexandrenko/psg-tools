@@ -94,11 +94,11 @@ int main(int argc, char* argv[])
     // setup destination chip config
     Chip chip;
 #if 0
-    chip.first.model(Chip::Model::AY8930);
-    chip.second.model(Chip::Model::AY8910);
-    chip.output(Chip::Output::Stereo);
-    chip.stereo(Chip::Stereo::CAB);
-    chip.clockValue(1000000);
+    chip.first.model(Chip::Model::AY8910);
+    //chip.second.model(Chip::Model::AY8910);
+    //chip.output(Chip::Output::Stereo);
+    //chip.stereo(Chip::Stereo::CAB);
+    //chip.clockValue(1000000);
 #endif
 
     PrintWellcome();
@@ -115,18 +115,14 @@ int main(int argc, char* argv[])
             // setup output device
             std::shared_ptr<Output> output;
             if (comPortIndex >= 0)
-            {
                 output.reset(new Streamer(comPortIndex));
-            }
             else
-            {
                 output.reset(new Emulator());
-            }
 
             // setup and start playback
             if (isRandomShuffle) filelist.RandomShuffle();
-            PSGPlayer psgPlayer(chip, *output, filelist, favorites, m_termination);
-            psgPlayer.Play();
+            PlayFiles player(chip, *output, filelist, favorites, m_termination);
+            player.Play();
         }
     }
     return 0;
