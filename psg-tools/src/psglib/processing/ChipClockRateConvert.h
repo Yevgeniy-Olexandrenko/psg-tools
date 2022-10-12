@@ -9,9 +9,14 @@ class ChipClockRateConvert : public Processing
 
 public:
     ChipClockRateConvert(const Chip& schip, const Chip& dchip)
-        : m_ratio(float(dchip.clockValue()) / float(schip.clockValue()))
+        : m_ratio(1.f)
         , m_count(dchip.count())
-    {}
+    {
+        if (schip.clockKnown() && dchip.clockKnown())
+        {
+            m_ratio = float(dchip.clockValue()) / float(schip.clockValue());
+        }
+    }
 
 #ifdef Enable_ChipClockRateConvert
 	const Frame& operator()(const Frame& frame) override
@@ -29,7 +34,7 @@ public:
             N_Period
         };
 
-        if (m_ratio != 1.0f)
+        if (m_ratio != 1.f)
         {
             Update(frame);
             for (int chip = 0; chip < m_count; ++chip)
