@@ -98,12 +98,13 @@ void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
         m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
         m_sHeight += gui::PrintFullStreamInfo(stream, m_output);
         m_sPrint = false;
-
+#if 0
         if (m_dbgDecodeTime)
         {
             std::cout << " DECODE TIME: " << m_dbgDecodeTime << " ms\n";
             m_sHeight++;
         }
+#endif
     }
 
     m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);

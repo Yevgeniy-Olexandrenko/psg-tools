@@ -584,7 +584,7 @@ namespace gui
     size_t PrintProgress(int index, size_t count, int spinner, const std::string& value)
     {
         static int s_spin = -1;
-        int spin = (spinner >> 2 & 3);
+        int spin = (spinner & 3);
 
         if (spin != s_spin)
         {
@@ -614,7 +614,7 @@ namespace gui
     {
         const auto t = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
-        return PrintProgress(1, 2, ms / 16, "Decoding");
+        return PrintProgress(1, 2, ms / 64, "Decoding");
     }
 
 	size_t PrintPlaybackProgress(const Stream& stream, int frameId)
@@ -628,6 +628,6 @@ namespace gui
         if (hh < 10) sstream << '0'; sstream << hh << ':';
         if (mm < 10) sstream << '0'; sstream << mm << ':';
         if (ss < 10) sstream << '0'; sstream << ss;
-        return PrintProgress(frameId, playbackFrames, (1000 - ms) / 16, sstream.str());
+        return PrintProgress(frameId, playbackFrames, (1000 - ms) / 64, sstream.str());
 	}
 }
