@@ -35,4 +35,6 @@ private:
     bool m_sPrint;
     size_t m_sHeight;
     size_t m_dHeight;
+
+    int m_dbgDecodeTime;
 };

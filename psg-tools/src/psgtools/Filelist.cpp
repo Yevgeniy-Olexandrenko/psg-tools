@@ -17,6 +17,16 @@ std::filesystem::path ConvertToAbsolute(const std::filesystem::path& base, const
 
 ////////////////////////////////////////////////////////////////////////////////
 
+bool IsPlaylistPath(const std::filesystem::path& path)
+{
+    if (path.has_filename())
+    {
+        auto extension = path.extension();
+        return (extension == ".m3u" || extension == ".ayl");
+    }
+    return false;
+}
+
 Filelist::Filelist(const std::string& exts)
     : m_index(-1)
 {
@@ -32,10 +42,22 @@ Filelist::Filelist(const std::string& exts)
 Filelist::Filelist(const std::string& exts, const FilePath& path)
     : Filelist(exts)
 {
-    auto items = glob::glob(path.string());
-    if (items.size() == 1) m_path = items[0];
+    Append(path);
+    if (path.has_filename())
+    {
+        auto extension = path.extension();
+        if (extension == ".m3u" || extension == ".ayl")
+        {
+            m_playlistPath = std::filesystem::absolute(path);
+        }
+    }
+}
 
-    for (auto path : items)
+////////////////////////////////////////////////////////////////////////////////
+
+void Filelist::Append(const FilePath& path)
+{
+    for (auto path : glob::glob(path.string()))
     {
         if (path.is_relative())
         {
@@ -62,13 +84,6 @@ Filelist::Filelist(const std::string& exts, const FilePath& path)
             ImportFolder(path);
         }
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-Filelist::FilePath Filelist::GetPath() const
-{
-    return m_path;
 }
 
 bool Filelist::IsEmpty() const
@@ -161,6 +176,11 @@ bool Filelist::ContainsFile(const FilePath& path)
     return (m_hashes.find(std::filesystem::hash_value(path)) != m_hashes.end());
 }
 
+Filelist::FilePath Filelist::GetPlaylistPath() const
+{
+    return m_playlistPath;
+}
+
 bool Filelist::ExportPlaylist(const FilePath& path)
 {
     if (path.has_filename())
@@ -175,6 +195,11 @@ bool Filelist::ExportPlaylist(const FilePath& path)
         }
     }
     return false;
+}
+
+bool Filelist::ExportPlaylist()
+{
+    return ExportPlaylist(m_playlistPath);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

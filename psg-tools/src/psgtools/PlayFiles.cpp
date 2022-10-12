@@ -1,5 +1,6 @@
 #include "PlayFiles.h"
 #include "interface/ConsoleGUI.h"
+#include <chrono>
 
 PSGPlayer::PSGPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
     : m_chip(chip)
@@ -38,8 +39,12 @@ void PSGPlayer::Play()
         m_dHeight = 0;
         m_sPrint = true;
 
+        auto t1 = std::chrono::high_resolution_clock::now();
         if (Decode(path, stream))
         {
+            auto t2 = std::chrono::high_resolution_clock::now();
+            m_dbgDecodeTime = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
             result = PlayStream(stream);
         }
         else
@@ -93,6 +98,12 @@ void PSGPlayer::PrintStreamPlayback(const Stream& stream, FrameId frameId)
         m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
         m_sHeight += gui::PrintFullStreamInfo(stream, m_output);
         m_sPrint = false;
+
+        if (m_dbgDecodeTime)
+        {
+            std::cout << " DECODE TIME: " << m_dbgDecodeTime << " ms\n";
+            m_sHeight++;
+        }
     }
 
     m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
@@ -131,7 +142,7 @@ PSGPlayer::PlayStreamResult PSGPlayer::HandleUserInput(const Stream& stream)
             ? m_favorites.EraseFile(stream.file)
             : m_favorites.InsertFile(stream.file))
         {
-            m_favorites.ExportPlaylist(m_favorites.GetPath());
+            m_favorites.ExportPlaylist();
             m_sPrint = true;
         }
     }

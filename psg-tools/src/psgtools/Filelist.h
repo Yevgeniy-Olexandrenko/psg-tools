@@ -11,10 +11,10 @@ class Filelist
 public:
 	Filelist(const std::string& exts);
 	Filelist(const std::string& exts, const FilePath& path);
+	void Append(const FilePath& path);
 
 public:
-	FilePath GetPath() const;
-	bool     IsEmpty() const;
+	bool IsEmpty() const;
 	uint32_t GetNumberOfFiles() const;
 	int32_t  GetCurrFileIndex() const;
 
@@ -25,7 +25,10 @@ public:
 	bool EraseFile(const FilePath& path);
 	bool InsertFile(const FilePath& path);
 	bool ContainsFile(const FilePath& path);
+
+	FilePath GetPlaylistPath() const;
 	bool ExportPlaylist(const FilePath& path);
+	bool ExportPlaylist();
 
 private:
 	void ImportFolder(const FilePath& path);
@@ -36,7 +39,7 @@ private:
 	bool ExportPlaylistAYL(const FilePath& path);
 
 private:
-	FilePath m_path;
+	FilePath m_playlistPath;
 	std::vector<FilePath> m_exts;
 	std::vector<FilePath> m_files;
 	std::set<PathHash> m_hashes;

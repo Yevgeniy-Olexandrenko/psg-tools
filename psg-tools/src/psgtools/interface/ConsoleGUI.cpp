@@ -583,40 +583,51 @@ namespace gui
 
     size_t PrintProgress(int index, size_t count, int spinner, const std::string& value)
     {
-        static const std::string c_spinner = R"(_\|/)";
-        char spin = c_spinner[spinner >> 2 & 3];
+        static int s_spin = -1;
+        int spin = (spinner >> 2 & 3);
 
-        auto range = size_t(terminal_width() - 1 - 2 - 2 - 10 - 2 - 2 - 1);
-        auto size1 = size_t(float(index * range) / count + 0.5f);
-        auto size2 = size_t(range - size1);
+        if (spin != s_spin)
+        {
+            static const char c_spinner[] = R"(_\|/)";
+            s_spin = spin;
 
-        std::cout << ' ' << color::bright_blue << std::string(2 + size1, '-');
-        std::cout << color::bright_cyan    << "[ ";
-        std::cout << color::bright_magenta << spin << ' ';
-        std::cout << color::bright_white   << value;
-        std::cout << color::bright_cyan    << " ]";
-        std::cout << color::bright_blue    << std::string(size2 + 2, '-');
-        std::cout << color::reset << std::endl;
+            auto range = size_t(terminal_width() - 1 - 2 - 2 - 10 - 2 - 2 - 1);
+            auto size1 = size_t(float(index * range) / count + 0.5f);
+            auto size2 = size_t(range - size1);
+
+            std::cout << ' ' << color::bright_blue << std::string(2 + size1, '-');
+            std::cout << color::bright_cyan << "[ ";
+            std::cout << color::bright_magenta << c_spinner[spin] << ' ';
+            std::cout << color::bright_white << value;
+            std::cout << color::bright_cyan << " ]";
+            std::cout << color::bright_blue << std::string(size2 + 2, '-');
+            std::cout << color::reset << std::endl;
+        }
+        else
+        {
+            cursor::move_down(1);
+        }
         return 1;
     }
 
     size_t PrintDecodingProgress(const Stream& stream)
     {
-        size_t playbackFrames = stream.framesCount();
-        return PrintProgress(1, 2, playbackFrames / 25, "Decoding");
+        const auto t = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+        return PrintProgress(1, 2, ms / 16, "Decoding");
     }
 
 	size_t PrintPlaybackProgress(const Stream& stream, int frameId)
 	{
-        int hh = 0, mm = 0, ss = 0;
+        int hh, mm, ss, ms;
         size_t playbackFrames  = stream.play.framesCount();
         size_t remainingFrames = (playbackFrames - frameId);
-        stream.play.ComputeDuration(remainingFrames, hh, mm, ss);
+        stream.play.ComputeDuration(remainingFrames, hh, mm, ss, ms);
 
         std::stringstream sstream;
         if (hh < 10) sstream << '0'; sstream << hh << ':';
         if (mm < 10) sstream << '0'; sstream << mm << ':';
         if (ss < 10) sstream << '0'; sstream << ss;
-        return PrintProgress(frameId, playbackFrames, frameId, sstream.str());
+        return PrintProgress(frameId, playbackFrames, (1000 - ms) / 16, sstream.str());
 	}
 }
