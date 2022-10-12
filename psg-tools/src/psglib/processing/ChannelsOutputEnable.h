@@ -27,7 +27,7 @@ public:
         {
             if (!enable)
             {
-                const auto ApplyEnable = [&](int chip, int chan, bool enableT, bool enableN, bool enableE)
+                const auto ApplyEnable = [&](int chip, int chan, bool enableT, bool enableE, bool enableN)
                 {
                     uint8_t mixer = m_frame[chip].Read(Mixer);
                     uint8_t vol_e = m_frame[chip].Read(A_Volume + chan);
@@ -38,7 +38,7 @@ public:
 
                     // disable envelope and volume if possible
                     if (!enableT && !enableN) vol_e &= m_frame[chip].emask();
-                    if (!enableE) vol_e &= ~m_frame[chip].emask();
+                    if (!enableE) vol_e &= m_frame[chip].vmask();
 
                     m_frame[chip].Update(Mixer, mixer);
                     m_frame[chip].Update(A_Volume + chan, vol_e);

@@ -275,39 +275,39 @@ namespace gui
         Coloring coloringM
         {
             playing,
-            (enables[0] || enables[1] || enables[2] || enables[3]),
+            (enables[0] || enables[1] || enables[2] || enables[4]),
             false,
-            enables[3] && (enableNA || enableNB || enableNC),
+            enables[4] && (enableNA || enableNB || enableNC),
             false
         };
         Coloring coloringA
         {
             playing,
             enables[0],
-            enables[4] && enableEA,
-            enables[3] && enableNA,
+            enables[3] && enableEA,
+            enables[4] && enableNA,
             frame[chip].IsChangedPeriod(A_Period) && frame[chip].IsChanged(A_Volume)
         };
         Coloring coloringB
         { 
             playing,
             enables[1],
-            enables[4] && enableEB,
-            enables[3] && enableNB,
+            enables[3] && enableEB,
+            enables[4] && enableNB,
             frame[chip].IsChangedPeriod(B_Period) && frame[chip].IsChanged(B_Volume)
         };
         Coloring coloringC
         { 
             playing,
             enables[2],
-            enables[4] && enableEC,
-            enables[3] && enableNC,
+            enables[3] && enableEC,
+            enables[4] && enableNC,
             frame[chip].IsChangedPeriod(C_Period) && frame[chip].IsChanged(C_Volume)
         };
         Coloring coloringN
         { 
             playing,
-            enables[3],
+            enables[4],
             false, 
             (enableNA || enableNB || enableNC),
             false 
@@ -315,7 +315,7 @@ namespace gui
         Coloring coloringE
         { 
             playing,
-            enables[4],
+            enables[3],
             (enableEA || enableEB || enableEC),
             false, 
             frame[chip].IsChangedPeriod(E_Period) && frame[chip].IsChanged(E_Shape)
@@ -371,39 +371,39 @@ namespace gui
         Coloring coloringM
         {
             playing,
-            (enables[0] || enables[1] || enables[2] || enables[3]),
+            (enables[0] || enables[1] || enables[2] || enables[4]),
             false,
-            enables[3] && (enableNA || enableNB || enableNC),
+            enables[4] && (enableNA || enableNB || enableNC),
             false
         };
         Coloring coloringA
         {
             playing,
             enables[0],
-            enables[4] && enableEA,
-            enables[3] && enableNA,
+            enables[3] && enableEA,
+            enables[4] && enableNA,
             frame[chip].IsChangedPeriod(A_Period) && frame[chip].IsChanged(A_Volume)
         };
         Coloring coloringB
         {
             playing,
             enables[1],
-            enables[4] && enableEB,
-            enables[3] && enableNB,
+            enables[3] && enableEB,
+            enables[4] && enableNB,
             frame[chip].IsChangedPeriod(B_Period) && frame[chip].IsChanged(B_Volume)
         };
         Coloring coloringC
         {
             playing,
             enables[2],
-            enables[4] && enableEC,
-            enables[3] && enableNC,
+            enables[3] && enableEC,
+            enables[4] && enableNC,
             frame[chip].IsChangedPeriod(C_Period) && frame[chip].IsChanged(C_Volume)
         };
         Coloring coloringN
         {
             playing,
-            enables[3],
+            enables[4],
             false,
             (enableNA || enableNB || enableNC),
             false
@@ -411,7 +411,7 @@ namespace gui
         Coloring coloringEA
         {
             playing,
-            enables[4],
+            enables[3],
             enableEA,
             false,
             frame[chip].IsChangedPeriod(EA_Period) && frame[chip].IsChanged(EA_Shape)
@@ -419,7 +419,7 @@ namespace gui
         Coloring coloringEB
         {
             playing,
-            enables[4],
+            enables[3],
             enableEB,
             false,
             frame[chip].IsChangedPeriod(EB_Period) && frame[chip].IsChanged(EB_Shape)
@@ -427,7 +427,7 @@ namespace gui
         Coloring coloringEC
         {
             playing,
-            enables[4],
+            enables[3],
             enableEC,
             false,
             frame[chip].IsChangedPeriod(EC_Period) && frame[chip].IsChanged(EC_Shape)
