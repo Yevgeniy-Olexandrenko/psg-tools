@@ -5,43 +5,48 @@
 
 class Filelist
 {
-	using FilePath = std::filesystem::path;
-	using PathHash = std::size_t;
+	using FSPath = std::filesystem::path;
+	using FSHash = std::size_t;
+
+public:
+	static FSPath ConvertToAbsolute(const FSPath& base, const FSPath& path);
+	static std::string GetExtension(const FSPath& path);
+	static bool IsPlaylistPath(const FSPath& path);
 
 public:
 	Filelist(const std::string& exts);
-	Filelist(const std::string& exts, const FilePath& path);
-	void Append(const FilePath& path);
+	Filelist(const std::string& exts, const FSPath& path);
+	void Append(const FSPath& path);
 
 public:
 	bool IsEmpty() const;
-	uint32_t GetNumberOfFiles() const;
-	int32_t  GetCurrFileIndex() const;
+	int  GetNumberOfFiles() const;
+	int  GetCurrFileIndex() const;
 
-	bool GetPrevFile(FilePath& path) const;
-	bool GetNextFile(FilePath& path) const;
+	bool GetPrevFile(FSPath& path) const;
+	bool GetNextFile(FSPath& path) const;
 	void RandomShuffle();
 
-	bool EraseFile(const FilePath& path);
-	bool InsertFile(const FilePath& path);
-	bool ContainsFile(const FilePath& path);
+	bool EraseFile(const FSPath& path);
+	bool InsertFile(const FSPath& path);
+	bool ContainsFile(const FSPath& path);
 
-	FilePath GetPlaylistPath() const;
-	bool ExportPlaylist(const FilePath& path);
+	FSPath GetPlaylistPath() const;
+	bool ExportPlaylist(const FSPath& path);
 	bool ExportPlaylist();
 
 private:
-	void ImportFolder(const FilePath& path);
-	void ImportPlaylistM3U(const FilePath& path);
-	void ImportPlaylistAYL(const FilePath& path);
+	void ImportDirectory(const FSPath& path);
+	void ImportPlaylistM3U(const FSPath& path);
+	void ImportPlaylistAYL(const FSPath& path);
 
-	bool ExportPlaylistM3U(const FilePath& path);
-	bool ExportPlaylistAYL(const FilePath& path);
+	bool ExportPlaylistM3U(const FSPath& path);
+	bool ExportPlaylistAYL(const FSPath& path);
 
 private:
-	FilePath m_playlistPath;
-	std::vector<FilePath> m_exts;
-	std::vector<FilePath> m_files;
-	std::set<PathHash> m_hashes;
+	FSPath m_playlistPath;
+	std::vector<FSPath> m_exts;
+	std::vector<FSPath> m_files;
+	std::set<FSHash> m_hashes;
 	mutable int32_t m_index;
 };

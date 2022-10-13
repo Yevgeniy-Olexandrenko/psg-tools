@@ -153,6 +153,7 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
         if (gui::GetKeyState(key).pressed)
         {
             m_enables[key - '1'] ^= true;
+            m_sPrint = true;
         }
     }
 
@@ -174,14 +175,14 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
 
         while (result == Action::Nothing)
         {
-            if (m_player.GetFrameId() != frameId)
+            m_output.SetEnables(m_enables);
+            gui::Update();
+
+            if (m_sPrint || m_player.GetFrameId() != frameId)
             {
                 frameId = m_player.GetFrameId();
                 PrintStreamPlayback(stream, frameId);
             }
-
-            m_output.SetEnables(m_enables);
-            gui::Update();
 
             if (!m_player.IsPlaying())
                 result = Action::GoToNext;

@@ -575,7 +575,7 @@ namespace gui
             }
         }
         m_framesBuffer.render();
-        cursor::move_down(height);
+        cursor::move_down(int(height));
         return height;
 	}
 
@@ -613,7 +613,7 @@ namespace gui
     size_t PrintDecodingProgress(const Stream& stream)
     {
         const auto t = std::chrono::system_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+        auto ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
         return PrintProgress(1, 2, ms / 64, "Decoding");
     }
 

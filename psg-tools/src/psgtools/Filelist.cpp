@@ -4,7 +4,15 @@
 #include <random>
 #include "Filelist.h"
 
-std::filesystem::path ConvertToAbsolute(const std::filesystem::path& base, const std::filesystem::path& path)
+namespace
+{
+    const std::string c_extPlaylistM3U{ ".m3u" };
+    const std::string c_extPlaylistAYL{ ".ayl" };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Filelist::FSPath Filelist::ConvertToAbsolute(const FSPath& base, const FSPath& path)
 {
     if (base.is_absolute() && path.is_relative())
     {
@@ -15,17 +23,24 @@ std::filesystem::path ConvertToAbsolute(const std::filesystem::path& base, const
     return path;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-bool IsPlaylistPath(const std::filesystem::path& path)
+std::string Filelist::GetExtension(const FSPath& path)
 {
-    if (path.has_filename())
+    auto extension = path.extension().string();
+    std::for_each(extension.begin(), extension.end(), [](char& c) { c = ::tolower(c); });
+    return extension;
+}
+
+bool Filelist::IsPlaylistPath(const FSPath& path)
+{
+    if (std::filesystem::is_regular_file(path))
     {
-        auto extension = path.extension();
-        return (extension == ".m3u" || extension == ".ayl");
+        auto extension = GetExtension(path);
+        return (extension == c_extPlaylistM3U || extension == c_extPlaylistAYL);
     }
     return false;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 Filelist::Filelist(const std::string& exts)
     : m_index(-1)
@@ -39,23 +54,19 @@ Filelist::Filelist(const std::string& exts)
     }
 }
 
-Filelist::Filelist(const std::string& exts, const FilePath& path)
+Filelist::Filelist(const std::string& exts, const FSPath& path)
     : Filelist(exts)
 {
     Append(path);
-    if (path.has_filename())
+    if (IsPlaylistPath(path))
     {
-        auto extension = path.extension();
-        if (extension == ".m3u" || extension == ".ayl")
-        {
-            m_playlistPath = std::filesystem::absolute(path);
-        }
+        m_playlistPath = std::filesystem::absolute(path);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Filelist::Append(const FilePath& path)
+void Filelist::Append(const FSPath& path)
 {
     for (auto path : glob::glob(path.string()))
     {
@@ -64,13 +75,14 @@ void Filelist::Append(const FilePath& path)
             path = std::filesystem::absolute(path);
         }
 
-        if (path.has_filename())
+        if (std::filesystem::is_regular_file(path))
         {
-            if (path.extension() == ".m3u")
+            auto extension = GetExtension(path);
+            if (extension == c_extPlaylistM3U)
             {
                 ImportPlaylistM3U(path);
             }
-            else if (path.extension() == ".ayl")
+            else if (extension == c_extPlaylistAYL)
             {
                 ImportPlaylistAYL(path);
             }
@@ -79,9 +91,9 @@ void Filelist::Append(const FilePath& path)
                 InsertFile(path);
             }
         }
-        else
+        else if (std::filesystem::is_directory(path))
         {
-            ImportFolder(path);
+            ImportDirectory(path);
         }
     }
 }
@@ -91,17 +103,17 @@ bool Filelist::IsEmpty() const
     return m_files.empty();
 }
 
-uint32_t Filelist::GetNumberOfFiles() const
+int Filelist::GetNumberOfFiles() const
 {
-    return (uint32_t)m_files.size();
+    return (int)m_files.size();
 }
 
-int32_t Filelist::GetCurrFileIndex() const
+int Filelist::GetCurrFileIndex() const
 {
     return m_index;
 }
 
-bool Filelist::GetPrevFile(FilePath& path) const
+bool Filelist::GetPrevFile(FSPath& path) const
 {
     if (!IsEmpty())
     {
@@ -114,7 +126,7 @@ bool Filelist::GetPrevFile(FilePath& path) const
     return false;
 }
 
-bool Filelist::GetNextFile(FilePath& path) const
+bool Filelist::GetNextFile(FSPath& path) const
 {
     if (!IsEmpty())
     {
@@ -135,7 +147,7 @@ void Filelist::RandomShuffle()
     m_index = -1;
 }
 
-bool Filelist::EraseFile(const FilePath& path)
+bool Filelist::EraseFile(const FSPath& path)
 {
     auto hashIt = m_hashes.find(std::filesystem::hash_value(path));
     auto fileIt = std::find(m_files.begin(), m_files.end(), path);
@@ -149,13 +161,11 @@ bool Filelist::EraseFile(const FilePath& path)
     return false;
 }
 
-bool Filelist::InsertFile(const FilePath& path)
+bool Filelist::InsertFile(const FSPath& path)
 {
-    if (path.has_filename())
+    if (std::filesystem::is_regular_file(path))
     {
-        auto extension = path.extension().string();
-        std::for_each(extension.begin(), extension.end(), [](char& c) { c = ::tolower(c); });
-
+        auto extension = GetExtension(path);
         if (std::find(m_exts.begin(), m_exts.end(), extension) != m_exts.end())
         {
             if (std::filesystem::exists(path))
@@ -171,25 +181,26 @@ bool Filelist::InsertFile(const FilePath& path)
     return false;
 }
 
-bool Filelist::ContainsFile(const FilePath& path)
+bool Filelist::ContainsFile(const FSPath& path)
 {
     return (m_hashes.find(std::filesystem::hash_value(path)) != m_hashes.end());
 }
 
-Filelist::FilePath Filelist::GetPlaylistPath() const
+Filelist::FSPath Filelist::GetPlaylistPath() const
 {
     return m_playlistPath;
 }
 
-bool Filelist::ExportPlaylist(const FilePath& path)
+bool Filelist::ExportPlaylist(const FSPath& path)
 {
-    if (path.has_filename())
+    if (std::filesystem::is_regular_file(path))
     {
-        if (path.extension() == ".m3u")
+        auto extension = GetExtension(path);
+        if (extension == c_extPlaylistM3U)
         {
             return ExportPlaylistM3U(std::filesystem::absolute(path));
         }
-        else if (path.extension() == ".ayl")
+        else if (extension == c_extPlaylistAYL)
         {
             return ExportPlaylistAYL(std::filesystem::absolute(path));
         }
@@ -204,7 +215,7 @@ bool Filelist::ExportPlaylist()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Filelist::ImportFolder(const FilePath& path)
+void Filelist::ImportDirectory(const FSPath& path)
 {
     for (const auto& file : std::filesystem::directory_iterator(path))
     {
@@ -215,7 +226,7 @@ void Filelist::ImportFolder(const FilePath& path)
     }
 }
 
-void Filelist::ImportPlaylistM3U(const FilePath& path)
+void Filelist::ImportPlaylistM3U(const FSPath& path)
 {
     std::ifstream fileStream;
     fileStream.open(path);
@@ -235,7 +246,7 @@ void Filelist::ImportPlaylistM3U(const FilePath& path)
     }
 }
 
-void Filelist::ImportPlaylistAYL(const FilePath& path)
+void Filelist::ImportPlaylistAYL(const FSPath& path)
 {
     std::ifstream fileStream;
     fileStream.open(path);
@@ -261,7 +272,7 @@ void Filelist::ImportPlaylistAYL(const FilePath& path)
     }
 }
 
-bool Filelist::ExportPlaylistM3U(const FilePath& path)
+bool Filelist::ExportPlaylistM3U(const FSPath& path)
 {
     std::ofstream stream;
     stream.open(path);
@@ -281,7 +292,7 @@ bool Filelist::ExportPlaylistM3U(const FilePath& path)
     return false;
 }
 
-bool Filelist::ExportPlaylistAYL(const FilePath& path)
+bool Filelist::ExportPlaylistAYL(const FSPath& path)
 {
     std::ofstream stream;
     stream.open(path);
