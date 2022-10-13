@@ -8,18 +8,18 @@ class ChipClockRateConvert : public Processing
     int   m_count;
 
 public:
-    ChipClockRateConvert(const Chip& schip, const Chip& dchip)
+    ChipClockRateConvert(const Chip& srcChip, const Chip& dstChip)
         : m_ratio(1.f)
-        , m_count(dchip.count())
+        , m_count(dstChip.count())
     {
-        if (schip.clockKnown() && dchip.clockKnown())
+        if (srcChip.clockKnown() && dstChip.clockKnown())
         {
-            m_ratio = float(dchip.clockValue()) / float(schip.clockValue());
+            m_ratio = float(dstChip.clockValue()) / float(srcChip.clockValue());
         }
     }
 
 #ifdef Enable_ChipClockRateConvert
-	const Frame& operator()(const Frame& frame) override
+    const Frame& operator()(const Frame& frame) override
     {
         static const PeriodRegister c_com[]
         {

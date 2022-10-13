@@ -461,9 +461,6 @@
     <ClInclude Include="..\src\psglib\processing\Processing.h">
       <Filter>Sources\psglib\processing</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\psgtools\PSGTools.h">
-      <Filter>Sources\psgtools</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\psgtools\PlayFiles.h">
       <Filter>Sources\psgtools</Filter>
     </ClInclude>

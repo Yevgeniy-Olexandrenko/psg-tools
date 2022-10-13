@@ -15,18 +15,18 @@ PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& f
 
 void PlayFiles::Play()
 {
-    PlayStreamResult result{ PlayStreamResult::GoToNext };
+    Action result{ Action::GoToNext };
 
     while (true)
     {
         std::filesystem::path path;
         bool newFileAvailable = false;
 
-        if (result == PlayStreamResult::GoToPrevious)
+        if (result == Action::GoToPrevious)
         {
             newFileAvailable = m_filelist.GetPrevFile(path);
         }
-        else if (result == PlayStreamResult::GoToNext)
+        else if (result == Action::GoToNext)
         {
             newFileAvailable = m_filelist.GetNextFile(path);
         }
@@ -111,13 +111,13 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
-PlayFiles::PlayStreamResult PlayFiles::HandleUserInput(const Stream& stream)
+PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
 {
     if (gui::GetKeyState(VK_UP).pressed)
     {
         if (!m_player.IsPaused())
         {
-            return PlayStreamResult::GoToPrevious;
+            return Action::GoToPrevious;
         }
     }
 
@@ -125,7 +125,7 @@ PlayFiles::PlayStreamResult PlayFiles::HandleUserInput(const Stream& stream)
     {
         if (!m_player.IsPaused())
         {
-            return PlayStreamResult::GoToNext;
+            return Action::GoToNext;
         }
     }
 
@@ -156,12 +156,12 @@ PlayFiles::PlayStreamResult PlayFiles::HandleUserInput(const Stream& stream)
         }
     }
 
-    return PlayStreamResult::Nothing;
+    return Action::Nothing;
 }
 
-PlayFiles::PlayStreamResult PlayFiles::PlayStream(const Stream& stream)
+PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
 {
-    auto result{ PlayStreamResult::Nothing };
+    auto result{ Action::Nothing };
 
     m_sPrint = true;
     m_sHeight += m_dHeight;
@@ -172,7 +172,7 @@ PlayFiles::PlayStreamResult PlayFiles::PlayStream(const Stream& stream)
         m_player.Play();
         FrameId frameId = -1;
 
-        while (result == PlayStreamResult::Nothing)
+        while (result == Action::Nothing)
         {
             if (m_player.GetFrameId() != frameId)
             {
@@ -184,9 +184,9 @@ PlayFiles::PlayStreamResult PlayFiles::PlayStream(const Stream& stream)
             gui::Update();
 
             if (!m_player.IsPlaying())
-                result = PlayStreamResult::GoToNext;
+                result = Action::GoToNext;
             else if (m_termination)
-                result = PlayStreamResult::Termination;
+                result = Action::Termination;
             else
                 result = HandleUserInput(stream);
 
