@@ -1,5 +1,5 @@
 <p align="center">
-  <img height="90" src="img/logo.png"/>  
+  <img height="90" src="https://raw.githubusercontent.com/p-ranav/glob/master/img/logo.png"/>  
 </p>
 
 <p align="center">
