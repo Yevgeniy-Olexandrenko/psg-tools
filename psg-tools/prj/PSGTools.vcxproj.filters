@@ -73,6 +73,9 @@
     <Filter Include="Sources\psgtools\components\argparse">
       <UniqueIdentifier>{452dbeaf-37b7-448b-8ea3-22571db662a2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\psgtools\components\magic_enum">
+      <UniqueIdentifier>{615cf42f-1226-4e1c-ab15-0826bdc4b93c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\psglib\stream\Chip.cpp">
@@ -473,6 +476,15 @@
     <ClInclude Include="..\src\psgtools\components\argparse\argparse.hpp">
       <Filter>Sources\psgtools\components\argparse</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum.hpp">
+      <Filter>Sources\psgtools\components\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum_format.hpp">
+      <Filter>Sources\psgtools\components\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum_fuse.hpp">
+      <Filter>Sources\psgtools\components\magic_enum</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\psgtools\components\glob\LICENSE">
@@ -486,6 +498,12 @@
     </None>
     <None Include="..\src\psgtools\components\argparse\README.md">
       <Filter>Sources\psgtools\components\argparse</Filter>
+    </None>
+    <None Include="..\src\psgtools\components\magic_enum\LICENSE">
+      <Filter>Sources\psgtools\components\magic_enum</Filter>
+    </None>
+    <None Include="..\src\psgtools\components\magic_enum\README.md">
+      <Filter>Sources\psgtools\components\magic_enum</Filter>
     </None>
   </ItemGroup>
 </Project>

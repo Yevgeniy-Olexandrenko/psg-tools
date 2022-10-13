@@ -143,6 +143,9 @@
     <ClInclude Include="..\src\psglib\stream\Stream.h" />
     <ClInclude Include="..\src\psgtools\components\argparse\argparse.hpp" />
     <ClInclude Include="..\src\psgtools\components\glob\glob.hpp" />
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum.hpp" />
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum_format.hpp" />
+    <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum_fuse.hpp" />
     <ClInclude Include="..\src\psgtools\components\terminal\terminal.hpp" />
     <ClInclude Include="..\src\psgtools\components\terminal\terminal_color.hpp" />
     <ClInclude Include="..\src\psgtools\components\terminal\terminal_cursor.hpp" />
@@ -159,6 +162,8 @@
     <None Include="..\src\psgtools\components\argparse\README.md" />
     <None Include="..\src\psgtools\components\glob\LICENSE" />
     <None Include="..\src\psgtools\components\glob\README.md" />
+    <None Include="..\src\psgtools\components\magic_enum\LICENSE" />
+    <None Include="..\src\psgtools\components\magic_enum\README.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -231,7 +236,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\terminal;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\argparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\argparse;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\magic_enum;$(SolutionDir)..\src\psgtools\components\terminal;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -248,7 +253,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\terminal;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\argparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\argparse;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\magic_enum;$(SolutionDir)..\src\psgtools\components\terminal;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -265,7 +270,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\terminal;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\argparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\argparse;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\magic_enum;$(SolutionDir)..\src\psgtools\components\terminal;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -282,7 +287,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\terminal;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\argparse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\src\psglib\compression\lha;$(SolutionDir)..\src\psglib\compression\zlib;$(SolutionDir)..\src\psglib\compression;$(SolutionDir)..\src\psglib;$(SolutionDir)..\src\psgtools\components\argparse;$(SolutionDir)..\src\psgtools\components\glob;$(SolutionDir)..\src\psgtools\components\magic_enum;$(SolutionDir)..\src\psgtools\components\terminal;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>

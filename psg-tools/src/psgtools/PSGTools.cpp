@@ -1,4 +1,6 @@
 ﻿#include <argparse.hpp>
+#include <magic_enum.hpp>
+
 #include "PlayFiles.h"
 #include "ConvertFiles.h"
 #include "interface/ConsoleGUI.h"
@@ -29,10 +31,8 @@ void PrintWellcome()
     std::cout << color::reset << std::endl;
 }
 
-int main(int argc, char* argv[])
+void InitProgramArguments(argparse::ArgumentParser& program)
 {
-    argparse::ArgumentParser program("PSG Tools", "1.0");
-
     program.add_argument("input")
         .help("input file(s) or directory")
         .default_value<std::vector<std::string>>({ "favorites.m3u" })
@@ -56,6 +56,24 @@ int main(int argc, char* argv[])
         .help("user defined favorites playlist")
         .metavar("PATH")
         .default_value(std::string{ "favorites.m3u" });
+
+    program.add_argument("--chip-model")
+        .help("destination chip model(s)")
+        .nargs(1, 2);
+
+    program.add_argument("--chip-clock")
+        .help("destination chip clock rate, MHz")
+        .scan<'g', float>();
+
+    program.add_argument("--chip-output")
+        .help("destination chip output type (and stereo type)")
+        .nargs(1, 2);
+}
+
+int main(int argc, char* argv[])
+{
+    argparse::ArgumentParser program("PSG Tools", "1.0");
+    InitProgramArguments(program);
 
     try { program.parse_args(argc, argv); }
     catch (const std::runtime_error& err) 
@@ -93,13 +111,41 @@ int main(int argc, char* argv[])
 
     // setup destination chip config
     Chip chip;
-#if 0
-    chip.first.model(Chip::Model::AY8910);
-    //chip.second.model(Chip::Model::AY8910);
-    //chip.output(Chip::Output::Stereo);
-    //chip.stereo(Chip::Stereo::CAB);
-    //chip.clockValue(1000000);
-#endif
+    if (auto optional = program.present<std::vector<std::string>>("chip-model"))
+    {
+        auto values = optional.value();
+        if (auto fmodel = magic_enum::enum_cast<Chip::Model>(values[0]))
+        {
+            chip.first.model(fmodel.value());
+        }
+        if (values.size() > 1)
+        {
+            if (auto smodel = magic_enum::enum_cast<Chip::Model>(values[1]))
+            {
+                chip.second.model(smodel.value());
+            }
+        }
+    }
+    if (auto optional = program.present<float>("chip-clock"))
+    {
+        auto clockRate = int(1e6f * optional.value());
+        chip.clockValue(clockRate);
+    }
+    if (auto optional = program.present<std::vector<std::string>>("chip-output"))
+    {
+        auto values = optional.value();
+        if (auto output = magic_enum::enum_cast<Chip::Output>(values[0]))
+        {
+            chip.output(output.value());
+        }
+        if (values.size() > 1)
+        {
+            if (auto stereo = magic_enum::enum_cast<Chip::Stereo>(values[1]))
+            {
+                chip.stereo(stereo.value());
+            }
+        }
+    }
 
     PrintWellcome();
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
