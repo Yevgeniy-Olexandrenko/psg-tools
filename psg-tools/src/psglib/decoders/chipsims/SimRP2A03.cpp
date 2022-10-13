@@ -145,7 +145,9 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
     {
-        uint16_t period = ConvertPeriod(state.noise_period >> 7);
+        uint16_t period = ConvertPeriod(state.noise_period >> 5);
+        if (period > 0x1F) period = 0x1F;
+
         frame[0].UpdatePeriod(N_Period, period);
         DistributeNoiseBetweenChannels(state, frame, mixer);
     }
@@ -171,16 +173,18 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
         if (state.pulse1_duty == 0) period1 ^= 1;
         if (state.pulse1_duty == 1 || state.pulse1_duty == 3) period1 >>= 1;
 
-        EnableTone(mixer0, Frame::Channel::A);
-        frame[0].UpdatePeriod(A_Period, period0);
-        frame[0].Update(A_Volume, volume);
-        
         if (period1 != period0)
         {
+            volume = LevelToVolume(0.5f * VolumeToLevel(volume));
+
             EnableTone(mixer1, Frame::Channel::A);
             frame[1].UpdatePeriod(A_Period, period1);
             frame[1].Update(A_Volume, volume);
         }
+
+        EnableTone(mixer0, Frame::Channel::A);
+        frame[0].UpdatePeriod(A_Period, period0);
+        frame[0].Update(A_Volume, volume);
     }
 
     // Pulse 2 -> Chip 0 Square C + Chip 1 Square C
@@ -193,16 +197,18 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
         if (state.pulse2_duty == 0) period1 ^= 1;
         if (state.pulse2_duty == 1 || state.pulse2_duty == 3) period1 >>= 1;
 
-        EnableTone(mixer0, Frame::Channel::C);
-        frame[0].UpdatePeriod(C_Period, period0);
-        frame[0].Update(C_Volume, volume);
-
         if (period1 != period0)
         {
+            volume = LevelToVolume(0.5f * VolumeToLevel(volume));
+
             EnableTone(mixer1, Frame::Channel::C);
             frame[1].UpdatePeriod(C_Period, period1);
             frame[1].Update(C_Volume, volume);
         }
+
+        EnableTone(mixer0, Frame::Channel::C);
+        frame[0].UpdatePeriod(C_Period, period0);
+        frame[0].Update(C_Volume, volume);
     }
 
     // Triangle -> Chip 0 Envelope in Channel B
@@ -222,8 +228,9 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
     // Noise -> Chip 1 Noise in Channel B
     if (state.noise_enable)
     {
-        uint16_t period = ConvertPeriod(state.noise_period >> 7);
+        uint16_t period = ConvertPeriod(state.noise_period >> 5);
         uint8_t  volume = ConvertVolume(state.noise_volume);
+        if (period > 0x1F) period = 0x1F;
 
         EnableNoise(mixer1, Frame::Channel::B);
         frame[1].UpdatePeriod(N_Period, period);
