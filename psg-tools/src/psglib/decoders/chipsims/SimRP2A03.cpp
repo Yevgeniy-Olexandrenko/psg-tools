@@ -323,9 +323,12 @@ void SimRP2A03::DistributeNoiseBetweenChannels(const State& state, Frame& frame,
         auto levelA = VolumeToLevel(frame[0].Read(A_Volume));
         auto levelC = VolumeToLevel(frame[0].Read(C_Volume));
 
-        auto deltaA = std::abs(levelN - levelA);
-        auto deltaC = std::abs(levelN - levelC);
-        auto delta2 = std::abs(levelN - std::sqrtf(levelA * levelA + levelC * levelC));
+        const auto Delta = [](float v, float a, float b)
+        {   return std::sqrtf(std::abs(v * v - (a * a + b * b))); };
+
+        auto deltaA = Delta(levelN, levelA, 0);
+        auto deltaC = Delta(levelN, levelC, 0);
+        auto delta2 = Delta(levelN, levelA, levelC);
         auto delta_ = std::min(std::min(deltaA, deltaC), delta2);
 
         if (delta_ == deltaA) EnableNoise(mixer, Frame::Channel::A);
