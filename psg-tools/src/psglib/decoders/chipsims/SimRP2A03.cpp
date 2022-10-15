@@ -125,22 +125,9 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
 
     // Triangle -> Envelope B
     if (state.triangle_enable)
-    {
-        // enable triangle envelope
-        uint16_t period = ConvertPeriod(state.triangle_period >> 3);
-        if (frame[0].GetData(E_Shape) != 0x0A)
-        {
-            frame[0].Update(E_Shape, 0x0A);
-        }
-        frame[0].UpdatePeriod(E_Period, period);
-        frame[0].Update(B_Volume, 0x10 + 0x08);
-    }
+        EnableTriangleEnvelopeOnChannelB<E_Shape, E_Period>(state, frame);
     else
-    {
-        // disable triangle envelope
-        uint8_t volumeB = frame[0].Read(B_Volume) & ~0x10;
-        frame[0].Update(B_Volume, volumeB);
-    }
+        DisableTriangleEnvelopeOnChannelB(frame);
     
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
@@ -213,17 +200,9 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
 
     // Triangle -> Chip 0 Envelope in Channel B
     if (state.triangle_enable)
-    {
-        uint16_t period = ConvertPeriod(state.triangle_period >> 3);
-
-        if (frame[0].GetData(E_Shape) != 0x0A) frame[0].Update(E_Shape, 0x0A);
-        frame[0].UpdatePeriod(E_Period, period);
-        frame[0].Update(B_Volume, 0x10);
-    }
+        EnableTriangleEnvelopeOnChannelB<E_Shape, E_Period>(state, frame);
     else
-    {
-        frame[0].Update(B_Volume, 0x08);
-    }
+        DisableTriangleEnvelopeOnChannelB(frame);
     
     // Noise -> Chip 1 Noise in Channel B
     if (state.noise_enable)
@@ -286,20 +265,10 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
         frame[0].Update(B_Duty, 0x08);
 
         // enable triangle envelope
-        uint16_t period = ConvertPeriod(state.triangle_period >> 3);
-        if (frame[0].GetData(EB_Shape) != 0x0A)
-        {
-            frame[0].Update(EB_Shape, 0x0A);
-        }
-        frame[0].UpdatePeriod(EB_Period, period);
-        frame[0].Update(B_Volume, 0x20 + 0x10);
+        EnableTriangleEnvelopeOnChannelB<EB_Shape, EB_Period>(state, frame);
     }
     else
-    {
-        // disable triangle envelope
-        uint8_t volumeB = frame[0].Read(B_Volume) & ~0x20;
-        frame[0].Update(B_Volume, volumeB);
-    }
+        DisableTriangleEnvelopeOnChannelB(frame);
 
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
@@ -316,6 +285,25 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
     {
         frame[0].Update(Mixer, mixer);
     }
+}
+
+template<Register shape_reg, PeriodRegister peiod_reg>
+void SimRP2A03::EnableTriangleEnvelopeOnChannelB(const State& state, Frame& frame)
+{
+    uint16_t period = ConvertPeriod(state.triangle_period >> 3);
+    uint8_t  volume = (frame[0].Read(B_Volume) | frame[0].emask());
+
+    if (frame[0].GetData(shape_reg) != 0x0A)
+        frame[0].Update (shape_reg, 0x0A);
+
+    frame[0].UpdatePeriod(peiod_reg, period);
+    frame[0].Update(B_Volume, volume);
+}
+
+void SimRP2A03::DisableTriangleEnvelopeOnChannelB(Frame& frame)
+{
+    uint8_t volume = (frame[0].Read(B_Volume) & frame[0].vmask());
+    frame[0].Update(B_Volume, volume);
 }
 
 void SimRP2A03::DistributeNoiseBetweenChannels(const State& state, Frame& frame, uint8_t& mixer)
