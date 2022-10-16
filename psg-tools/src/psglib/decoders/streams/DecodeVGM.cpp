@@ -7,24 +7,26 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// debug output
-#if DBG_DECODE_VGM
-std::ofstream debug_out;
-#define DebugOpen() \
-    debug_out.open("dbg_decode_vgm.txt");
-#define DebugPrintWrite(aa, dd) \
-    debug_out << 'r' << std::hex << std::setw(2) << std::setfill('0') << int(aa); \
-    debug_out << ':' << std::hex << std::setw(2) << std::setfill('0') << int(dd); \
-    debug_out << ' ';
-#define DebugPrintNewLine() \
-    debug_out << std::endl;
-#define DebugClose() \
-    debug_out.close();
+#if DBG_DECODE_VGM && defined(_DEBUG)
+#include <fstream>
+static std::ofstream dbg;
+static void dbg_close() { if (dbg.is_open()) dbg.close(); }
+static void dbg_open () { dbg_close(); dbg.open("dbg_decode_vgm.txt"); }
+static void dbg_print_endl() { if (dbg.is_open()) dbg << std::endl; }
+static void dbg_print_payload(int r, int d)
+{
+    if (dbg.is_open())
+    {
+        dbg << 'r' << std::hex << std::setw(2) << std::setfill('0') << r;
+        dbg << ':' << std::hex << std::setw(2) << std::setfill('0') << d;
+        dbg << ' ';
+    }
+}
 #else
-#define DebugOpen()
-#define DebugPrintWrite(aa, bb)
-#define DebugPrintNewLine()
-#define DebugClose()
+static void dbg_open() {}
+static void dbg_close() {}
+static void dbg_print_endl() {}
+static void dbg_print_payload(int r, int d) {}
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -203,7 +205,7 @@ bool DecodeVGM::Open(Stream& stream)
                             stream.info.type(stream.info.type() + " (" + GD3[4] + ")");
                     }
                 }
-                DebugOpen();
+                dbg_open();
                 return true;
             }
             else
@@ -232,7 +234,7 @@ bool DecodeVGM::Decode(Frame& frame)
         else return false;
     }
     m_processedSamples -= m_samplesPerFrame;
-    DebugPrintNewLine();
+    dbg_print_endl();
     return true;
 }
 
@@ -240,8 +242,7 @@ void DecodeVGM::Close(Stream& stream)
 {
     stream.loop.frameId(m_loop);
     delete[] m_data;
-
-    DebugClose();
+    dbg_close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -286,7 +287,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
-                DebugPrintWrite(aa, dd);
+                dbg_print_payload(aa, dd);
             }
             m_dataPtr += 2;
         }
@@ -299,7 +300,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write(0, aa, dd);
-                DebugPrintWrite(aa, dd);
+                dbg_print_payload(aa, dd);
             }
             m_dataPtr += 2;
         }

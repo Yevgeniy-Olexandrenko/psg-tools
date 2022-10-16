@@ -5,7 +5,7 @@
 #include "encoders/Encoder.h"
 #include "encoders/BitStream.h"
 
-#define DBG_ENCODE_AYM 1
+#define DBG_ENCODE_AYM 0
 
 class EncodeAYM : public Encoder
 {

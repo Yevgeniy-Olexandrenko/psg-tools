@@ -11,15 +11,15 @@
 
 #if DBG_PROCESSING && defined(_DEBUG)
 #include <fstream>
-static std::ofstream debug_out;
-static void dbg_open() { dbg_close(); debug_out.open("dbg_processing.txt"); }
-static void dbg_close() { if (debug_out.is_open()) debug_out.close(); }
-static void dbg_print_endl() { if (debug_out.is_open()) debug_out << std::endl; }
+static std::ofstream dbg;
+static void dbg_close() { if (dbg.is_open()) dbg.close(); }
+static void dbg_open () { dbg_close(); dbg.open("dbg_processing.txt"); }
+static void dbg_print_endl() { if (dbg.is_open()) dbg << std::endl; }
 static void dbg_print_payload(char tag, const Frame& frame) 
 {
-    if (debug_out.is_open())
+    if (dbg.is_open())
     {
-        debug_out << tag << ": ";
+        dbg << tag << ": ";
         for (int chip = 0; chip < 2; ++chip)
         {
             bool isExpMode = frame[chip].IsExpMode();
@@ -27,11 +27,11 @@ static void dbg_print_payload(char tag, const Frame& frame)
             {
                 int d = frame[chip].GetData(reg);
                 if (frame[chip].IsChanged(reg))
-                    debug_out << '[' << std::hex << std::setw(2) << std::setfill('0') << d << ']';
+                    dbg << '[' << std::hex << std::setw(2) << std::setfill('0') << d << ']';
                 else
-                    debug_out << ' ' << std::hex << std::setw(2) << std::setfill('0') << d << ' ';
+                    dbg << ' ' << std::hex << std::setw(2) << std::setfill('0') << d << ' ';
             }
-            debug_out << ':';
+            dbg << ':';
         }
         dbg_print_endl();
     }
