@@ -217,26 +217,20 @@ bool DecodeVGM::Open(Stream& stream)
 
 bool DecodeVGM::Decode(Frame& frame)
 {
+    m_simulator->Convert(frame);
     if (m_processedSamples >= m_samplesPerFrame)
     {
         m_simulator->Simulate(m_samplesPerFrame);
-        m_simulator->Convert(frame);
     }
-
     else while (m_processedSamples < m_samplesPerFrame)
     {
         if (int samples = DecodeBlock())
         {
             m_simulator->Simulate(samples);
-            m_simulator->Convert(frame);
             m_processedSamples += samples;
         }
-        else
-        {
-            return false;
-        }
+        else return false;
     }
-
     m_processedSamples -= m_samplesPerFrame;
     DebugPrintNewLine();
     return true;
