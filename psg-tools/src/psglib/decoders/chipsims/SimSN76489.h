@@ -24,5 +24,5 @@ private:
 		int NoiseFreq;
 	};
 
-	SN76489_t SN76489;
+	SN76489_t SN76489[2];
 };

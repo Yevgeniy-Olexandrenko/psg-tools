@@ -61,8 +61,8 @@ bool DecodeVGM::Open(Stream& stream)
     if (ReadFile(stream.file.string().c_str(), (uint8_t*)(&header), sizeof(header)))
     {
         if (header.sn76489Clock) m_simulator.reset(new SimSN76489());
-        if (header.version >= 0x151 && header.ay8910Clock) m_simulator.reset(new SimAY8910());
-        if (header.version >= 0x161 && header.nesApuClock) m_simulator.reset(new SimRP2A03());
+        else if (header.version >= 0x151 && header.ay8910Clock) m_simulator.reset(new SimAY8910());
+        else if (header.version >= 0x161 && header.nesApuClock) m_simulator.reset(new SimRP2A03());
 
         if (header.ident == VGMSignature && m_simulator)
         {
@@ -269,12 +269,13 @@ int DecodeVGM::DecodeBlock()
         }
 
         // SN76489, write value dd
-        else if (m_dataPtr[0] == 0x50)
+        else if (m_dataPtr[0] == 0x50 || m_dataPtr[0] == 0x30)
         {
             if (m_simulator->type() == ChipSim::Type::SN76489)
             {
+                uint8_t aa = m_dataPtr[0];
                 uint8_t dd = m_dataPtr[1];
-                m_simulator->Write(0, 0, dd);
+                m_simulator->Write((aa & 0x20) >> 5, 0, dd);
             }
             m_dataPtr += 1;
         }
