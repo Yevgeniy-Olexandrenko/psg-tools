@@ -14,4 +14,5 @@ public:
 
 private:
 	Frame m_frame;
+	Frame m_pframe;
 };
