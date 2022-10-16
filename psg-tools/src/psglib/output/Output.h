@@ -4,6 +4,8 @@
 #include <vector>
 #include "processing/Processing.h"
 
+#define DBG_PROCESSING 0
+
 class Stream;
 class Frame;
 

@@ -7,6 +7,44 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
+////////////////////////////////////////////////////////////////////////////////
+
+#if DBG_PROCESSING && defined(_DEBUG)
+#include <fstream>
+static std::ofstream debug_out;
+static void dbg_open() { dbg_close(); debug_out.open("dbg_processing.txt"); }
+static void dbg_close() { if (debug_out.is_open()) debug_out.close(); }
+static void dbg_print_endl() { if (debug_out.is_open()) debug_out << std::endl; }
+static void dbg_print_payload(char tag, const Frame& frame) 
+{
+    if (debug_out.is_open())
+    {
+        debug_out << tag << ": ";
+        for (int chip = 0; chip < 2; ++chip)
+        {
+            bool isExpMode = frame[chip].IsExpMode();
+            for (Register reg = 0; reg < (isExpMode ? 32 : 16); ++reg)
+            {
+                int d = frame[chip].GetData(reg);
+                if (frame[chip].IsChanged(reg))
+                    debug_out << '[' << std::hex << std::setw(2) << std::setfill('0') << d << ']';
+                else
+                    debug_out << ' ' << std::hex << std::setw(2) << std::setfill('0') << d << ' ';
+            }
+            debug_out << ':';
+        }
+        dbg_print_endl();
+    }
+}
+#else
+static void dbg_open() {}
+static void dbg_close() {}
+static void dbg_print_endl() {}
+static void dbg_print_payload(char tag, const Frame& frame) {}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
 Output::Output()
     : m_isOpened(false)
 {
@@ -14,6 +52,7 @@ Output::Output()
 
 Output::~Output()
 {
+    dbg_close();
 }
 
 bool Output::Open()
@@ -55,6 +94,7 @@ bool Output::Init(const Stream& stream)
             m_procChain.emplace_back(new ChannelsLayoutChange(m_dchip));
             m_procChain.emplace_back(new AY8930EnvelopeFix(m_dchip));
             Reset();
+            dbg_open();
         }
     }
     return m_isOpened;
@@ -137,10 +177,16 @@ void Output::Reset()
 const Frame& Output::operator()(const Frame& frame)
 {
     const Frame* pframe = &frame;
+    dbg_print_payload('S', *pframe);
+
     for (const auto& procStep : m_procChain)
     {
         pframe = &(*procStep)(*pframe);
+        dbg_print_payload('P', *pframe);
     }
+
     Processing::Update(*pframe);
+    dbg_print_payload('D', m_frame);
+    dbg_print_endl();
     return m_frame;
 }
