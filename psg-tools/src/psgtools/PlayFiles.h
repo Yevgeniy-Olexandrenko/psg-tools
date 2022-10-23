@@ -31,6 +31,8 @@ private:
 
     Player m_player;
     Output::Enables m_enables;
+    bool  m_pause;
+    float m_step;
 
     bool m_sPrint;
     size_t m_sHeight;

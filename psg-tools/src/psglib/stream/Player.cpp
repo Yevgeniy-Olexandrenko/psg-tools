@@ -42,9 +42,9 @@ void WaitFor(const double period)
 Player::Player(Output& output)
 	: m_output(output)
 	, m_stream(nullptr)
-	, m_playbackStep(1)
 	, m_isPlaying(false)
 	, m_isPaused(false)
+	, m_frameStep(1.0f)
 	, m_frameId(0)
 {
 	m_output.Open();
@@ -73,13 +73,13 @@ bool Player::Init(const Stream& stream)
 	return m_isPlaying;
 }
 
-void Player::Play(int playbackStep)
+void Player::Step(float step)
 {
-	if (playbackStep >= -10 && playbackStep <= +10)
-	{
-		m_playbackStep = playbackStep;
-	}
+	m_frameStep = step;
+}
 
+void Player::Play()
+{
 	if (m_isPaused)
 	{
 		m_isPaused = false;
@@ -96,11 +96,6 @@ void Player::Stop()
 	}
 }
 
-FrameId Player::GetFrameId() const
-{
-	return m_frameId;
-}
-
 bool Player::IsPlaying() const
 {
 	return m_isPlaying;
@@ -109,6 +104,11 @@ bool Player::IsPlaying() const
 bool Player::IsPaused() const
 {
 	return m_isPaused;
+}
+
+FrameId Player::GetFrameId() const
+{
+	return FrameId(m_frameId);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,13 +129,13 @@ void Player::PlaybackThread()
 		// play current frame
 		if (firstFrame)
 		{
-			Frame frame(m_stream->play.GetFrame(m_frameId));
+			Frame frame(m_stream->play.GetFrame(GetFrameId()));
 			if (!m_output.Write(!frame)) isPlaying = false;
 			firstFrame = false;
 		}
 		else
 		{
-			const Frame& frame = m_stream->play.GetFrame(m_frameId);
+			const Frame& frame = m_stream->play.GetFrame(GetFrameId());
 			if (!m_output.Write(frame)) isPlaying = false;
 		}
 
@@ -144,7 +144,7 @@ void Player::PlaybackThread()
 		WaitFor(frameNextTS - GetTime());
 
 		// go to next frame
-		m_frameId += m_playbackStep;
+		m_frameId = (m_frameId + m_frameStep);
 		if (int(m_frameId) < 0 || m_frameId > m_stream->play.lastFrameId())
 		{
 			isPlaying = false;

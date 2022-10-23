@@ -44,7 +44,7 @@ void PrintOutputDebugInfo(const std::string& debugInfo)
 void PrintPlayerControls()
 {
     using namespace terminal;
-    std::cout << " ENTER\t- Pause/Resume current song playback" << std::endl;
+    std::cout << " SPACE\t- Pause/Resume current song playback" << std::endl;
     std::cout << " DOWN\t- Go to next song in playlist" << std::endl;
     std::cout << " UP\t- Go to previous song in playlist" << std::endl;
     std::cout << " F\t- Add/Remove current song to/from favorites" << std::endl;

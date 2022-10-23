@@ -9,6 +9,8 @@ PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& f
     , m_favorites(favorites)
     , m_termination(termination)
     , m_player(output)
+    , m_pause(false)
+    , m_step(1.f)
 {
     for (auto& enable : m_enables) enable = true;
 }
@@ -113,28 +115,80 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
 
 PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
 {
-    if (gui::GetKeyState(VK_UP).pressed)
+    if (m_pause)
     {
-        if (!m_player.IsPaused())
+        if (gui::GetKeyState(VK_SPACE).pressed)
+        {
+            m_pause = false;
+            m_player.Play();
+        }
+        else
+        {
+            if (gui::GetKeyState(VK_LEFT).held)
+            {
+                m_player.Step(-m_step);
+                m_player.Play();
+            }
+            else if (gui::GetKeyState(VK_RIGHT).held)
+            {
+                m_player.Step(+m_step);
+                m_player.Play();
+            }
+            else if (gui::GetKeyState(VK_LSHIFT).held)
+            {
+                m_player.Step(0);
+                m_player.Play();
+            }
+            else
+            {
+                m_player.Stop();
+            }
+        }
+    }
+    else
+    {
+        if (gui::GetKeyState(VK_SPACE).pressed)
+        {
+            m_pause = true;
+            m_player.Stop();
+        }
+        else
+        {
+            float rewindStep = 0.4f * stream.play.frameRate();
+            if (m_step < 1.f) rewindStep = 1.f;
+
+            if (gui::GetKeyState(VK_LEFT).held)
+            {
+                m_player.Step(-rewindStep);
+            }
+            else if (gui::GetKeyState(VK_RIGHT).held)
+            {
+                m_player.Step(+rewindStep);
+            }
+            else
+            {
+                m_player.Step(+m_step);
+            }
+        }
+
+        if (gui::GetKeyState(VK_UP).pressed)
         {
             return Action::GoToPrevious;
         }
-    }
-
-    if (gui::GetKeyState(VK_DOWN).pressed)
-    {
-        if (!m_player.IsPaused())
+        else if (gui::GetKeyState(VK_DOWN).pressed)
         {
             return Action::GoToNext;
         }
     }
 
-    if (gui::GetKeyState(VK_RETURN).pressed)
+    if (gui::GetKeyState('A').pressed)
     {
-        if (m_player.IsPaused())
-            m_player.Play();
-        else
-            m_player.Stop();
+        if (m_step > 0.0625f) m_step *= 0.5f;
+    }
+    else if (gui::GetKeyState('Q').pressed)
+    {
+        if (m_step < 1.0) m_step *= 2.0f; 
+        else m_step = 1.f;
     }
 
     if (gui::GetKeyState('F').pressed)
@@ -170,9 +224,11 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
 
     if (m_player.Init(stream))
     {
+        m_step = 1.f;
+        m_pause = false;
         m_player.Play();
-        FrameId frameId = -1;
 
+        FrameId frameId = -1;
         while (result == Action::Nothing)
         {
             m_output.SetEnables(m_enables);
