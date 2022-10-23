@@ -7,7 +7,7 @@ using Termination = std::atomic<bool>;
 
 class PlayFiles : public PSGHandler
 {
-    enum class Action { Nothing, GoToNext, GoToPrevious, Termination };
+    enum class Action { Nothing, GoToNextFile, Termination };
 
 public:
     PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
@@ -28,6 +28,7 @@ private:
     Filelist& m_filelist;
     Filelist& m_favorites;
     Termination& m_termination;
+    bool m_gotoBackward;
 
     Player m_player;
     Output::Enables m_enables;
@@ -37,6 +38,7 @@ private:
     bool m_sPrint;
     size_t m_sHeight;
     size_t m_dHeight;
+    bool m_hideStream;
 
     int m_dbgDecodeTime;
 };

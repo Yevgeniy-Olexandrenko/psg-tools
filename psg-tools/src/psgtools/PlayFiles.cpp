@@ -8,29 +8,31 @@ PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& f
     , m_filelist(filelist)
     , m_favorites(favorites)
     , m_termination(termination)
+    , m_gotoBackward(false)
     , m_player(output)
     , m_pause(false)
     , m_step(1.f)
+    , m_hideStream(false)
 {
     for (auto& enable : m_enables) enable = true;
 }
 
 void PlayFiles::Play()
 {
-    Action result{ Action::GoToNext };
+    m_gotoBackward = false;
+    Action result{ Action::GoToNextFile };
 
     while (true)
     {
         std::filesystem::path path;
         bool newFileAvailable = false;
 
-        if (result == Action::GoToPrevious)
+        if (result == Action::GoToNextFile)
         {
-            newFileAvailable = m_filelist.GetPrevFile(path);
-        }
-        else if (result == Action::GoToNext)
-        {
-            newFileAvailable = m_filelist.GetNextFile(path);
+            if (m_gotoBackward)
+                newFileAvailable = m_filelist.GetPrevFile(path);
+            else
+                newFileAvailable = m_filelist.GetNextFile(path);
         }
         if (!newFileAvailable) break;
 
@@ -109,7 +111,10 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
 #endif
     }
 
-    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+    if (!m_hideStream)
+    {
+        m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+    }
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
@@ -159,10 +164,12 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
 
             if (gui::GetKeyState(VK_LEFT).held)
             {
+                m_gotoBackward = true;
                 m_player.Step(-rewindStep);
             }
             else if (gui::GetKeyState(VK_RIGHT).held)
             {
+                m_gotoBackward = false;
                 m_player.Step(+rewindStep);
             }
             else
@@ -173,11 +180,13 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
 
         if (gui::GetKeyState(VK_UP).pressed)
         {
-            return Action::GoToPrevious;
+            m_gotoBackward = true;
+            return Action::GoToNextFile;
         }
         else if (gui::GetKeyState(VK_DOWN).pressed)
         {
-            return Action::GoToNext;
+            m_gotoBackward = false;
+            return Action::GoToNextFile;
         }
     }
 
@@ -211,6 +220,13 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
         }
     }
 
+    if (gui::GetKeyState('H').pressed)
+    {
+        m_hideStream ^= true;
+        gui::Clear(m_dHeight);
+        m_dHeight = 0;
+    }
+
     return Action::Nothing;
 }
 
@@ -241,7 +257,7 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
             }
 
             if (!m_player.IsPlaying())
-                result = Action::GoToNext;
+                result = Action::GoToNextFile;
             else if (m_termination)
                 result = Action::Termination;
             else
