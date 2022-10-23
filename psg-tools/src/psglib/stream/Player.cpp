@@ -147,7 +147,7 @@ void Player::PlaybackThread()
 		m_frameId = (m_frameId + m_frameStep);
 		if (m_frameId > m_stream->play.lastFrameId())
 		{
-			m_frameId = m_stream->play.lastFrameId();
+			m_frameId = float(m_stream->play.lastFrameId());
 			isPlaying = false;
 		}
 		else if (m_frameId < 0)

@@ -114,6 +114,7 @@ public:
 	public:
 		uint8_t  Read(Register reg) const;
 		bool     IsChanged(Register reg) const;
+		bool     IsChanged(Register reg, uint8_t mask) const;
 
 		uint16_t ReadPeriod(PeriodRegister preg) const;
 		bool     IsChangedPeriod(PeriodRegister preg) const;
@@ -123,12 +124,13 @@ public:
 
 	public:
 		uint8_t  GetData(Register reg) const;
+		uint8_t  GetDiff(Register reg) const;
 		Channel  ReadChannel(int chan) const;
 		void     UpdateChannel(int chan, const Channel& data);
 
 	private:
 		uint8_t m_data[25];
-		bool m_changes[25];
+		uint8_t m_diff[25];
 	};
 
 	const Registers& operator[](int chip) const;

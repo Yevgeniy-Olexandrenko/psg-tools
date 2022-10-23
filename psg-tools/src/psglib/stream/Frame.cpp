@@ -169,7 +169,7 @@ void Frame::Registers::ResetData()
 
 void Frame::Registers::ResetChanges(bool val)
 {
-	memset(m_changes, val, sizeof(m_changes));
+	memset(m_diff, (val ? 0xFF : 0x00), sizeof(m_diff));
 }
 
 bool Frame::Registers::HasChanges() const
@@ -217,7 +217,7 @@ uint8_t Frame::Registers::Read(Register reg) const
 	Info info;
 	if (GetInfo(reg, info))
 	{
-		if ((info.flags & 0x80) && !m_changes[info.index])
+		if ((info.flags & 0x80) && !m_diff[info.index])
 		{
 			return c_unchangedShape;
 		}
@@ -228,8 +228,13 @@ uint8_t Frame::Registers::Read(Register reg) const
 
 bool Frame::Registers::IsChanged(Register reg) const
 {
+	return IsChanged(reg, 0xFF);
+}
+
+bool Frame::Registers::IsChanged(Register reg, uint8_t mask) const
+{
 	Info info;
-	return (GetInfo(reg, info) ? m_changes[info.index] : false);
+	return (GetInfo(reg, info) ? (m_diff[info.index] & mask) : false);
 }
 
 uint16_t Frame::Registers::ReadPeriod(PeriodRegister preg) const
@@ -284,8 +289,8 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 				}
 
 				// write new value in register
+				m_diff[info.index] = (m_data[info.index] ^ data);
 				m_data[info.index] = data;
-				m_changes[info.index] = true;
 			}
 		}
 		else
@@ -295,8 +300,8 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 			data &= info.mask;
 			if (m_data[info.index] != data)
 			{
+				m_diff[info.index] = 0xFF;
 				m_data[info.index] = data;
-				m_changes[info.index] = true;
 			}
 		}
 	}
@@ -318,6 +323,12 @@ uint8_t Frame::Registers::GetData(Register reg) const
 {
 	Info info;
 	return (GetInfo(reg, info) ? m_data[info.index] : 0x00);
+}
+
+uint8_t Frame::Registers::GetDiff(Register reg) const
+{
+	Info info;
+	return (GetInfo(reg, info) ? m_diff[info.index] : 0x00);
 }
 
 Frame::Channel Frame::Registers::ReadChannel(int chan) const
