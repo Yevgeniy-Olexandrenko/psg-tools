@@ -11,6 +11,7 @@ class PlayFiles : public PSGHandler
 
 public:
     PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
+    ~PlayFiles();
     void Play();
 
 protected:

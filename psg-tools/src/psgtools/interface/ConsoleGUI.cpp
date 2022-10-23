@@ -110,6 +110,19 @@ namespace gui
         str.erase(std::find_if(str.rbegin(), str.rend(), [](int c) { return !std::isspace(c); }).base(), str.end());
     };
 
+    bool limit(std::string& str, size_t add = 0)
+    {
+        size_t len = str.length();
+        size_t max = terminal_width() - 2;
+        if (len + add > max)
+        {
+            size_t reduce = (len + add - max + 3 + 2) / 2;
+            str = str.substr(0, len / 2 - reduce) + " ~ " + str.substr(len / 2 + reduce, len);
+            return true;
+        }
+        return false;
+    }
+
     ////////////////////////////////////////////////////////////////////////////
 
 	size_t PrintInputFile(const Stream& stream, int index, int amount, bool isFavorite)
@@ -117,15 +130,20 @@ namespace gui
         cursor::show(false);
         std::string numberStr = std::to_string(index + 1);
         std::string totalStr = std::to_string(amount);
+        std::string fileName = stream.file.stem().string();
+        std::string fileExt = stream.file.extension().string();
 
-        size_t strLen = numberStr.length() + 1 + totalStr.length() + stream.file.filename().string().length();
-        size_t delLen = std::max(int(terminal_width() - 2 - strLen - 7), 2);
+        size_t numLen = (numberStr.length() + 1 + totalStr.length());
+        size_t strLen = (numLen + fileName.length() + fileExt.length());
+        if (limit(fileName, 7 + numLen + fileExt.length()))
+            strLen = (numLen + fileName.length() + fileExt.length());
+        size_t delLen = (terminal_width() - 2 - 7 - strLen);
 
         std::cout << ' ' << color::bright_blue << std::string(delLen, '-');
         std::cout << color::bright_cyan << "[ ";
         std::cout << color::bright_yellow << numberStr << color::bright_cyan << '/' << color::bright_yellow << totalStr;
-        std::cout << ' ' << (isFavorite ? color::bright_magenta : color::bright_white) << stream.file.stem().string();
-        std::cout << color::bright_grey << stream.file.extension().string();
+        std::cout << ' ' << (isFavorite ? color::bright_magenta : color::bright_white) << fileName;
+        std::cout << color::bright_grey << fileExt;
         std::cout << color::bright_cyan << " ]";
         std::cout << color::bright_blue << "--";
         std::cout << color::reset << std::endl;
@@ -148,6 +166,7 @@ namespace gui
 
         if (!str.empty())
         {
+            limit(str, 9);
             printPropertyLabel(label);
             if (property == Stream::Property::Title)
                 std::cout << color::bright_green;
@@ -557,7 +576,7 @@ namespace gui
             m_framesBuffer.position(offset, y);
             m_framesBuffer.color(highlight ? BG_DARK_MAGENTA | FG_WHITE : FG_DARK_GREY);
             if (useFakeFrame)
-                m_framesBuffer.draw(std::string(5, '-'));
+                m_framesBuffer.draw(std::string(5, '.'));
             else
             {
                 std::stringstream ss;

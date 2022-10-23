@@ -17,6 +17,11 @@ PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& f
     for (auto& enable : m_enables) enable = true;
 }
 
+PlayFiles::~PlayFiles()
+{
+    terminal::cursor::show(true);
+}
+
 void PlayFiles::Play()
 {
     m_gotoBackward = false;
