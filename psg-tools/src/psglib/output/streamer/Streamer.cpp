@@ -19,14 +19,18 @@ const std::string Streamer::GetDeviceName() const
 
 bool Streamer::OpenDevice()
 {
+	bool isOK = true;
 	m_port.Open(m_portIndex);
-	if (m_port.SetBaudRate(SerialPort::BaudRate::_57600))
-	{
-		// wait before AYM Streame become ready
-		std::this_thread::sleep_for(std::chrono::seconds(5));
-		return true;
-	}
-	return false;
+
+	// configure port for data steaming
+	isOK &= m_port.SetBaudRate(SerialPort::BaudRate::_57600);
+	isOK &= m_port.SetDataBits(SerialPort::DataBits::_8);
+	isOK &= m_port.SetStopBits(SerialPort::StopBits::ONE);
+	isOK &= m_port.SetParity(SerialPort::Parity::NO);
+	isOK &= m_port.SetDTRControl(SerialPort::DTRControl::DISABLE);
+	isOK &= m_port.SetRTSControl(SerialPort::RTSControl::DISABLE);
+
+	return isOK;
 }
 
 bool Streamer::ConfigureChip(const Chip& schip, Chip& dchip)
