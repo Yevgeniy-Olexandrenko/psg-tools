@@ -10,43 +10,45 @@ SerialPort::~SerialPort()
 	Close();
 }
 
-void SerialPort::Open(int index)
+bool SerialPort::Open(int index)
 {
+	Close();
+
 	TCHAR comName[100];
 	wsprintf(comName, TEXT("\\\\.\\COM%d"), index);
 
 	HANDLE hComm = CreateFile(
 		comName,      //port name 
-		GENERIC_READ | GENERIC_WRITE,		 
+		GENERIC_READ | GENERIC_WRITE,
 		0,            // No Sharing                               
 		NULL,         // No Security                              
 		OPEN_EXISTING,// Open existing port only                     
 		0,            // Non Overlapped I/O                           
 		NULL);        // Null for Comm Devices
 
-	if (hComm == INVALID_HANDLE_VALUE) return;
+	if (hComm != INVALID_HANDLE_VALUE)
+	{
+		COMMTIMEOUTS timeouts = { 0 };
+		timeouts.ReadTotalTimeoutMultiplier = 1;
 
-	COMMTIMEOUTS timeouts = { 0 };
-	timeouts.ReadIntervalTimeout = 50;
-	timeouts.ReadTotalTimeoutConstant = 50;
-	timeouts.ReadTotalTimeoutMultiplier = 10;
-	timeouts.WriteTotalTimeoutConstant = 50;
-	timeouts.WriteTotalTimeoutMultiplier = 10;
-
-	if (SetCommTimeouts(hComm, &timeouts) == FALSE) return;
-	if (SetCommMask(hComm, EV_RXCHAR) == FALSE) return;
-
-	Close();
-	m_port = hComm;
+		if (SetCommTimeouts(hComm, &timeouts) && SetCommMask(hComm, EV_RXCHAR))
+		{
+			m_port = hComm;
+			return true;
+		}
+	}
+	return false;
 }
 
-void SerialPort::Close()
+bool SerialPort::Close()
 {
 	if (m_port)
 	{
 		CloseHandle(m_port);
 		m_port = NULL;
+		return true;
 	}
+	return false;
 }
 
 bool SerialPort::SetBaudRate(BaudRate baudRate)

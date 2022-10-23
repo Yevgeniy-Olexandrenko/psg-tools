@@ -12,6 +12,11 @@ Streamer::~Streamer()
 	CloseDevice();
 }
 
+const std::string& Streamer::GetDebugInfo() const
+{
+	return m_debugInfo;
+}
+
 const std::string Streamer::GetDeviceName() const
 {
 	return "Streamer";
@@ -19,18 +24,28 @@ const std::string Streamer::GetDeviceName() const
 
 bool Streamer::OpenDevice()
 {
-	bool isOK = true;
-	m_port.Open(m_portIndex);
+	if (m_port.Open(m_portIndex))
+	{
+		// read debug info from streamer
+		if (m_port.GetRTSControl() != SerialPort::RTSControl::DISABLE)
+		{
+			char buffer[1024] = { 0 };
+			m_port.SetBaudRate(SerialPort::BaudRate::_9600);
+			m_port.ReciveText(buffer, sizeof(buffer));
+			m_debugInfo.assign(buffer);
+		}
 
-	// configure port for data steaming
-	isOK &= m_port.SetBaudRate(SerialPort::BaudRate::_57600);
-	isOK &= m_port.SetDataBits(SerialPort::DataBits::_8);
-	isOK &= m_port.SetStopBits(SerialPort::StopBits::ONE);
-	isOK &= m_port.SetParity(SerialPort::Parity::NO);
-	isOK &= m_port.SetDTRControl(SerialPort::DTRControl::DISABLE);
-	isOK &= m_port.SetRTSControl(SerialPort::RTSControl::DISABLE);
-
-	return isOK;
+		// configure port for data steaming
+		bool isOK = true;
+		isOK &= m_port.SetBaudRate(SerialPort::BaudRate::_57600);
+		isOK &= m_port.SetDataBits(SerialPort::DataBits::_8);
+		isOK &= m_port.SetStopBits(SerialPort::StopBits::ONE);
+		isOK &= m_port.SetParity(SerialPort::Parity::NO);
+		isOK &= m_port.SetDTRControl(SerialPort::DTRControl::DISABLE);
+		isOK &= m_port.SetRTSControl(SerialPort::RTSControl::DISABLE);
+		return isOK;
+	}
+	return false;
 }
 
 bool Streamer::ConfigureChip(const Chip& schip, Chip& dchip)

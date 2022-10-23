@@ -23,12 +23,32 @@ void PrintWellcome()
     std::cout << ' ' << color::bright_red << "PSG Tools v1.0" << std::endl;
     std::cout << ' ' << color::bright_red << "by Yevgeniy Olexandrenko" << std::endl;
     std::cout << ' ' << color::bright_blue << std::string(gui::k_consoleWidth - 2, '-') << std::endl;
-    std::cout << color::reset << std::endl;
+    std::cout << color::reset;
+}
+
+#if _DEBUG
+void PrintOutputDebugInfo(const std::string& debugInfo)
+{
+    using namespace terminal;
+    if (!debugInfo.empty())
+    {
+        std::string line;
+        std::stringstream ss(debugInfo);
+        while (getline(ss, line)) std::cout << ' ' << color::cyan << line << std::endl;
+        std::cout << ' ' << color::bright_blue << std::string(gui::k_consoleWidth - 2, '-') << std::endl;
+        std::cout << color::reset;
+    }
+}
+#endif
+
+void PrintPlayerControls()
+{
+    using namespace terminal;
     std::cout << " ENTER\t- Pause/Resume current song playback" << std::endl;
     std::cout << " DOWN\t- Go to next song in playlist" << std::endl;
     std::cout << " UP\t- Go to previous song in playlist" << std::endl;
     std::cout << " F\t- Add/Remove current song to/from favorites" << std::endl;
-    std::cout << color::reset << std::endl;
+    std::cout << color::reset;
 }
 
 void InitProgramArguments(argparse::ArgumentParser& program)
@@ -168,6 +188,14 @@ int main(int argc, char* argv[])
             // setup and start playback
             if (isRandomShuffle) filelist.RandomShuffle();
             PlayFiles player(chip, *output, filelist, favorites, m_termination);
+#if _DEBUG
+            if (comPortIndex >= 0)
+            {
+                const std::string debugInfo = static_cast<Streamer&>(*output).GetDebugInfo();
+                PrintOutputDebugInfo(debugInfo);
+            }
+#endif
+            PrintPlayerControls();
             player.Play();
         }
     }

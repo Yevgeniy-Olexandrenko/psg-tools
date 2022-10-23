@@ -9,6 +9,8 @@ public:
 	Streamer(int comPortIndex);
 	virtual ~Streamer();
 
+	const std::string& GetDebugInfo() const;
+
 protected:
 	const std::string GetDeviceName() const override;
 
@@ -20,4 +22,5 @@ protected:
 private:
 	int m_portIndex;
 	SerialPort m_port;
+	std::string m_debugInfo;
 };

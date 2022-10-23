@@ -67,8 +67,8 @@ public:
 	~SerialPort();
 
 public:
-	void Open(int index);
-	void Close();
+	bool Open(int index);
+	bool Close();
 
 	bool SetBaudRate(BaudRate baudRate);
 	bool SetDataBits(DataBits dataBits);
