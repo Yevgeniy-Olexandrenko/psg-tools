@@ -24,7 +24,7 @@ public:
 	bool hasExpMode(int index) const;
 	
 	RW_PROP_DEF( Clock,  clock      );
-	RW_PROP_IMP( int,    clockValue );
+	RW_PROP_DEC( int,    clockValue );
 	RW_PROP_DEF( Output, output     );
 	RW_PROP_DEF( Stereo, stereo     );
 

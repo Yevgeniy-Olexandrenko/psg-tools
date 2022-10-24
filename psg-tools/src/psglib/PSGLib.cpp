@@ -10,6 +10,7 @@
 
 // stream decoders
 #include "decoders/streams/DecodePSG.h"
+#include "decoders/streams/DecodeRSF.h"
 #include "decoders/streams/DecodeVGM.h"
 #include "decoders/streams/DecodeVTX.h"
 #include "decoders/streams/DecodeYM.h"
@@ -26,7 +27,7 @@
 #include "encoders/streams/EncodeVTX.h"
 #include "encoders/streams/EncodeYM.h"
 
-const std::string PSGHandler::DecodeFileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|vgm|vgz|vtx|ym" };
+const std::string PSGHandler::DecodeFileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string PSGHandler::EncodeFileTypes{ "psg" };
 
 bool PSGHandler::Decode(const std::filesystem::path& path, Stream& stream)
@@ -43,6 +44,7 @@ bool PSGHandler::Decode(const std::filesystem::path& path, Stream& stream)
 	    
 	    // streams
 	    std::shared_ptr<Decoder>(new DecodePSG()),
+		std::shared_ptr<Decoder>(new DecodeRSF()),
 	    std::shared_ptr<Decoder>(new DecodeVGM()),
 		std::shared_ptr<Decoder>(new DecodeVTX()),
 		std::shared_ptr<Decoder>(new DecodeYM ()),

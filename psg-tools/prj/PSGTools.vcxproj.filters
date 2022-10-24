@@ -261,6 +261,9 @@
     <ClCompile Include="..\src\psgtools\ConvertFiles.cpp">
       <Filter>Sources\psgtools</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeRSF.cpp">
+      <Filter>Sources\psglib\decoders\streams</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\psglib\stream\Chip.h">
@@ -484,6 +487,9 @@
     </ClInclude>
     <ClInclude Include="..\src\psgtools\components\magic_enum\magic_enum_fuse.hpp">
       <Filter>Sources\psgtools\components\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeRSF.h">
+      <Filter>Sources\psglib\decoders\streams</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
