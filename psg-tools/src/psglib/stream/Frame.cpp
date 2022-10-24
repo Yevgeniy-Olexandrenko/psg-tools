@@ -289,7 +289,7 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 				}
 
 				// write new value in register
-				m_diff[info.index] = (m_data[info.index] ^ data);
+				m_diff[info.index] = 0xFF;
 				m_data[info.index] = data;
 			}
 		}
@@ -298,11 +298,8 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 			// as for the remaining registers, only updating their
 			// values ​​has an effect on the sound generation
 			data &= info.mask;
-			if (m_data[info.index] != data)
-			{
-				m_diff[info.index] = 0xFF;
-				m_data[info.index] = data;
-			}
+			m_diff[info.index] = (m_data[info.index] ^ data);
+			m_data[info.index] = data;
 		}
 	}
 }
