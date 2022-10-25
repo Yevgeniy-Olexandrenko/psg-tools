@@ -583,7 +583,7 @@ namespace gui
                 ss << std::setfill('0') << std::setw(5) << i;
                 m_framesBuffer.draw(ss.str());
             }
-            m_framesBuffer.draw(' ');
+            m_framesBuffer.draw(frame.IsAudible() ? ' ' : '*');
 
             // print frame registers
             printRegistersValues(0, frame, highlight, enables);

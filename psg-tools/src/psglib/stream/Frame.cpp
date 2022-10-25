@@ -134,6 +134,24 @@ bool Frame::HasChanges() const
 	return false;
 }
 
+bool Frame::IsAudible() const
+{
+	for (int chip = 0; chip < 2; ++chip)
+	{
+		for (int chan = 0; chan < 3; ++chan)
+		{
+			uint8_t mixer = m_regs[chip].GetData(Mixer) >> chan;
+			uint8_t vol_e = m_regs[chip].GetData(A_Volume + chan);
+
+			bool enableNT = ~(mixer & (m_regs[chip].nmask() | m_regs[chip].tmask()));
+			bool enableEV =  (vol_e & (m_regs[chip].emask() | m_regs[chip].vmask()));
+
+			if (enableNT && enableEV) return true;
+		}
+	}
+	return false;
+}
+
 struct Frame::Registers::Info
 {
 	uint8_t flags;

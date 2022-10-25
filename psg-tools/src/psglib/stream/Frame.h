@@ -76,6 +76,7 @@ public:
 	void ResetData();
 	void ResetChanges(bool val = false);
 	bool HasChanges() const;
+	bool IsAudible() const;
 
 public:
 	struct Channel
