@@ -583,7 +583,7 @@ namespace gui
                 ss << std::setfill('0') << std::setw(5) << i;
                 m_framesBuffer.draw(ss.str());
             }
-            m_framesBuffer.draw(frame.IsAudible() ? ' ' : '*');
+            m_framesBuffer.draw(' ');
 
             // print frame registers
             printRegistersValues(0, frame, highlight, enables);
@@ -641,7 +641,7 @@ namespace gui
         int hh, mm, ss, ms;
         size_t playbackFrames  = stream.play.framesCount();
         size_t remainingFrames = (playbackFrames - frameId);
-        stream.play.ComputeDuration(remainingFrames, hh, mm, ss, ms);
+        stream.ComputeDuration(remainingFrames, hh, mm, ss, ms);
 
         std::stringstream sstream;
         if (hh < 10) sstream << '0'; sstream << hh << ':';

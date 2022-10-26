@@ -36,39 +36,28 @@ public:
 		RO_PROP_DEC( bool, commentKnown );
 	};
 
-	struct Loop : public Delegate
-	{
-		Loop(Stream& stream);
-
-		RW_PROP_IMP( FrameId, frameId     );
-		RO_PROP_DEF( int,     extraLoops  );
-		RO_PROP_DEC( bool,    available   );
-		RO_PROP_DEC( size_t,  framesCount );
-		
-	private:
-		void ComputeExtraLoops();
-		void UpdateLoopFrameChanges();
-	};
-
 	struct Play : public Delegate
 	{
 		Play(Stream& stream);
+		friend class Stream;
 
 		RO_PROP_DEC( size_t,    framesCount );
-		RO_PROP_DEC( FrameId,   lastFrameId );
+		RO_PROP_IMP( FrameId,   lastFrameId );
 		RW_PROP_DEF( FrameRate, frameRate   );
 
 	public:
 		const Frame& GetFrame(FrameId frameId) const;
 
-		void GetRealDuration(int& hh, int& mm, int& ss, int& ms) const;
-		void GetRealDuration(int& hh, int& mm, int& ss) const;
+		void GetDuration(int& hh, int& mm, int& ss, int& ms) const;
+		void GetDuration(int& hh, int& mm, int& ss) const;		
 
-		void GetFakeDuration(int& hh, int& mm, int& ss, int& ms) const;
-		void GetFakeDuration(int& hh, int& mm, int& ss) const;
+	private:
+		void Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId);
 
-		void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const;
-		void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const;
+	private:
+		FrameId m_loopFrameId;
+		size_t  m_loopFramesCount;
+		size_t  m_extraLoops;
 	};
 
 public:
@@ -82,19 +71,27 @@ public:
 
 	RO_PROP_DEC( size_t,  framesCount );
 	RO_PROP_DEC( FrameId, lastFrameId );
+	RO_PROP_DEF( FrameId, loopFrameId );
+	RO_PROP_DEC( bool,    hasLoop     );
 	
 public:
 	void AddFrame(const Frame& frame);
 	const Frame& GetFrame(FrameId frameId) const;
+	void Finalize(FrameId loopFrameId);
+
+	void GetDuration(int& hh, int& mm, int& ss, int& ms) const;
+	void GetDuration(int& hh, int& mm, int& ss) const;
 
 	bool IsSecondChipUsed() const;
 	bool IsExpandedModeUsed() const;
 	bool IsExpandedModeUsed(int chip) const;
 
+	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const;
+	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const;
+
 public:
 	File file;
 	Info info;
-	Loop loop;
 	Play play;
 
 	Chip schip; // source chip configuration defined by stream

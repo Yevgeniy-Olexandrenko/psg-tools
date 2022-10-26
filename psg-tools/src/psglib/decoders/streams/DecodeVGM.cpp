@@ -240,7 +240,7 @@ bool DecodeVGM::Decode(Frame& frame)
 
 void DecodeVGM::Close(Stream& stream)
 {
-    stream.loop.frameId(m_loop);
+    stream.Finalize(m_loop);
     delete[] m_data;
     dbg_close();
 }

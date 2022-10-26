@@ -8,7 +8,7 @@ bool EncodeTXT::Open(const Stream& stream)
         if (m_output)
         {
             m_isTS = stream.IsSecondChipUsed();
-            m_loop = stream.loop.frameId();
+            m_loop = stream.loopFrameId();
             m_frameRate = stream.play.frameRate();
             m_displayType = DisplayType::Readable;
 

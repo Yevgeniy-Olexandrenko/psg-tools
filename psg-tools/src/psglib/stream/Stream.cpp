@@ -7,6 +7,7 @@ namespace
 	const int k_prefDurationMM = 4;
 	const int k_prefDurationSS = 0;
 	const int k_maxExtraLoops  = 3;
+	const int k_maxSilenceSec  = 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,93 +34,56 @@ bool Stream::Info::commentKnown() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Stream::Loop::Loop(Stream& stream)
-	: Delegate(stream)
-	, m_frameId(0)
-	, m_extraLoops(0)
-{
-}
 
-void Stream::Loop::frameId(const FrameId& frameId)
-{
-	m_frameId = frameId;
-
-	UpdateLoopFrameChanges();
-	ComputeExtraLoops();
-}
-
-FrameId Stream::Loop::frameId() const
-{
-	return (m_frameId > 2 ? m_frameId : FrameId(m_stream.framesCount()));
-}
-
-bool Stream::Loop::available() const
-{
-	return (framesCount() >= (m_stream.framesCount() / 2));
-}
-
-size_t Stream::Loop::framesCount() const
-{
-	return (m_stream.framesCount() - frameId());
-}
-
-void Stream::Loop::ComputeExtraLoops()
-{
-	m_extraLoops = 0;
-	if (available())
-	{
-		auto frameCount = m_stream.framesCount();
-		auto maxPlaybackFrames = size_t((k_prefDurationMM * 60 + k_prefDurationSS) * m_stream.play.frameRate());
-		if (maxPlaybackFrames > frameCount)
-		{
-			m_extraLoops = int((maxPlaybackFrames - frameCount) / framesCount());
-			m_extraLoops = std::min(m_extraLoops, k_maxExtraLoops);
-		}
-	}
-}
-
-void Stream::Loop::UpdateLoopFrameChanges()
-{
-	if (available())
-	{
-		//uint8_t loopFrameData, lastFrameData;
-		//const Frame& lastFrame = m_stream.GetFrame(m_stream.lastFrameId());
-		//Frame& loopFrame = const_cast<Frame&>(m_stream.GetFrame(frameId()));
-
-		//for (uint8_t reg = 0; reg < 16; ++reg)
-		//{
-		//	if (!loopFrame.IsChanged(0, reg))
-		//	{
-		//		loopFrameData = loopFrame.Read(0, reg);
-		//		lastFrameData = lastFrame.Read(0, reg);
-
-		//		if (loopFrameData != lastFrameData)
-		//			loopFrame.Write(0, reg, loopFrameData);
-		//	}
-
-		//	if (!loopFrame.IsChanged(1, reg))
-		//	{
-		//		loopFrameData = loopFrame.Read(1, reg);
-		//		lastFrameData = lastFrame.Read(1, reg);
-
-		//		if (loopFrameData != lastFrameData)
-		//			loopFrame.Write(1, reg, loopFrameData);
-		//	}
-		//}
-	}
-}
+//void Stream::Loop::UpdateLoopFrameChanges()
+//{
+//	if (available())
+//	{
+//		uint8_t loopFrameData, lastFrameData;
+//		const Frame& lastFrame = m_stream.GetFrame(m_stream.lastFrameId());
+//		Frame& loopFrame = const_cast<Frame&>(m_stream.GetFrame(frameId()));
+//
+//		for (uint8_t reg = 0; reg < 16; ++reg)
+//		{
+//			if (!loopFrame.IsChanged(0, reg))
+//			{
+//				loopFrameData = loopFrame.Read(0, reg);
+//				lastFrameData = lastFrame.Read(0, reg);
+//
+//				if (loopFrameData != lastFrameData)
+//					loopFrame.Write(0, reg, loopFrameData);
+//			}
+//
+//			if (!loopFrame.IsChanged(1, reg))
+//			{
+//				loopFrameData = loopFrame.Read(1, reg);
+//				lastFrameData = lastFrame.Read(1, reg);
+//
+//				if (loopFrameData != lastFrameData)
+//					loopFrame.Write(1, reg, loopFrameData);
+//			}
+//		}
+//	}
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 Stream::Play::Play(Stream& stream)
 	: Delegate(stream)
 	, m_frameRate(50)
+	, m_loopFrameId(0)
+	, m_loopFramesCount(0)
+	, m_extraLoops(0)
 {
 }
 
 size_t Stream::Play::framesCount() const
 {
-	return m_stream.framesCount() + m_stream.loop.extraLoops() * m_stream.loop.framesCount();
+	if (m_lastFrameId == m_stream.lastFrameId())
+	{
+		return (m_stream.framesCount() + m_loopFramesCount * m_extraLoops);
+	}
+	return size_t(m_lastFrameId + 1);
 }
 
 FrameId Stream::Play::lastFrameId() const
@@ -129,56 +93,59 @@ FrameId Stream::Play::lastFrameId() const
 
 const Frame& Stream::Play::GetFrame(FrameId frameId) const
 {
-	auto frameCount = m_stream.framesCount();
-	if (frameId >= frameCount)
+	if (frameId >= m_stream.framesCount())
 	{
-		frameId = m_stream.loop.frameId() + FrameId((frameId - frameCount) % m_stream.loop.framesCount());
+		frameId = m_loopFrameId + FrameId((frameId - m_stream.framesCount()) % m_loopFramesCount);
 	}
 	return m_stream.GetFrame(frameId);
 }
 
-void Stream::Play::GetRealDuration(int& hh, int& mm, int& ss, int& ms) const
+void Stream::Play::GetDuration(int& hh, int& mm, int& ss, int& ms) const
 {
-	ComputeDuration(m_stream.framesCount(), hh, mm, ss, ms);
+	m_stream.ComputeDuration(framesCount(), hh, mm, ss, ms);
 }
 
-void Stream::Play::GetRealDuration(int& hh, int& mm, int& ss) const
+void Stream::Play::GetDuration(int& hh, int& mm, int& ss) const
 {
-	ComputeDuration(m_stream.framesCount(), hh, mm, ss);
+	m_stream.ComputeDuration(framesCount(), hh, mm, ss);
 }
 
-void Stream::Play::GetFakeDuration(int& hh, int& mm, int& ss, int& ms) const
+void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId)
 {
-	ComputeDuration(framesCount(), hh, mm, ss, ms);
-}
+	m_loopFrameId = loopFrameId;
+	m_loopFramesCount = loopFramesCount;
+	m_lastFrameId = lastFrameId;
 
-void Stream::Play::GetFakeDuration(int& hh, int& mm, int& ss) const
-{
-	ComputeDuration(framesCount(), hh, mm, ss);
-}
-
-void Stream::Play::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const
-{
-	auto duration = (frameCount * 1000) / frameRate();
-	ms = int(duration % 1000); duration /= 1000;
-	ss = int(duration % 60);   duration /= 60;
-	mm = int(duration % 60);   duration /= 60;
-	hh = int(duration);
-}
-
-void Stream::Play::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
-{
-	auto duration = (((frameCount * 1000) / frameRate()) + 500) / 1000;
-	ss = int(duration % 60); duration /= 60;
-	mm = int(duration % 60); duration /= 60;
-	hh = int(duration);
+	if (m_loopFrameId < m_stream.framesCount() / 2)
+	{
+		// playback loop available, compute new duration using maximum extra loops amount
+		auto maxPlaybackFrames = size_t((k_prefDurationMM * 60 + k_prefDurationSS) * frameRate());
+		if (maxPlaybackFrames > m_stream.framesCount())
+		{
+			m_extraLoops = int((maxPlaybackFrames - m_stream.framesCount()) / m_loopFramesCount);
+			m_extraLoops = std::min(m_extraLoops, size_t(k_maxExtraLoops));
+		}
+	}
+	else
+	{
+		// playback loop not available, cut the silence at the end of the stream
+		for (FrameId frameId = m_stream.lastFrameId(); frameId > 0; --frameId)
+		{
+			if (m_stream.GetFrame(frameId).IsAudible())
+			{
+				lastFrameId = (frameId + frameRate() * k_maxSilenceSec);
+				if (lastFrameId < m_lastFrameId) 
+					m_lastFrameId = lastFrameId;
+				break;
+			}
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 Stream::Stream()
 	: info(*this)
-	, loop(*this)
 	, play(*this)
 	, m_isSecondChipUsed(false)
 	, m_isExpandedModeUsed{}
@@ -211,15 +178,15 @@ std::string Stream::ToString(Property property) const
 
 	case Property::Frames:
 		stream << framesCount();
-		if (loop.available()) stream << " -> " << loop.frameId();
+		if (hasLoop()) stream << " -> " << m_loopFrameId;
 		stream << " @ " << play.frameRate() << " Hz";
 		break;
 
 	case Property::Duration:
 		int hh0 = 0, mm0 = 0, ss0 = 0, ms0 = 0;
 		int hh1 = 0, mm1 = 0, ss1 = 0, ms1 = 0;
-		play.GetRealDuration(hh0, mm0, ss0);
-		play.GetFakeDuration(hh1, mm1, ss1);
+		GetDuration(hh0, mm0, ss0);
+		play.GetDuration(hh1, mm1, ss1);
 
 		stream <<
 			std::setfill('0') << std::setw(2) << hh0 << ':' <<
@@ -250,6 +217,11 @@ FrameId Stream::lastFrameId() const
 	return FrameId(framesCount() - 1);
 }
 
+bool Stream::hasLoop() const
+{
+	return (m_loopFrameId < framesCount() / 2);
+}
+
 void Stream::AddFrame(const Frame& frame)
 {
 	if (framesCount() < 100000)
@@ -269,6 +241,23 @@ const Frame& Stream::GetFrame(FrameId frameId) const
 	return m_frames[frameId];
 }
 
+void Stream::Finalize(FrameId loopFrameId)
+{
+	m_loopFrameId = (loopFrameId && loopFrameId < framesCount() ? loopFrameId : FrameId(framesCount()));
+	loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount()));
+	play.Prepare(loopFrameId, framesCount() - loopFrameId, lastFrameId());
+}
+
+void Stream::GetDuration(int& hh, int& mm, int& ss, int& ms) const
+{
+	ComputeDuration(framesCount(), hh, mm, ss, ms);
+}
+
+void Stream::GetDuration(int& hh, int& mm, int& ss) const
+{
+	ComputeDuration(framesCount(), hh, mm, ss);
+}
+
 bool Stream::IsSecondChipUsed() const
 {
 	return m_isSecondChipUsed;
@@ -282,4 +271,21 @@ bool Stream::IsExpandedModeUsed() const
 bool Stream::IsExpandedModeUsed(int chip) const
 {
 	return m_isExpandedModeUsed[bool(chip)];
+}
+
+void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const
+{
+	auto duration = (frameCount * 1000) / play.frameRate();
+	ms = int(duration % 1000); duration /= 1000;
+	ss = int(duration % 60);   duration /= 60;
+	mm = int(duration % 60);   duration /= 60;
+	hh = int(duration);
+}
+
+void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
+{
+	auto duration = (((frameCount * 1000) / play.frameRate()) + 500) / 1000;
+	ss = int(duration % 60); duration /= 60;
+	mm = int(duration % 60); duration /= 60;
+	hh = int(duration);
 }
