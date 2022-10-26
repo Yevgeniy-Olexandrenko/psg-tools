@@ -561,9 +561,13 @@ void DecodePT3::GetRegisters(int chip, Channel& chan, uint8_t& mixer, int& envAd
         if (b0 & 0x80) 
         {
             if (b0 & 0x40) 
-                if (chan.currentAmplitudeSliding < +15) chan.currentAmplitudeSliding++;
-            else 
-                if (chan.currentAmplitudeSliding > -15) chan.currentAmplitudeSliding--;
+            {
+                if (chan.currentAmplitudeSliding < +15) ++chan.currentAmplitudeSliding;
+            }
+            else
+            {
+                if (chan.currentAmplitudeSliding > -15) --chan.currentAmplitudeSliding;
+            }
         }
         chan.amplitude += chan.currentAmplitudeSliding;
 
@@ -576,21 +580,27 @@ void DecodePT3::GetRegisters(int chip, Channel& chan, uint8_t& mixer, int& envAd
             chan.amplitude = PT3VolumeTable_35[chan.volume][chan.amplitude];
 
         if (!(b0 & 0x01) && chan.envelopeEnabled)
+        {
             chan.amplitude |= 0x10;
+        }
         if (b1 & 0x80) 
         {
             uint8_t envelopeSliding = (b0 & 0x20)
                 ? ((b0 >> 1) | 0xF0) + chan.currentEnvelopeSliding
                 : ((b0 >> 1) & 0x0F) + chan.currentEnvelopeSliding;
-            if (b1 & 0x20) 
+            if (b1 & 0x20)
+            {
                 chan.currentEnvelopeSliding = envelopeSliding;
+            }
             envAdd += envelopeSliding;
         }
         else 
         {
             _chip.glob.addToNoise = (b0 >> 1) + chan.currentNoiseSliding;
-            if (b1 & 0x20) 
+            if (b1 & 0x20)
+            {
                 chan.currentNoiseSliding = _chip.glob.addToNoise;
+            }
         }
         mixer |= (b1 >> 1) & 0x48;
 
@@ -609,8 +619,8 @@ void DecodePT3::GetRegisters(int chip, Channel& chan, uint8_t& mixer, int& envAd
     {
         if (!--chan.currentOnOff) 
         {
-            chan.enabled = !chan.enabled;
-            chan.currentOnOff = chan.enabled ? chan.onOffDelay : chan.offOnDelay;
+            chan.enabled ^= true;
+            chan.currentOnOff = (chan.enabled ? chan.onOffDelay : chan.offOnDelay);
         }
     }
 }
