@@ -69,6 +69,7 @@ bool DecodePSG::Decode(Frame& frame)
 
 void DecodePSG::Close(Stream& stream)
 {
+    stream.Finalize(0);
     m_input.close();
 
     if (stream.IsExpandedModeUsed(0))

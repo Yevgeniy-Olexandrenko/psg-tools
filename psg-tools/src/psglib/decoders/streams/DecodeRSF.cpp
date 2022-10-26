@@ -76,6 +76,6 @@ bool DecodeRSF::Decode(Frame& frame)
 
 void DecodeRSF::Close(Stream& stream)
 {
-    m_input.close();
     stream.Finalize(m_loop);
+    m_input.close();
 }
