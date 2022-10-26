@@ -34,40 +34,6 @@ bool Stream::Info::commentKnown() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
-//void Stream::Loop::UpdateLoopFrameChanges()
-//{
-//	if (available())
-//	{
-//		uint8_t loopFrameData, lastFrameData;
-//		const Frame& lastFrame = m_stream.GetFrame(m_stream.lastFrameId());
-//		Frame& loopFrame = const_cast<Frame&>(m_stream.GetFrame(frameId()));
-//
-//		for (uint8_t reg = 0; reg < 16; ++reg)
-//		{
-//			if (!loopFrame.IsChanged(0, reg))
-//			{
-//				loopFrameData = loopFrame.Read(0, reg);
-//				lastFrameData = lastFrame.Read(0, reg);
-//
-//				if (loopFrameData != lastFrameData)
-//					loopFrame.Write(0, reg, loopFrameData);
-//			}
-//
-//			if (!loopFrame.IsChanged(1, reg))
-//			{
-//				loopFrameData = loopFrame.Read(1, reg);
-//				lastFrameData = lastFrame.Read(1, reg);
-//
-//				if (loopFrameData != lastFrameData)
-//					loopFrame.Write(1, reg, loopFrameData);
-//			}
-//		}
-//	}
-//}
-
-////////////////////////////////////////////////////////////////////////////////
-
 Stream::Play::Play(Stream& stream)
 	: Delegate(stream)
 	, m_frameRate(50)
@@ -134,8 +100,7 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
 			if (m_stream.GetFrame(frameId).IsAudible())
 			{
 				lastFrameId = (frameId + frameRate() * k_maxSilenceSec);
-				if (lastFrameId < m_lastFrameId) 
-					m_lastFrameId = lastFrameId;
+				if (lastFrameId < m_lastFrameId) m_lastFrameId = lastFrameId;
 				break;
 			}
 		}
@@ -226,9 +191,8 @@ void Stream::AddFrame(const Frame& frame)
 {
 	if (framesCount() < 100000)
 	{
-		auto id = FrameId(m_frames.size());
 		m_frames.push_back(frame);
-		m_frames.back().SetId(id);
+		m_frames.back().SetId(lastFrameId());
 
 		m_isSecondChipUsed |= m_frames.back()[1].HasChanges();
 		m_isExpandedModeUsed[0] |= m_frames.back()[0].IsExpMode();
