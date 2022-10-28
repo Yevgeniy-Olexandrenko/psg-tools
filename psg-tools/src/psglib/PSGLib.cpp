@@ -27,76 +27,76 @@
 #include "encoders/streams/EncodeVTX.h"
 #include "encoders/streams/EncodeYM.h"
 
-const std::string PSGHandler::DecodeFileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
-const std::string PSGHandler::EncodeFileTypes{ "psg" };
+const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
+const std::string FileEncoder::FileTypes{ "psg" };
 
-bool PSGHandler::Decode(const std::filesystem::path& path, Stream& stream)
+bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 {
 	std::shared_ptr<Decoder> decoders[]
 	{
-	    // modules
+		// modules
 		std::shared_ptr<Decoder>(new DecodeASC()),
 		std::shared_ptr<Decoder>(new DecodePT2()),
-	    std::shared_ptr<Decoder>(new DecodePT3()),
+		std::shared_ptr<Decoder>(new DecodePT3()),
 		std::shared_ptr<Decoder>(new DecodeSQT()),
-	    std::shared_ptr<Decoder>(new DecodeSTC()),
-	    std::shared_ptr<Decoder>(new DecodeSTP()),
-	    
-	    // streams
-	    std::shared_ptr<Decoder>(new DecodePSG()),
+		std::shared_ptr<Decoder>(new DecodeSTC()),
+		std::shared_ptr<Decoder>(new DecodeSTP()),
+
+		// streams
+		std::shared_ptr<Decoder>(new DecodePSG()),
 		std::shared_ptr<Decoder>(new DecodeRSF()),
-	    std::shared_ptr<Decoder>(new DecodeVGM()),
+		std::shared_ptr<Decoder>(new DecodeVGM()),
 		std::shared_ptr<Decoder>(new DecodeVTX()),
-		std::shared_ptr<Decoder>(new DecodeYM ()),
+		std::shared_ptr<Decoder>(new DecodeYM()),
 	};
-	
+
 	stream.file = path;
 	for (std::shared_ptr<Decoder> decoder : decoders)
 	{
-	    if (decoder->Open(stream))
-	    {
-	        Frame frame;
-	        while (decoder->Decode(frame))
-	        {
-	            stream.AddFrame(frame);
-	            frame.ResetChanges();
+		if (decoder->Open(stream))
+		{
+			Frame frame;
+			while (decoder->Decode(frame))
+			{
+				if (!stream.AddFrame(frame)) break;
+				frame.ResetChanges();
 
-				OnFrameDecoded(stream, stream.lastFrameId());
-	        }
-	
-	        decoder->Close(stream);
-	        return true;
-	    }
+				FrameId frameId(stream.lastFrameId());
+				OnFrameDecoded(stream, frameId);
+			}
+			decoder->Close(stream);
+			return true;
+		}
 	}
 	return false;
 }
 
-bool PSGHandler::Encode(const std::filesystem::path& path, Stream& stream)
+bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 {
 	std::shared_ptr<Encoder> encoders[]
 	{
-	    std::shared_ptr<Encoder>(new EncodeTST()),
-	    std::shared_ptr<Encoder>(new EncodePSG()),
-	    std::shared_ptr<Encoder>(new EncodeAYM()),
-	    std::shared_ptr<Encoder>(new EncodeTXT()),
+		std::shared_ptr<Encoder>(new EncodeTST()),
+		std::shared_ptr<Encoder>(new EncodePSG()),
+		std::shared_ptr<Encoder>(new EncodeAYM()),
+		std::shared_ptr<Encoder>(new EncodeTXT()),
 	};
-	
+
 	stream.file = path;
 	for (std::shared_ptr<Encoder> encoder : encoders)
 	{
-	    if (encoder->Open(stream))
-	    {
-	        for (FrameId id = 0; id < stream.framesCount(); ++id)
-	        {
-	            const Frame& frame = stream.GetFrame(id);
-	            encoder->Encode(frame);
+		if (encoder->Open(stream))
+		{
+			for (size_t i = 0; i < stream.framesCount(); ++i)
+			{
+				FrameId frameId(i);
+				const Frame& frame = stream.GetFrame(frameId);
 
-				OnFrameEncoded(stream, id);
-	        }
-	
-	        encoder->Close(stream);
-	        return true;
-	    }
+				encoder->Encode(frame);
+				OnFrameEncoded(stream, frameId);
+			}
+			encoder->Close(stream);
+			return true;
+		}
 	}
 	return false;
 }

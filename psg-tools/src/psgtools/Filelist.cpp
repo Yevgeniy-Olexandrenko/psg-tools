@@ -26,18 +26,14 @@ Filelist::FSPath Filelist::ConvertToAbsolute(const FSPath& base, const FSPath& p
 std::string Filelist::GetExtension(const FSPath& path)
 {
     auto extension = path.extension().string();
-    std::for_each(extension.begin(), extension.end(), [](char& c) { c = ::tolower(c); });
+    std::for_each(extension.begin(), extension.end(), ::tolower);
     return extension;
 }
 
 bool Filelist::IsPlaylistPath(const FSPath& path)
 {
-    if (std::filesystem::is_regular_file(path))
-    {
-        auto extension = GetExtension(path);
-        return (extension == c_extPlaylistM3U || extension == c_extPlaylistAYL);
-    }
-    return false;
+    auto extension = GetExtension(path);
+    return (extension == c_extPlaylistM3U || extension == c_extPlaylistAYL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +54,7 @@ Filelist::Filelist(const std::string& exts, const FSPath& path)
     : Filelist(exts)
 {
     Append(path);
-    if (IsPlaylistPath(path))
+    if (std::filesystem::is_regular_file(path) && IsPlaylistPath(path))
     {
         m_playlistPath = std::filesystem::absolute(path);
     }
@@ -193,8 +189,10 @@ Filelist::FSPath Filelist::GetPlaylistPath() const
 
 bool Filelist::ExportPlaylist(const FSPath& path)
 {
-    if (std::filesystem::is_regular_file(path))
+    if (IsPlaylistPath(path))
     {
+        std::filesystem::create_directories(path.parent_path());
+
         auto extension = GetExtension(path);
         if (extension == c_extPlaylistM3U)
         {

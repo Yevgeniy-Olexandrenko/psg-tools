@@ -5,10 +5,10 @@
 
 class Filelist
 {
+public:
 	using FSPath = std::filesystem::path;
 	using FSHash = std::size_t;
 
-public:
 	static FSPath ConvertToAbsolute(const FSPath& base, const FSPath& path);
 	static std::string GetExtension(const FSPath& path);
 	static bool IsPlaylistPath(const FSPath& path);

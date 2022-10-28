@@ -187,7 +187,7 @@ bool Stream::hasLoop() const
 	return (m_loopFrameId < framesCount() / 2);
 }
 
-void Stream::AddFrame(const Frame& frame)
+bool Stream::AddFrame(const Frame& frame)
 {
 	if (framesCount() < 100000)
 	{
@@ -197,7 +197,9 @@ void Stream::AddFrame(const Frame& frame)
 		m_isSecondChipUsed |= m_frames.back()[1].HasChanges();
 		m_isExpandedModeUsed[0] |= m_frames.back()[0].IsExpMode();
 		m_isExpandedModeUsed[1] |= m_frames.back()[1].IsExpMode();
+		return true;
 	}
+	return false;
 }
 
 const Frame& Stream::GetFrame(FrameId frameId) const

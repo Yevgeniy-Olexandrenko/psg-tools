@@ -75,7 +75,7 @@ public:
 	RO_PROP_DEC( bool,    hasLoop     );
 	
 public:
-	void AddFrame(const Frame& frame);
+	bool AddFrame(const Frame& frame);
 	const Frame& GetFrame(FrameId frameId) const;
 	void Finalize(FrameId loopFrameId);
 

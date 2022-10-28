@@ -104,17 +104,16 @@ int main(int argc, char* argv[])
     }
 
     // parse list of input files
-    Filelist filelist(PSGHandler::DecodeFileTypes);
+    Filelist filelist(FileDecoder::FileTypes);
     auto inputs{ program.get<std::vector<std::string>>("input") };
     for (const auto& path : inputs) filelist.Append(path);
 
-    // TODO: parse output file or output type
-    std::filesystem::path outputPath;
+    // parse output file or output type
+    std::filesystem::path output;
     if (auto optional = program.present("output")) 
     {
-        outputPath = optional.value();
+        output = optional.value();
     }
-    bool isConverting = false;
 
     // parse index of COM port for AYM Streamer
     int comPortIndex = -1;
@@ -127,7 +126,7 @@ int main(int argc, char* argv[])
     bool isRandomShuffle = program.get<bool>("shuffle");
 
     // parse list of favorites files
-    Filelist favorites(PSGHandler::DecodeFileTypes, program.get("favorites"));
+    Filelist favorites(FileDecoder::FileTypes, program.get("favorites"));
 
     // setup destination chip config
     Chip chip;
@@ -172,9 +171,10 @@ int main(int argc, char* argv[])
 
     if (!filelist.IsEmpty())
     {
-        if (isConverting)
+        if (!output.empty())
         {
-            //ConvertInputFiles(outputPath);
+            ConvertFiles converter(chip, filelist, output, m_termination);
+            converter.Convert();
         }
         else
         {
