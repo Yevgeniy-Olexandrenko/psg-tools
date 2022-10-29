@@ -24,4 +24,8 @@ private:
     Filelist& m_filelist;
     Filelist::FSPath& m_output;
     Termination& m_termination;
+
+    bool m_sPrint;
+    size_t m_sHeight;
+    size_t m_dHeight;
 };

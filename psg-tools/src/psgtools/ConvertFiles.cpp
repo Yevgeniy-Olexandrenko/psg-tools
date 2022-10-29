@@ -1,4 +1,5 @@
 #include "ConvertFiles.h"
+#include "interface/ConsoleGUI.h"
 
 ConvertFiles::ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination)
     : m_chip(chip)
@@ -70,19 +71,70 @@ void ConvertFiles::ExportPlaylist(const Filelist::FSPath& output)
 
 void ConvertFiles::ConvertFile(const Filelist::FSPath& input, const Filelist::FSPath& output)
 {
-    std::cout << "input:  " << input.string()  << std::endl;
-    std::cout << "output: " << output.string() << std::endl;
-    std::cout << std::endl;
+    Stream stream;
+    stream.dchip = m_chip;
 
-    // TODO
+    m_sHeight = 0;
+    m_dHeight = 0;
+    m_sPrint = true;
+
+    if (Decode(input, stream))
+    {
+        m_sPrint = true;
+        m_sHeight += m_dHeight;
+        m_dHeight = 0;
+
+        if (Encode(output, stream))
+        {
+            gui::Clear(m_dHeight);
+        }
+        else
+        {
+            std::cout << "Could not encode file: " << output << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Could not decode file: " << input << std::endl;
+    }
 }
 
 void ConvertFiles::OnFrameDecoded(Stream& stream, FrameId frameId)
 {
-    // TODO
+    terminal::cursor::move_up(int(m_dHeight));
+    m_dHeight = 0;
+
+    if (m_sPrint)
+    {
+        gui::Clear(m_sHeight);
+        m_sHeight = 0;
+
+        auto index = m_filelist.GetCurrFileIndex();
+        auto amount = m_filelist.GetNumberOfFiles();
+
+        m_sHeight += gui::PrintInputFile(stream, index, amount, false);
+        m_sHeight += gui::PrintBriefStreamInfo(stream);
+        m_sPrint = false;
+    }
+    m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
 void ConvertFiles::OnFrameEncoded(Stream& stream, FrameId frameId)
 {
-    // TODO
+    terminal::cursor::move_up(int(m_dHeight));
+    m_dHeight = 0;
+
+    if (m_sPrint)
+    {
+        gui::Clear(m_sHeight);
+        m_sHeight = 0;
+
+        auto index = m_filelist.GetCurrFileIndex();
+        auto amount = m_filelist.GetNumberOfFiles();
+
+        m_sHeight += gui::PrintInputFile(stream, index, amount, false);
+        m_sHeight += gui::PrintFullStreamInfo(stream, stream.file.string());
+        m_sPrint = false;
+    }
+    m_dHeight += gui::PrintEncodingProgress(stream, frameId);
 }

@@ -105,7 +105,7 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
         auto favorite = m_favorites.ContainsFile(stream.file);
 
         m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
-        m_sHeight += gui::PrintFullStreamInfo(stream, m_output);
+        m_sHeight += gui::PrintFullStreamInfo(stream, m_output.toString());
         m_sPrint = false;
 #if 0
         if (m_dbgDecodeTime)

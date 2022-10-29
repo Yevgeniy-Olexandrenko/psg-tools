@@ -178,9 +178,9 @@ namespace gui
         return 0;
     };
 
-    size_t printOutputProperty(const std::string& label, const Output& output)
+    size_t printOutputProperty(const std::string& label, const std::string& output)
     {
-        std::string str = output.toString();
+        std::string str = output;
         trim(str);
 
         if (!str.empty())
@@ -204,7 +204,7 @@ namespace gui
         return height;
     }
 
-	size_t PrintFullStreamInfo(const Stream& stream, const Output& output)
+	size_t PrintFullStreamInfo(const Stream& stream, const std::string& output)
 	{
         size_t height = 0;
         height += printModuleProperty("Title", stream, Stream::Property::Title);
@@ -610,7 +610,7 @@ namespace gui
             static const char c_spinner[] = R"(_\|/)";
             s_spin = spin;
 
-            auto range = size_t(terminal_width() - 1 - 2 - 2 - 10 - 2 - 2 - 1);
+            auto range = size_t(terminal_width() - 1 - 2 - 2 - 2 - value.length() - 2 - 2 - 1);
             auto size1 = size_t(float(index * range) / count + 0.5f);
             auto size2 = size_t(range - size1);
 
@@ -649,4 +649,14 @@ namespace gui
         if (ss < 10) sstream << '0'; sstream << ss;
         return PrintProgress(frameId, playbackFrames, (1000 - ms) / 64, sstream.str());
 	}
+
+    size_t PrintEncodingProgress(const Stream& stream, int frameId)
+    {
+        auto frames = stream.framesCount();
+        auto percent = int(100.f * frameId / frames + 0.5f);
+
+        std::stringstream sstream;
+        sstream << percent;
+        return PrintProgress(frameId, frames, frameId / 256, sstream.str());
+    }
 }
