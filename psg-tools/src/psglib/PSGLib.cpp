@@ -1,9 +1,5 @@
 #include "PSGLib.h"
 
-#include "processing/ChipClockRateConvert.h"
-#include "processing/ChannelsLayoutChange.h"
-#include "processing/AY8930EnvelopeFix.h"
-
 // module decoders
 #include "decoders/modules/DecodeASC.h"
 #include "decoders/modules/DecodePT2.h"
@@ -31,6 +27,11 @@
 #include "encoders/streams/EncodeVTX.h"
 #include "encoders/streams/EncodeYM.h"
 
+// processing
+#include "processing/ChipClockRateConvert.h"
+#include "processing/ChannelsLayoutChange.h"
+#include "processing/AY8930EnvelopeFix.h"
+
 const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg" };
 
@@ -55,7 +56,7 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 	};
 
 	stream.file = path;
-	for (std::shared_ptr<Decoder> decoder : decoders)
+	for (auto decoder : decoders)
 	{
 		if (decoder->Open(stream))
 		{
@@ -93,7 +94,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 	};
 
 	stream.file = path;
-	for (std::shared_ptr<Encoder> encoder : encoders)
+	for (auto encoder : encoders)
 	{
 		if (encoder->Open(stream))
 		{
@@ -105,7 +106,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 
 				// frame processing
 				const Frame* pframe = &sframe;
-				for (const auto& processor : processors)
+				for (auto processor : processors)
 				{
 					pframe = &(*processor)(*pframe);
 				}
