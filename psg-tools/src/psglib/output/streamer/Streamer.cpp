@@ -9,7 +9,7 @@ Streamer::Streamer(int comPortIndex)
 
 Streamer::~Streamer()
 {
-	CloseDevice();
+	DeviceClose();
 }
 
 const std::string& Streamer::GetDebugInfo() const
@@ -22,7 +22,7 @@ const std::string Streamer::GetDeviceName() const
 	return "Streamer";
 }
 
-bool Streamer::OpenDevice()
+bool Streamer::DeviceOpen()
 {
 	if (m_port.Open(m_portIndex))
 	{
@@ -48,21 +48,19 @@ bool Streamer::OpenDevice()
 	return false;
 }
 
-bool Streamer::ConfigureChip(const Chip& schip, Chip& dchip)
+bool Streamer::DeviceInit(const Stream& stream, Chip& dchip)
 {
 	dchip.second.model(Chip::Model::Unknown);
 	dchip.clock(Chip::Clock::F1773400);
-	dchip.output(Chip::Output::Stereo);
-
-	if (!dchip.stereoKnown())
+	if (!dchip.outputKnown() || dchip.output() == Chip::Output::Mono)
 	{
-		dchip.stereo(schip.stereoKnown() ? schip.stereo() : Chip::Stereo::ABC);
+		dchip.output(Chip::Output::Stereo);
+		dchip.stereo(Chip::Stereo::ABC);
 	}
-
 	return true;
 }
 
-bool Streamer::WriteToChip(int chip, const Data& data)
+bool Streamer::DeviceWrite(int chip, const Data& data)
 {
 	// prepare packet
 	std::vector<uint8_t> binary;
@@ -82,7 +80,7 @@ bool Streamer::WriteToChip(int chip, const Data& data)
 	return (sentSize == dataSize);
 }
 
-void Streamer::CloseDevice()
+void Streamer::DeviceClose()
 {
 	Write(!Frame());
 	m_port.Close();

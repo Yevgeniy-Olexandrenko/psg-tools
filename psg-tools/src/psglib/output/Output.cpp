@@ -57,7 +57,7 @@ Output::~Output()
 
 bool Output::Open()
 {
-    m_isOpened = OpenDevice();
+    m_isOpened = DeviceOpen();
     return m_isOpened;
 }
 
@@ -65,10 +65,8 @@ bool Output::Init(const Stream& stream)
 {
     if (m_isOpened)
     {
-        m_schip = stream.schip;
         m_dchip = stream.dchip;
-
-        if (m_isOpened &= ConfigureChip(m_schip, m_dchip))
+        if (m_isOpened &= DeviceInit(stream, m_dchip))
         {
             // check if the output chip setup is correct
             assert(m_dchip.clockKnown());
@@ -78,19 +76,10 @@ bool Output::Init(const Stream& stream)
                 assert(m_dchip.stereoKnown());
             }
 
-            // restrict stereo modes available for exp mode
-            if (stream.IsExpandedModeUsed() && m_dchip.output() == Chip::Output::Stereo)
-            {
-                if (m_dchip.stereo() != Chip::Stereo::ABC && m_dchip.stereo() != Chip::Stereo::ACB)
-                {
-                    m_dchip.stereo(Chip::Stereo::ABC);
-                }
-            }
-
             // init post-processing
             m_procChain.clear();
             m_procChain.emplace_back(new ChannelsOutputEnable(m_dchip));
-            m_procChain.emplace_back(new ChipClockRateConvert(m_schip, m_dchip));
+            m_procChain.emplace_back(new ChipClockRateConvert(stream.schip, m_dchip));
             m_procChain.emplace_back(new ChannelsLayoutChange(m_dchip));
             m_procChain.emplace_back(new AY8930EnvelopeFix(m_dchip));
             Reset();
@@ -137,7 +126,7 @@ bool Output::Write(const Frame& frame)
                     data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
             }
 
-            if (!(m_isOpened &= WriteToChip(chip, data))) break;
+            if (!(m_isOpened &= DeviceWrite(chip, data))) break;
         }
     }
     return m_isOpened;
@@ -145,7 +134,7 @@ bool Output::Write(const Frame& frame)
 
 void Output::Close()
 {
-    CloseDevice();
+    DeviceClose();
     m_isOpened = false;
 }
 
@@ -153,11 +142,6 @@ void Output::SetEnables(const Enables& enables)
 {
     auto& processing = static_cast<ChannelsOutputEnable&>(*m_procChain.front());
     processing.SetEnables(enables);
-}
-
-const Frame& Output::GetFrame() const
-{
-    return m_frame;
 }
 
 std::string Output::toString() const

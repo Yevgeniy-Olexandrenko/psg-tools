@@ -5,12 +5,12 @@
 
 class ChannelsOutputEnable : public Processing
 {
-    Chip m_chip;
     std::array<bool, 5> m_enables;
+    int m_count;
 
 public:
     ChannelsOutputEnable(const Chip& dstChip)
-        : m_chip(dstChip)
+        : m_count(dstChip.count())
     {
         for (auto& enable : m_enables) enable = true;
     }
@@ -45,7 +45,7 @@ public:
                 };
 
                 Update(frame);
-                for (int chip = 0; chip < m_chip.count(); ++chip)
+                for (int chip = 0; chip < m_count; ++chip)
                 {
                     for (int chan = 0; chan < 3; ++chan)
                     {

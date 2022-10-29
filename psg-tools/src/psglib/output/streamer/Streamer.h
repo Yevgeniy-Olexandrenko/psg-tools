@@ -14,10 +14,10 @@ public:
 protected:
 	const std::string GetDeviceName() const override;
 
-	bool OpenDevice() override;
-	bool ConfigureChip(const Chip& schip, Chip& dchip) override;
-	bool WriteToChip(int chip, const Data& data) override;
-	void CloseDevice() override;
+	bool DeviceOpen() override;
+	bool DeviceInit(const Stream& stream, Chip& dchip) override;
+	bool DeviceWrite(int chip, const Data& data) override;
+	void DeviceClose() override;
 
 private:
 	int m_portIndex;

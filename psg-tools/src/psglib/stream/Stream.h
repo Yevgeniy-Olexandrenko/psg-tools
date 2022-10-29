@@ -89,6 +89,9 @@ public:
 	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const;
 	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const;
 
+private:
+	void ConfigureDestinationChip();
+
 public:
 	File file;
 	Info info;

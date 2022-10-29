@@ -25,25 +25,23 @@ public:
 	using Enables = std::array<bool, 5>;
 	void SetEnables(const Enables& enables);
 
-	const Frame& GetFrame() const;
 	std::string toString() const;
 
 protected:
 	using Data = std::vector<std::pair<uint8_t, uint8_t>>;
 	virtual const std::string GetDeviceName() const = 0;
 
-	virtual bool OpenDevice() = 0;
-	virtual bool ConfigureChip(const Chip& schip, Chip& dchip) = 0;
-	virtual bool WriteToChip(int chip, const Data& data) = 0;
-	virtual void CloseDevice() = 0;
+	virtual bool DeviceOpen() = 0;
+	virtual bool DeviceInit(const Stream& stream, Chip& dchip) = 0;
+	virtual bool DeviceWrite(int chip, const Data& data) = 0;
+	virtual void DeviceClose() = 0;
 
 private:
 	void Reset() override;
 	const Frame& operator()(const Frame& frame) override;
 
 private:
-	bool m_isOpened;
-	Chip m_schip;
 	Chip m_dchip;
+	bool m_isOpened;
 	ProcChain m_procChain;
 };

@@ -212,6 +212,7 @@ void Stream::Finalize(FrameId loopFrameId)
 	m_loopFrameId = (loopFrameId && loopFrameId < framesCount() ? loopFrameId : FrameId(framesCount()));
 	loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount()));
 	play.Prepare(loopFrameId, framesCount() - loopFrameId, lastFrameId());
+	ConfigureDestinationChip();
 }
 
 void Stream::GetDuration(int& hh, int& mm, int& ss, int& ms) const
@@ -254,4 +255,59 @@ void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
 	ss = int(duration % 60); duration /= 60;
 	mm = int(duration % 60); duration /= 60;
 	hh = int(duration);
+}
+
+void Stream::ConfigureDestinationChip()
+{
+	// configure model of the 1st destination chip
+	if (dchip.first.model() == Chip::Model::Compatible)
+	{
+		switch (schip.first.model())
+		{
+		case Chip::Model::AY8930:
+		case Chip::Model::YM2149:
+			dchip.first.model(schip.first.model());
+			break;
+		default:
+			dchip.first.model(Chip::Model::AY8910);
+			break;
+		}
+	}
+
+	// configure model of the 2nd destination chip
+	if (schip.second.modelKnown())
+	{
+		if (!dchip.second.modelKnown() || dchip.second.model() == Chip::Model::Compatible)
+		{
+			switch (schip.second.model())
+			{
+			case Chip::Model::AY8910:
+			case Chip::Model::AY8930:
+			case Chip::Model::YM2149:
+				dchip.second.model(schip.second.model());
+				break;
+			default:
+				dchip.second.model(dchip.first.model());
+				break;
+			}
+		}
+	}
+	else
+	{
+		dchip.second.model(Chip::Model::Unknown);
+	}
+
+	// configure clock rate, output type and stereo type of destination chip
+	if (!dchip.clockKnown ()) dchip.clock (schip.clockKnown () ? schip.clock () : Chip::Clock::F1750000);
+	if (!dchip.outputKnown()) dchip.output(schip.outputKnown() ? schip.output() : Chip::Output::Stereo);
+	if (!dchip.stereoKnown()) dchip.stereo(schip.stereoKnown() ? schip.stereo() : Chip::Stereo::ABC);
+
+	// restrict stereo modes available for exp mode
+	if (IsExpandedModeUsed() && dchip.output() == Chip::Output::Stereo)
+	{
+		if (dchip.stereo() != Chip::Stereo::ABC && dchip.stereo() != Chip::Stereo::ACB)
+		{
+			dchip.stereo(Chip::Stereo::ABC);
+		}
+	}
 }
