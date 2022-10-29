@@ -1,5 +1,9 @@
 #include "PSGLib.h"
 
+#include "processing/ChipClockRateConvert.h"
+#include "processing/ChannelsLayoutChange.h"
+#include "processing/AY8930EnvelopeFix.h"
+
 // module decoders
 #include "decoders/modules/DecodeASC.h"
 #include "decoders/modules/DecodePT2.h"
@@ -81,17 +85,35 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Encoder>(new EncodeTXT()),
 	};
 
+	std::shared_ptr<Processing> processors[]
+	{
+		std::shared_ptr<Processing>(new ChipClockRateConvert(stream.schip, stream.dchip)),
+		std::shared_ptr<Processing>(new ChannelsLayoutChange(stream.dchip)),
+		std::shared_ptr<Processing>(new AY8930EnvelopeFix(stream.dchip)),
+	};
+
 	stream.file = path;
 	for (std::shared_ptr<Encoder> encoder : encoders)
 	{
 		if (encoder->Open(stream))
 		{
+			Frame dframe;
 			for (size_t i = 0; i < stream.framesCount(); ++i)
 			{
-				FrameId frameId(i);
-				const Frame& frame = stream.GetFrame(frameId);
+				auto frameId = FrameId(i);
+				const Frame& sframe = stream.GetFrame(frameId);
 
-				encoder->Encode(frame);
+				// frame processing
+				const Frame* pframe = &sframe;
+				for (const auto& processor : processors)
+				{
+					pframe = &(*processor)(*pframe);
+				}
+				dframe.ResetChanges();
+				dframe += *pframe;
+
+				// frame encoding
+				encoder->Encode(dframe);
 				OnFrameEncoded(stream, frameId);
 			}
 			encoder->Close(stream);
