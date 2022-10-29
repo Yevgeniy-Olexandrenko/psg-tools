@@ -140,10 +140,10 @@ bool Frame::IsAudible() const
 	{
 		for (int chan = 0; chan < 3; ++chan)
 		{
-			uint8_t mixer = m_regs[chip].GetData(Mixer) >> chan;
+			uint8_t mixer = m_regs[chip].GetData(Mixer);
 			uint8_t vol_e = m_regs[chip].GetData(A_Volume + chan);
 
-			bool enableNT = ~(mixer & (m_regs[chip].nmask() | m_regs[chip].tmask()));
+			bool enableNT = ~(mixer & (m_regs[chip].nmask(chan) | m_regs[chip].tmask(chan)));
 			bool enableEV =  (vol_e & (m_regs[chip].emask() | m_regs[chip].vmask()));
 
 			if (enableNT && enableEV) return true;
@@ -210,14 +210,24 @@ void Frame::Registers::SetExpMode(bool yes)
 	Update(Mode_Bank, data);
 }
 
+const uint8_t Frame::Registers::tmask(int chan) const
+{
+	return (0x01 << chan);
+}
+
+const uint8_t Frame::Registers::nmask(int chan) const
+{
+	return (0x08 << chan);
+}
+
 const uint8_t Frame::Registers::tmask() const
 {
-	return 0x01;
+	return 0x07;
 }
 
 const uint8_t Frame::Registers::nmask() const
 {
-	return 0x08;
+	return 0x38;
 }
 
 const uint8_t Frame::Registers::emask() const
@@ -334,16 +344,28 @@ void Frame::Registers::UpdatePeriod(PeriodRegister preg, uint16_t data)
 	}
 }
 
+uint8_t& Frame::Registers::GetData(Register reg)
+{
+	Info info; static uint8_t dummy = 0;
+	return (GetInfo(reg, info) ? m_data[info.index] : dummy);
+}
+
+uint8_t& Frame::Registers::GetDiff(Register reg)
+{
+	Info info; static uint8_t dummy = 0;
+	return (GetInfo(reg, info) ? m_diff[info.index] : dummy);
+}
+
 uint8_t Frame::Registers::GetData(Register reg) const
 {
 	Info info;
-	return (GetInfo(reg, info) ? m_data[info.index] : 0x00);
+	return (GetInfo(reg, info) ? m_data[info.index] : 0);
 }
 
 uint8_t Frame::Registers::GetDiff(Register reg) const
 {
 	Info info;
-	return (GetInfo(reg, info) ? m_diff[info.index] : 0x00);
+	return (GetInfo(reg, info) ? m_diff[info.index] : 0);
 }
 
 Frame::Channel Frame::Registers::ReadChannel(int chan) const

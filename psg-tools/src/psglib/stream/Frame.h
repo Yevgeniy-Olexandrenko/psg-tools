@@ -107,8 +107,10 @@ public:
 		void SetExpMode(bool yes);
 
 	public:
-		const uint8_t tmask() const; // for channel A
-		const uint8_t nmask() const; // for channel A
+		const uint8_t tmask(int chan) const;
+		const uint8_t nmask(int chan) const;
+		const uint8_t tmask() const; // all channels tone
+		const uint8_t nmask() const; // all channels noise
 		const uint8_t emask() const; // depends on exp mode
 		const uint8_t vmask() const; // depends on exp mode
 
@@ -124,8 +126,12 @@ public:
 		void     UpdatePeriod(PeriodRegister preg, uint16_t data);
 
 	public:
+		uint8_t& GetData(Register reg);
+		uint8_t& GetDiff(Register reg);
+
 		uint8_t  GetData(Register reg) const;
 		uint8_t  GetDiff(Register reg) const;
+
 		Channel  ReadChannel(int chan) const;
 		void     UpdateChannel(int chan, const Channel& data);
 

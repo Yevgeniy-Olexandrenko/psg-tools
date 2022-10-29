@@ -33,8 +33,8 @@ public:
                     uint8_t vol_e = m_frame[chip].Read(A_Volume + chan);
 
                     // disable tone and noise
-                    if (!enableT) mixer |= m_frame[chip].tmask() << chan;
-                    if (!enableN) mixer |= m_frame[chip].nmask() << chan;
+                    if (!enableT) mixer |= m_frame[chip].tmask(chan);
+                    if (!enableN) mixer |= m_frame[chip].nmask(chan);
 
                     // disable envelope and volume if possible
                     if (!enableT && !enableN) vol_e &= m_frame[chip].emask();
