@@ -13,17 +13,20 @@ public:
     void Convert();
 
 protected:
-    void ExportPlaylist(const Filelist::FSPath& output);
-    void ConvertFile(const Filelist::FSPath& input, const Filelist::FSPath& output);
+    void ExportPlaylist();
+    void ConvertFile();
 
-    void OnFrameDecoded(Stream& stream, FrameId frameId) override;
-    void OnFrameEncoded(Stream& stream, FrameId frameId) override;
+    void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
+    void OnFrameEncoded(const Stream& stream, FrameId frameId) override;
 
 private:
     Chip& m_chip;
     Filelist& m_filelist;
     Filelist::FSPath& m_output;
     Termination& m_termination;
+
+    Filelist::FSPath m_inputPath;
+    Filelist::FSPath m_outputPath;
 
     bool m_sPrint;
     size_t m_sHeight;

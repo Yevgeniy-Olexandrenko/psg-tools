@@ -16,11 +16,10 @@ public:
     void Play();
 
 protected:
-    void OnFrameDecoded(Stream& stream, FrameId frameId) override;
+    void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
+    void OnFramePlaying(const Stream& stream, FrameId frameId);
 
 private:
-    void PrintStreamDecoding(const Stream& stream);
-    void PrintStreamPlayback(const Stream& stream, FrameId frameId);
     Action HandleUserInput(const Stream& stream);
     Action PlayStream(const Stream& stream);
 

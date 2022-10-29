@@ -17,7 +17,7 @@ namespace gui
 	void Clear(int offset, size_t height);
 	const KeyState& GetKeyState(int key);
 
-	size_t PrintInputFile(const Stream& stream, int index, int amount, bool isFavorite);
+	size_t PrintInputFile(const std::filesystem::path& path, int index, int amount, bool isFavorite);
 	size_t PrintBriefStreamInfo(const Stream& stream);
 	size_t PrintFullStreamInfo(const Stream& stream, const std::string& output);
 	size_t PrintStreamFrames(const Stream& stream, int frameId, const Output::Enables& enables);

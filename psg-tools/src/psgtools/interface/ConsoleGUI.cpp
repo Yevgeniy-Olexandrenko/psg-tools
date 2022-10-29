@@ -125,13 +125,13 @@ namespace gui
 
     ////////////////////////////////////////////////////////////////////////////
 
-	size_t PrintInputFile(const Stream& stream, int index, int amount, bool isFavorite)
+	size_t PrintInputFile(const std::filesystem::path& path, int index, int amount, bool isFavorite)
 	{
         cursor::show(false);
         std::string numberStr = std::to_string(index + 1);
-        std::string totalStr = std::to_string(amount);
-        std::string fileName = stream.file.stem().string();
-        std::string fileExt = stream.file.extension().string();
+        std::string totalStr  = std::to_string(amount);
+        std::string fileName  = path.stem().string();
+        std::string fileExt   = path.extension().string();
 
         size_t numLen = (numberStr.length() + 1 + totalStr.length());
         size_t strLen = (numLen + fileName.length() + fileExt.length());
@@ -653,10 +653,6 @@ namespace gui
     size_t PrintEncodingProgress(const Stream& stream, int frameId)
     {
         auto frames = stream.framesCount();
-        auto percent = int(100.f * frameId / frames + 0.5f);
-
-        std::stringstream sstream;
-        sstream << percent;
-        return PrintProgress(frameId, frames, frameId / 256, sstream.str());
+        return PrintProgress(frameId, frames, frameId / 256, "Encoding");
     }
 }

@@ -13,7 +13,7 @@ public:
 	bool Decode(const std::filesystem::path& path, Stream& stream);
 
 protected:
-	virtual void OnFrameDecoded(Stream& stream, FrameId frameId) {}
+	virtual void OnFrameDecoded(const Stream& stream, FrameId frameId) {}
 };
 
 class FileEncoder
@@ -23,5 +23,5 @@ public:
 	bool Encode(const std::filesystem::path& path, Stream& stream);
 
 protected:
-	virtual void OnFrameEncoded(Stream& stream, FrameId frameId) {}
+	virtual void OnFrameEncoded(const Stream& stream, FrameId frameId) {}
 };

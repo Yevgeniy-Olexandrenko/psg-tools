@@ -63,12 +63,7 @@ void PlayFiles::Play()
     }
 }
 
-void PlayFiles::OnFrameDecoded(Stream& stream, FrameId frameId)
-{
-    PrintStreamDecoding(stream);
-}
-
-void PlayFiles::PrintStreamDecoding(const Stream& stream)
+void PlayFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -82,7 +77,7 @@ void PlayFiles::PrintStreamDecoding(const Stream& stream)
         auto amount = m_filelist.GetNumberOfFiles();
         auto favorite = m_favorites.ContainsFile(stream.file);
 
-        m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
+        m_sHeight += gui::PrintInputFile(stream.file, index, amount, favorite);
         m_sHeight += gui::PrintBriefStreamInfo(stream);
         m_sPrint = false;
     }
@@ -90,7 +85,7 @@ void PlayFiles::PrintStreamDecoding(const Stream& stream)
     m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
-void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
+void PlayFiles::OnFramePlaying(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -104,7 +99,7 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
         auto amount = m_filelist.GetNumberOfFiles();
         auto favorite = m_favorites.ContainsFile(stream.file);
 
-        m_sHeight += gui::PrintInputFile(stream, index, amount, favorite);
+        m_sHeight += gui::PrintInputFile(stream.file, index, amount, favorite);
         m_sHeight += gui::PrintFullStreamInfo(stream, m_output.toString());
         m_sPrint = false;
 #if 0
@@ -117,9 +112,7 @@ void PlayFiles::PrintStreamPlayback(const Stream& stream, FrameId frameId)
     }
 
     if (!m_hideStream)
-    {
-        m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
-    }
+    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
@@ -258,7 +251,7 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
             if (m_sPrint || m_player.GetFrameId() != frameId)
             {
                 frameId = m_player.GetFrameId();
-                PrintStreamPlayback(stream, frameId);
+                OnFramePlaying(stream, frameId);
             }
 
             if (!m_player.IsPlaying())

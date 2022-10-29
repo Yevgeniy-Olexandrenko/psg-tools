@@ -11,15 +11,14 @@ ConvertFiles::ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& out
 
 void ConvertFiles::Convert()
 {
-    Filelist::FSPath inputPath, outputPath;
-    outputPath = std::filesystem::absolute(m_output);
-    outputPath.remove_filename();
+    m_outputPath = std::filesystem::absolute(m_output);
+    m_outputPath.remove_filename();
 
     if (Filelist::IsPlaylistPath(m_output))
     {
         // write input files as playlist
-        outputPath.replace_filename(m_output.filename());
-        ExportPlaylist(outputPath);
+        m_outputPath.replace_filename(m_output.filename());
+        ExportPlaylist();
     }
     else
     {
@@ -39,20 +38,20 @@ void ConvertFiles::Convert()
         if (!outputType.empty())
         {
             std::for_each(outputType.begin(), outputType.end(), ::tolower);
-            while (m_filelist.GetNextFile(inputPath))
+            while (m_filelist.GetNextFile(m_inputPath))
             {
-                std::string inputName = inputPath.stem().string();
+                std::string inputName = m_inputPath.stem().string();
                 std::string outputName = m_output.stem().string();
 
                 size_t star = outputName.find('*');
                 if (star != std::string::npos)
                     outputName.replace(star, 1, inputName);
 
-                outputPath.replace_filename(outputName);
-                outputPath.replace_extension(outputType);
+                m_outputPath.replace_filename(outputName);
+                m_outputPath.replace_extension(outputType);
 
-                std::filesystem::create_directories(outputPath.parent_path());
-                ConvertFile(inputPath, outputPath);
+                std::filesystem::create_directories(m_outputPath.parent_path());
+                ConvertFile();
 
                 // single file case
                 if (star == std::string::npos) break;
@@ -61,15 +60,15 @@ void ConvertFiles::Convert()
     }
 }
 
-void ConvertFiles::ExportPlaylist(const Filelist::FSPath& output)
+void ConvertFiles::ExportPlaylist()
 {
-    std::cout << "output: " << output.string() << std::endl;
+    std::cout << "output: " << m_outputPath.string() << std::endl;
     std::cout << std::endl;
 
-    m_filelist.ExportPlaylist(output);
+    m_filelist.ExportPlaylist(m_outputPath);
 }
 
-void ConvertFiles::ConvertFile(const Filelist::FSPath& input, const Filelist::FSPath& output)
+void ConvertFiles::ConvertFile()
 {
     Stream stream;
     stream.dchip = m_chip;
@@ -78,28 +77,28 @@ void ConvertFiles::ConvertFile(const Filelist::FSPath& input, const Filelist::FS
     m_dHeight = 0;
     m_sPrint = true;
 
-    if (Decode(input, stream))
+    if (Decode(m_inputPath, stream))
     {
         m_sPrint = true;
         m_sHeight += m_dHeight;
         m_dHeight = 0;
 
-        if (Encode(output, stream))
+        if (Encode(m_outputPath, stream))
         {
             gui::Clear(m_dHeight);
         }
         else
         {
-            std::cout << "Could not encode file: " << output << std::endl;
+            std::cout << "Could not encode file: " << m_outputPath << std::endl;
         }
     }
     else
     {
-        std::cout << "Could not decode file: " << input << std::endl;
+        std::cout << "Could not decode file: " << m_inputPath << std::endl;
     }
 }
 
-void ConvertFiles::OnFrameDecoded(Stream& stream, FrameId frameId)
+void ConvertFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -112,14 +111,14 @@ void ConvertFiles::OnFrameDecoded(Stream& stream, FrameId frameId)
         auto index = m_filelist.GetCurrFileIndex();
         auto amount = m_filelist.GetNumberOfFiles();
 
-        m_sHeight += gui::PrintInputFile(stream, index, amount, false);
+        m_sHeight += gui::PrintInputFile(m_inputPath, index, amount, false);
         m_sHeight += gui::PrintBriefStreamInfo(stream);
         m_sPrint = false;
     }
     m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
-void ConvertFiles::OnFrameEncoded(Stream& stream, FrameId frameId)
+void ConvertFiles::OnFrameEncoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -132,8 +131,8 @@ void ConvertFiles::OnFrameEncoded(Stream& stream, FrameId frameId)
         auto index = m_filelist.GetCurrFileIndex();
         auto amount = m_filelist.GetNumberOfFiles();
 
-        m_sHeight += gui::PrintInputFile(stream, index, amount, false);
-        m_sHeight += gui::PrintFullStreamInfo(stream, stream.file.string());
+        m_sHeight += gui::PrintInputFile(m_inputPath, index, amount, false);
+        m_sHeight += gui::PrintFullStreamInfo(stream, m_outputPath.string());
         m_sPrint = false;
     }
     m_dHeight += gui::PrintEncodingProgress(stream, frameId);
