@@ -23,6 +23,7 @@
 #include "encoders/streams/EncodeTST.h"
 #include "encoders/streams/EncodeAYM.h"
 #include "encoders/streams/EncodePSG.h"
+#include "encoders/streams/EncodeRSF.h"
 #include "encoders/streams/EncodeVGM.h"
 #include "encoders/streams/EncodeVTX.h"
 #include "encoders/streams/EncodeYM.h"
@@ -33,7 +34,7 @@
 #include "processing/AY8930EnvelopeFix.h"
 
 const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
-const std::string FileEncoder::FileTypes{ "psg" };
+const std::string FileEncoder::FileTypes{ "psg|rsf" };
 
 bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 {
@@ -82,6 +83,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 	{
 		std::shared_ptr<Encoder>(new EncodeTST()),
 		std::shared_ptr<Encoder>(new EncodePSG()),
+		std::shared_ptr<Encoder>(new EncodeRSF()),
 		std::shared_ptr<Encoder>(new EncodeAYM()),
 		std::shared_ptr<Encoder>(new EncodeTXT()),
 	};

@@ -184,7 +184,7 @@ FrameId Stream::lastFrameId() const
 
 bool Stream::hasLoop() const
 {
-	return (m_loopFrameId < framesCount() / 2);
+	return (m_loopFrameId > 0);
 }
 
 bool Stream::AddFrame(const Frame& frame)
@@ -209,8 +209,9 @@ const Frame& Stream::GetFrame(FrameId frameId) const
 
 void Stream::Finalize(FrameId loopFrameId)
 {
-	m_loopFrameId = (loopFrameId && loopFrameId < framesCount() ? loopFrameId : FrameId(framesCount()));
+	m_loopFrameId = (loopFrameId < framesCount() ? loopFrameId : 0);
 	loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount()));
+
 	play.Prepare(loopFrameId, framesCount() - loopFrameId, lastFrameId());
 	ConfigureDestinationChip();
 }

@@ -58,6 +58,7 @@
     <ClCompile Include="..\src\psglib\encoders\specific\EncodeWAV.cpp" />
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeAYM.cpp" />
     <ClCompile Include="..\src\psglib\encoders\streams\EncodePSG.cpp" />
+    <ClCompile Include="..\src\psglib\encoders\streams\EncodeRSF.cpp" />
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeTST.cpp" />
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeVGM.cpp" />
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeVTX.cpp" />
@@ -122,6 +123,7 @@
     <ClInclude Include="..\src\psglib\encoders\specific\EncodeWAV.h" />
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeAYM.h" />
     <ClInclude Include="..\src\psglib\encoders\streams\EncodePSG.h" />
+    <ClInclude Include="..\src\psglib\encoders\streams\EncodeRSF.h" />
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeTST.h" />
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeVGM.h" />
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeVTX.h" />
