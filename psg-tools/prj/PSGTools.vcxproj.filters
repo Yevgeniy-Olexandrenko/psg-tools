@@ -267,6 +267,12 @@
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeRSF.cpp">
       <Filter>Sources\psglib\encoders\streams</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\modules\DecodeMID.cpp">
+      <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\modules\DecodePSC.cpp">
+      <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\psglib\stream\Chip.h">
@@ -496,6 +502,12 @@
     </ClInclude>
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeRSF.h">
       <Filter>Sources\psglib\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\modules\DecodeMID.h">
+      <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\modules\DecodePSC.h">
+      <Filter>Sources\psglib\decoders\modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

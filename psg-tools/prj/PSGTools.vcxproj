@@ -41,6 +41,8 @@
     <ClCompile Include="..\src\psglib\decoders\chipsims\SimSN76489.cpp" />
     <ClCompile Include="..\src\psglib\decoders\Decoder.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeASC.cpp" />
+    <ClCompile Include="..\src\psglib\decoders\modules\DecodeMID.cpp" />
+    <ClCompile Include="..\src\psglib\decoders\modules\DecodePSC.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodePT2.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodePT3.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeSQT.cpp" />
@@ -106,6 +108,8 @@
     <ClInclude Include="..\src\psglib\decoders\chipsims\SimSN76489.h" />
     <ClInclude Include="..\src\psglib\decoders\Decoder.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeASC.h" />
+    <ClInclude Include="..\src\psglib\decoders\modules\DecodeMID.h" />
+    <ClInclude Include="..\src\psglib\decoders\modules\DecodePSC.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodePT2.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodePT3.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeSQT.h" />
