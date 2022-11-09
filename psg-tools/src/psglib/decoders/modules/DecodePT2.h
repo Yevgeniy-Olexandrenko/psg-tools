@@ -59,8 +59,8 @@ protected:
     bool Play() override;
 
 private:
-    void PatternInterpreter(int ch);
-    void GetRegisters(int ch, uint8_t& mixer);
+    void ParsePattern(int ch);
+    void ParseSample(int ch, uint8_t& mixer);
 
 private:
     uint8_t m_delay;

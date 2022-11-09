@@ -1,19 +1,19 @@
 #include "DecodePT2.h"
 
-const uint16_t DecodePT2::NoteTable[] =
+const uint16_t DecodePT2::NoteTable[] = // PT3NoteTable_ST
 {
-    0x0ef8, 0x0e10, 0x0d60, 0x0c80, 0x0bd8, 0x0b28, 0x0a88, 0x09f0,
-    0x0960, 0x08e0, 0x0858, 0x07e0, 0x077c, 0x0708, 0x06b0, 0x0640,
-    0x05ec, 0x0594, 0x0544, 0x04f8, 0x04b0, 0x0470, 0x042c, 0x03fd,
-    0x03be, 0x0384, 0x0358, 0x0320, 0x02f6, 0x02ca, 0x02a2, 0x027c,
-    0x0258, 0x0238, 0x0216, 0x01f8, 0x01df, 0x01c2, 0x01ac, 0x0190,
-    0x017b, 0x0165, 0x0151, 0x013e, 0x012c, 0x011c, 0x010a, 0x00fc,
-    0x00ef, 0x00e1, 0x00d6, 0x00c8, 0x00bd, 0x00b2, 0x00a8, 0x009f,
-    0x0096, 0x008e, 0x0085, 0x007e, 0x0077, 0x0070, 0x006b, 0x0064,
-    0x005e, 0x0059, 0x0054, 0x004f, 0x004b, 0x0047, 0x0042, 0x003f,
-    0x003b, 0x0038, 0x0035, 0x0032, 0x002f, 0x002c, 0x002a, 0x0027,
-    0x0025, 0x0023, 0x0021, 0x001f, 0x001d, 0x001c, 0x001a, 0x0019,
-    0x0017, 0x0016, 0x0015, 0x0013, 0x0012, 0x0011, 0x0010, 0x000f,
+    0x0EF8, 0x0E10, 0x0D60, 0x0C80, 0x0BD8, 0x0B28, 0x0A88, 0x09F0,
+    0x0960, 0x08E0, 0x0858, 0x07E0, 0x077C, 0x0708, 0x06B0, 0x0640,
+    0x05EC, 0x0594, 0x0544, 0x04F8, 0x04B0, 0x0470, 0x042C, 0x03FD,
+    0x03BE, 0x0384, 0x0358, 0x0320, 0x02F6, 0x02CA, 0x02A2, 0x027C, 
+    0x0258, 0x0238, 0x0216, 0x01F8, 0x01DF, 0x01C2, 0x01AC, 0x0190,
+    0x017B, 0x0165, 0x0151, 0x013E, 0x012C, 0x011C, 0x010A, 0x00FC,
+    0x00EF, 0x00E1, 0x00D6, 0x00C8, 0x00BD, 0x00B2, 0x00A8, 0x009F,
+    0x0096, 0x008E, 0x0085, 0x007E, 0x0077, 0x0070, 0x006B, 0x0064,
+    0x005E, 0x0059, 0x0054, 0x004F, 0x004B, 0x0047, 0x0042, 0x003F,
+    0x003B, 0x0038, 0x0035, 0x0032, 0x002F, 0x002C, 0x002A, 0x0027,
+    0x0025, 0x0023, 0x0021, 0x001F, 0x001D, 0x001C, 0x001A, 0x0019,
+    0x0017, 0x0016, 0x0015, 0x0013, 0x0012, 0x0011, 0x0010, 0x000F
 };
 
 bool DecodePT2::Open(Stream& stream)
@@ -121,16 +121,16 @@ bool DecodePT2::Play()
                     m_ch[1].patternPtr = *(uint16_t*)(&m_data[patternPointer + 2]);
                     m_ch[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
                 }
-                PatternInterpreter(ch);
+                ParsePattern(ch);
             }
         }
         m_delayCounter = m_delay;
     }
 
     uint8_t mixer = 0x00;
-    GetRegisters(0, mixer);
-    GetRegisters(1, mixer);
-    GetRegisters(2, mixer);
+    ParseSample(0, mixer);
+    ParseSample(1, mixer);
+    ParseSample(2, mixer);
 
     m_regs[0][Mixer   ] = mixer;
     m_regs[0][A_Fine  ] = (m_ch[0].tone & 0xFF);
@@ -147,7 +147,7 @@ bool DecodePT2::Play()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void DecodePT2::PatternInterpreter(int ch)
+void DecodePT2::ParsePattern(int ch)
 {
     auto& hdr  = reinterpret_cast<const Header&>(*m_data);
     auto& chan = m_ch[ch];
@@ -263,14 +263,19 @@ void DecodePT2::PatternInterpreter(int ch)
     chan.noteSkipCounter = chan.noteSkip;
 }
 
-void DecodePT2::GetRegisters(int ch, uint8_t& mixer)
+void DecodePT2::ParseSample(int ch, uint8_t& mixer)
 {
     Channel& chan = m_ch[ch];
 
     if (chan.enabled)
     {
-        uint16_t sptr = (chan.samplePtr + chan.samplePos * 3);
+        uint16_t sptr = (chan.samplePtr + 3 * chan.samplePos);
+        if (++chan.samplePos == chan.sampleLen)
+            chan.samplePos = chan.sampleLoop;
+
         uint16_t optr = (chan.ornamentPtr + chan.ornamentPos);
+        if (++chan.ornamentPos == chan.ornamentLen)
+            chan.ornamentPos = chan.ornamentLoop;
 
         uint8_t s0 = m_data[sptr + 0];
         uint8_t s1 = m_data[sptr + 1];
@@ -280,7 +285,8 @@ void DecodePT2::GetRegisters(int ch, uint8_t& mixer)
         chan.tone = s2 | ((s1 & 0x0F) << 8);
         if (!(s0 & 0b00000100)) chan.tone = -chan.tone;
 
-        uint8_t note = (chan.note + o1);
+        int8_t note = (chan.note + o1);
+        if (note < 0 ) note = 0;
         if (note > 95) note = 95;
 
         chan.tone += (chan.toneSliding + NoteTable[note]);
@@ -297,28 +303,21 @@ void DecodePT2::GetRegisters(int ch, uint8_t& mixer)
             }
         }
         if (chan.glissType != 0)
+        {
             chan.toneSliding += chan.glissade;
+        }
 
-        chan.amplitude = (chan.volume * 17 + (uint8_t)(chan.volume > 7)) * (s1 >> 4) / 256;
+        chan.amplitude = ((chan.volume * 17 + uint8_t(chan.volume > 7)) * (s1 >> 4) + 127) / 256;
         if (chan.envelopeEnabled) chan.amplitude |= 0x10;
 
-        if (s0 & 0b00000001)
-            mixer |= 0b01000000;
+        if (s0 & 0b00000010) mixer |= 0b00001000;
+        if (s0 & 0b00000001) mixer |= 0b01000000;
         else
-            m_regs[0][N_Period] = ((s0 >> 3) + chan.additionToNoise) & 0x1F;
-
-        if (s0 & 0b00000010)
-            mixer |= 0b00001000;
-
-        if (++chan.samplePos == chan.sampleLen)
-            chan.samplePos = chan.sampleLoop;
-
-        if (++chan.ornamentPos == chan.ornamentLen)
-            chan.ornamentPos = chan.ornamentLoop;
+        {
+            uint8_t noise = ((s0 >> 3) + chan.additionToNoise);
+            m_regs[0][N_Period] = (noise & 0x1F);
+        }
     }
-    else
-    {
-        chan.amplitude = 0;
-    }
+    else chan.amplitude = 0;
     mixer >>= 1;
 }
