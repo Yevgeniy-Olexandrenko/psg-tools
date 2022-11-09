@@ -20,25 +20,25 @@ class DecodePT2 : public ModuleDecoder
 
     struct Channel
     {
-        uint16_t addressInPattern;
-        uint16_t ornamentPointer;
-        uint16_t samplePointer;
-        uint16_t ton;
+        uint16_t patternPtr;
+        uint16_t ornamentPtr;
+        uint16_t samplePtr;
+        uint16_t tone;
 
-        uint8_t loopOrnamentPosition;
-        uint8_t ornamentLength;
-        uint8_t positionInOrnament;
-        uint8_t loopSamplePosition;
-        uint8_t sampleLength;
-        uint8_t positionInSample;
+        uint8_t ornamentLoop;
+        uint8_t ornamentLen;
+        uint8_t ornamentPos;
+        uint8_t sampleLoop;
+        uint8_t sampleLen;
+        uint8_t samplePos;
         uint8_t volume;
-        uint8_t numberOfNotesToSkip;
+        uint8_t noteSkip;
         uint8_t note;
         uint8_t slideToNote;
         uint8_t amplitude;
         
-        int8_t currentTonSliding;
-        int8_t tonDelta;
+        int8_t toneSliding;
+        int8_t toneDelta;
         int8_t glissType;
         int8_t glissade;
         int8_t additionToNoise;
@@ -47,6 +47,8 @@ class DecodePT2 : public ModuleDecoder
         bool envelopeEnabled;
         bool enabled;
     };
+
+    static const uint16_t NoteTable[];
 
 public:
     bool Open(Stream& stream) override;
@@ -57,15 +59,12 @@ protected:
     bool Play() override;
 
 private:
-    void PatternInterpreter(Channel& chan);
-    void GetRegisters(Channel& chan, uint8_t& mixer);
+    void PatternInterpreter(int ch);
+    void GetRegisters(int ch, uint8_t& mixer);
 
 private:
     uint8_t m_delay;
     uint8_t m_delayCounter;
     uint8_t m_currentPosition;
-
-    Channel m_chA;
-    Channel m_chB;
-    Channel m_chC;
+    Channel m_ch[3];
 };
