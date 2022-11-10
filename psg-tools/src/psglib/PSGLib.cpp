@@ -7,6 +7,7 @@
 #include "decoders/modules/DecodeSQT.h"
 #include "decoders/modules/DecodeSTC.h"
 #include "decoders/modules/DecodeSTP.h"
+#include "decoders/modules/DecodeVT2.h"
 
 // stream decoders
 #include "decoders/streams/DecodePSG.h"
@@ -33,7 +34,7 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
-const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|psg|rsf|vgm|vgz|vtx|ym" };
+const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|vt2|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg|rsf" };
 
 bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
@@ -47,6 +48,7 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Decoder>(new DecodeSQT()),
 		std::shared_ptr<Decoder>(new DecodeSTC()),
 		std::shared_ptr<Decoder>(new DecodeSTP()),
+		std::shared_ptr<Decoder>(new DecodeVT2()),
 
 		// streams
 		std::shared_ptr<Decoder>(new DecodePSG()),

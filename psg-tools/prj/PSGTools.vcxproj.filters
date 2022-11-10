@@ -273,6 +273,9 @@
     <ClCompile Include="..\src\psglib\decoders\modules\DecodePSC.cpp">
       <Filter>Sources\psglib\decoders\modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\modules\DecodeVT2.cpp">
+      <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\psglib\stream\Chip.h">
@@ -507,6 +510,9 @@
       <Filter>Sources\psglib\decoders\modules</Filter>
     </ClInclude>
     <ClInclude Include="..\src\psglib\decoders\modules\DecodePSC.h">
+      <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\modules\DecodeVT2.h">
       <Filter>Sources\psglib\decoders\modules</Filter>
     </ClInclude>
   </ItemGroup>
