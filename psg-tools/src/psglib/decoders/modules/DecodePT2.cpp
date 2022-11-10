@@ -72,13 +72,13 @@ void DecodePT2::Init()
     m_delayCounter = 1;
     m_currentPosition = 0;
 
-    for (Channel& chan : m_channels)
+    for (auto& cha : m_channels)
     {
-        memset(&chan, 0, sizeof(Channel));
-        chan.ornamentPtr  = hdr.ornamentsPointers[0];
-        chan.ornamentLen  = m_data[chan.ornamentPtr++];
-        chan.ornamentLoop = m_data[chan.ornamentPtr++];
-        chan.volume = 0x0F;
+        memset(&cha, 0, sizeof(cha));
+        cha.ornamentPtr  = hdr.ornamentsPointers[0];
+        cha.ornamentLen  = m_data[cha.ornamentPtr++];
+        cha.ornamentLoop = m_data[cha.ornamentPtr++];
+        cha.volume = 0x0F;
     }
 
     InitPattern();
@@ -100,10 +100,10 @@ bool DecodePT2::Play()
     {
         for (int c = 0; c < 3; ++c)
         {
-            Channel& chan = m_channels[c];
-            if (--chan.noteSkipCounter < 0)
+            auto& cha = m_channels[c];
+            if (--cha.noteSkipCounter < 0)
             {
-                if (!c && m_data[chan.patternPtr] == 0)
+                if (!c && m_data[cha.patternPtr] == 0)
                 {
                     auto& hdr = reinterpret_cast<const Header&>(*m_data);
                     if (++m_currentPosition == hdr.numberOfPositions)
@@ -140,132 +140,130 @@ void DecodePT2::InitPattern()
 void DecodePT2::ProcessPattern(int c, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
 {
     auto& hdr = reinterpret_cast<const Header&>(*m_data);
-    Channel& chan = m_channels[c];
+    auto& cha = m_channels[c];
 
     bool quit  = false;
     bool gliss = false;
 
     do
     {
-        uint8_t val = m_data[chan.patternPtr];
-        if (val >= 0xe1)
+        uint8_t byte = m_data[cha.patternPtr];
+        if (byte >= 0xe1)
         {
-            chan.samplePtr = hdr.samplesPointers[val - 0xe0];
-            chan.sampleLen = m_data[chan.samplePtr++];
-            chan.sampleLoop = m_data[chan.samplePtr++];
+            cha.samplePtr = hdr.samplesPointers[byte - 0xe0];
+            cha.sampleLen = m_data[cha.samplePtr++];
+            cha.sampleLoop = m_data[cha.samplePtr++];
         }
-        else if (val == 0xe0)
+        else if (byte == 0xe0)
         {
-            chan.samplePos = 0;
-            chan.ornamentPos = 0;
-            chan.toneSliding = 0;
-            chan.glissType = 0;
-            chan.enabled = false;
+            cha.samplePos = 0;
+            cha.ornamentPos = 0;
+            cha.toneSliding = 0;
+            cha.glissType = 0;
+            cha.enabled = false;
             quit = true;
         }
-        else if (val >= 0x80 && val <= 0xdf)
+        else if (byte >= 0x80 && byte <= 0xdf)
         {
-            chan.samplePos = 0;
-            chan.ornamentPos = 0;
-            chan.toneSliding = 0;
+            cha.samplePos = 0;
+            cha.ornamentPos = 0;
+            cha.toneSliding = 0;
             if (gliss)
             {
-                chan.slideToNote = val - 0x80;
-                if (chan.glissType == 1)
-                    chan.note = chan.slideToNote;
+                cha.slideToNote = byte - 0x80;
+                if (cha.glissType == 1)
+                    cha.note = cha.slideToNote;
             }
             else
             {
-                chan.note = val - 0x80;
-                chan.glissType = 0;
+                cha.note = byte - 0x80;
+                cha.glissType = 0;
             }
-            chan.enabled = true;
+            cha.enabled = true;
             quit = true;
         }
-        else if (val == 0x7f)
+        else if (byte == 0x7f)
         {
-            chan.envelopeEnabled = false;
+            cha.envelopeEnabled = false;
         }
-        else if (val >= 0x71 && val <= 0x7e)
+        else if (byte >= 0x71 && byte <= 0x7e)
         {
-            chan.envelopeEnabled = true;
-            shape   = (val - 0x70);
-            efine   = m_data[++chan.patternPtr];
-            ecoarse = m_data[++chan.patternPtr];
+            cha.envelopeEnabled = true;
+            shape   = (byte - 0x70);
+            efine   = m_data[++cha.patternPtr];
+            ecoarse = m_data[++cha.patternPtr];
         }
-        else if (val == 0x70)
+        else if (byte == 0x70)
         {
             quit = true;
         }
-        else if (val >= 0x60 && val <= 0x6f)
+        else if (byte >= 0x60 && byte <= 0x6f)
         {
-            chan.ornamentPtr = hdr.ornamentsPointers[val - 0x60];
-            chan.ornamentLen = m_data[chan.ornamentPtr++];
-            chan.ornamentLoop = m_data[chan.ornamentPtr++];
-            chan.ornamentPos = 0;
+            cha.ornamentPtr = hdr.ornamentsPointers[byte - 0x60];
+            cha.ornamentLen = m_data[cha.ornamentPtr++];
+            cha.ornamentLoop = m_data[cha.ornamentPtr++];
+            cha.ornamentPos = 0;
         }
-        else if (val >= 0x20 && val <= 0x5f)
+        else if (byte >= 0x20 && byte <= 0x5f)
         {
-            chan.noteSkip = val - 0x20;
+            cha.noteSkip = byte - 0x20;
         }
-        else if (val >= 0x10 && val <= 0x1f)
+        else if (byte >= 0x10 && byte <= 0x1f)
         {
-            chan.volume = val - 0x10;
+            cha.volume = byte - 0x10;
         }
-        else if (val == 0xf)
+        else if (byte == 0xf)
         {
-            m_delay = m_data[++chan.patternPtr];
+            m_delay = m_data[++cha.patternPtr];
         }
-        else if (val == 0xe)
+        else if (byte == 0xe)
         {
-            chan.glissade = m_data[++chan.patternPtr];
-            chan.glissType = 1;
+            cha.glissade = m_data[++cha.patternPtr];
+            cha.glissType = 1;
             gliss = true;
         }
-        else if (val == 0xd)
+        else if (byte == 0xd)
         {
-            chan.glissade = std::abs((int8_t)(m_data[++chan.patternPtr]));
+            cha.glissade = std::abs((int8_t)(m_data[++cha.patternPtr]));
 
             // Do not use precalculated Ton_Delta to
             // avoide error with first note of pattern
-            chan.patternPtr += 2; 
+            cha.patternPtr += 2; 
             
-            chan.glissType = 2;
+            cha.glissType = 2;
             gliss = true;
         }
-        else if (val == 0xc)
+        else if (byte == 0xc)
         {
-            chan.glissType = 0;
+            cha.glissType = 0;
         }
         else
         {
-            chan.additionToNoise = m_data[++chan.patternPtr];
+            cha.additionToNoise = m_data[++cha.patternPtr];
         }
-        chan.patternPtr++;
+        cha.patternPtr++;
     } while (!quit);
 
-    if (gliss && (chan.glissType == 2))
+    if (gliss && cha.glissType == 2)
     {
-        chan.toneDelta = std::abs(NoteTable[chan.slideToNote] - NoteTable[chan.note]);
-        if (chan.slideToNote > chan.note)
-            chan.glissade = -chan.glissade;
+        cha.toneDelta = std::abs(NoteTable[cha.slideToNote] - NoteTable[cha.note]);
+        if (cha.slideToNote > cha.note) cha.glissade = -cha.glissade;
     }
-    chan.noteSkipCounter = chan.noteSkip;
+    cha.noteSkipCounter = cha.noteSkip;
 }
 
 void DecodePT2::ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
 {
-    Channel& chan = m_channels[c];
-
-    if (chan.enabled)
+    auto& cha = m_channels[c];
+    if (cha.enabled)
     {
-        uint16_t sptr = (chan.samplePtr + 3 * chan.samplePos);
-        if (++chan.samplePos == chan.sampleLen)
-            chan.samplePos = chan.sampleLoop;
+        uint16_t sptr = (cha.samplePtr + 3 * cha.samplePos);
+        if (++cha.samplePos == cha.sampleLen)
+            cha.samplePos = cha.sampleLoop;
 
-        uint16_t optr = (chan.ornamentPtr + chan.ornamentPos);
-        if (++chan.ornamentPos == chan.ornamentLen)
-            chan.ornamentPos = chan.ornamentLoop;
+        uint16_t optr = (cha.ornamentPtr + cha.ornamentPos);
+        if (++cha.ornamentPos == cha.ornamentLen)
+            cha.ornamentPos = cha.ornamentLoop;
 
         uint8_t sb0 = m_data[sptr + 0];
         uint8_t sb1 = m_data[sptr + 1];
@@ -275,37 +273,37 @@ void DecodePT2::ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8
         uint16_t tone = sb2 | ((sb1 & 0x0F) << 8);
         if (!(sb0 & 0b00000100)) tone = -tone;
 
-        int8_t note = (chan.note + ob0);
+        int8_t note = (cha.note + ob0);
         if (note < 0 ) note = 0;
         if (note > 95) note = 95;
 
-        tone += (chan.toneSliding + NoteTable[note]);
+        tone += (cha.toneSliding + NoteTable[note]);
         tfine = (tone & 0xFF);
         tcoarse = (tone >> 8 & 0x0F);
 
-        if (chan.glissType == 2)
+        if (cha.glissType == 2)
         {
-            chan.toneDelta -= std::abs(chan.glissade);
-            if (chan.toneDelta < 0)
+            cha.toneDelta -= std::abs(cha.glissade);
+            if (cha.toneDelta < 0)
             {
-                chan.note = chan.slideToNote;
-                chan.glissType = 0;
-                chan.toneSliding = 0;
+                cha.note = cha.slideToNote;
+                cha.glissType = 0;
+                cha.toneSliding = 0;
             }
         }
-        if (chan.glissType != 0)
+        if (cha.glissType != 0)
         {
-            chan.toneSliding += chan.glissade;
+            cha.toneSliding += cha.glissade;
         }
 
-        volume = ((chan.volume * 17 + uint8_t(chan.volume > 7)) * (sb1 >> 4) + 127) / 256;
-        if (chan.envelopeEnabled) volume |= 0x10;
+        volume = ((cha.volume * 17 + uint8_t(cha.volume > 7)) * (sb1 >> 4) + 127) / 256;
+        if (cha.envelopeEnabled) volume |= 0x10;
 
         if (sb0 & 0b00000010) mixer |= 0b00001000;
         if (sb0 & 0b00000001) mixer |= 0b01000000;
         else
         {
-            noise = ((sb0 >> 3) + chan.additionToNoise) & 0x1F;
+            noise = ((sb0 >> 3) + cha.additionToNoise) & 0x1F;
         }
     }
     else volume = 0;

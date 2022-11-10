@@ -148,7 +148,7 @@ bool DecodePT3::Open(Stream& stream)
         if (isPT || isVT)
         {
             fileStream.seekg(0, fileStream.end);
-            m_size = (uint32_t)fileStream.tellg();
+            m_size = (int)fileStream.tellg();
 
             m_data = new uint8_t[m_size];
             fileStream.seekg(0, fileStream.beg);
@@ -165,7 +165,7 @@ bool DecodePT3::Open(Stream& stream)
             {
                 stream.schip.clock(Chip::Clock::F1773400);
             }
-            else if (m_module[0].m_hdr->tonTableId == 2 && m_ver > 3)
+            else if (m_module[0].m_hdr->tonTableId == 2 && m_version > 3)
             {
                 stream.schip.clock(Chip::Clock::F1750000);
             }
@@ -192,9 +192,8 @@ void DecodePT3::Init()
     m_module[0].m_hdr  = (Header*)m_module[0].m_data;
     m_module[1].m_hdr  = (Header*)m_module[1].m_data;
     
-
     uint8_t ver = m_module[0].m_hdr->musicName[13];
-    m_ver = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
+    m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 
     m_module[0].ts = m_module[1].ts = 0x20;
     int TS = m_module[0].m_hdr->musicName[98];
@@ -213,30 +212,28 @@ void DecodePT3::Init()
         }
     }
 
-    for (auto& module : m_module) 
+    for (auto& mod : m_module) 
     {
-        module.m_delay = module.m_hdr->delay;
-        module.m_delayCounter = 1;
+        mod.m_delay = mod.m_hdr->delay;
+        mod.m_delayCounter = 1;
 
-        int b = module.ts;
-        uint8_t i = module.m_hdr->positionList[0];
-        if (b != 0x20) i = (uint8_t)(3 * b - 3 - i);
+        uint8_t pat = mod.m_hdr->positionList[0];
+        if (mod.ts != 0x20) pat = (uint8_t)(3 * mod.ts - 3 - pat);
 
         for (int c = 0; c < 3; ++c) 
         {
-            Channel& chan = module.m_channels[c];
-            chan.patternPtr =
-                module.m_data[module.m_hdr->patternsPointer + 2 * (i + c) + 0] +
-                module.m_data[module.m_hdr->patternsPointer + 2 * (i + c) + 1] * 0x100;
-
-            chan.samplePtr = module.m_hdr->samplesPointers[2] + module.m_hdr->samplesPointers[3] * 0x100;
-            chan.ornamentPtr = module.m_hdr->ornamentsPointers[0] + module.m_hdr->ornamentsPointers[1] * 0x100;
-            chan.ornamentLoop = module.m_data[chan.ornamentPtr++];
-            chan.ornamentLen = module.m_data[chan.ornamentPtr++];
-            chan.sampleLoop = module.m_data[chan.samplePtr++];
-            chan.sampleLen = module.m_data[chan.samplePtr++];
-            chan.volume = 15;
-            chan.noteSkipCounter = 1;
+            auto& cha = mod.m_channels[c];
+            cha.patternPtr =
+                mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 0] +
+                mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 1] * 0x100;
+            cha.ornamentPtr = mod.m_hdr->ornamentsPointers[0];
+            cha.ornamentLoop = mod.m_data[cha.ornamentPtr++];
+            cha.ornamentLen = mod.m_data[cha.ornamentPtr++];
+            cha.samplePtr = mod.m_hdr->samplesPointers[1];
+            cha.sampleLoop = mod.m_data[cha.samplePtr++];
+            cha.sampleLen = mod.m_data[cha.samplePtr++];
+            cha.volume = 0xF;
+            cha.noteSkipCounter = 1;
         }
     }
 }
@@ -250,277 +247,271 @@ void DecodePT3::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loop
 
 bool DecodePT3::Play()
 {
-    bool isNewLoop = Play(0);
-    if (m_isTS) Play(1);
-    return isNewLoop;
+    bool loop = PlayModule(0);
+    if (m_isTS) PlayModule(1);
+    return loop;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool DecodePT3::Play(int m)
+bool DecodePT3::PlayModule(int m)
 {
-    Module& module = m_module[m];
-
+    auto& mod = m_module[m];
     bool loop = false;
-    if (--module.m_delayCounter == 0) 
+    if (--mod.m_delayCounter == 0) 
     {
         for (int c = 0; c < 3; ++c) 
         {
-            Channel& chan = module.m_channels[c];
-            if (!--chan.noteSkipCounter) 
+            Channel& cha = mod.m_channels[c];
+            if (!--cha.noteSkipCounter) 
             {
-                if (!c && module.m_data[chan.patternPtr] == 0) 
+                if (!c && mod.m_data[cha.patternPtr] == 0) 
                 {
-                    if (++module.m_currentPosition == module.m_hdr->numberOfPositions)
+                    if (++mod.m_currentPosition == mod.m_hdr->numberOfPositions)
                     {
-                        module.m_currentPosition = module.m_hdr->loopPosition;
+                        mod.m_currentPosition = mod.m_hdr->loopPosition;
                         loop = true;
                     }
 
-                    uint8_t i = module.m_hdr->positionList[module.m_currentPosition];
-                    if (module.ts != 0x20) i = (uint8_t)(3 * module.ts - 3 - i);
+                    uint8_t pat = mod.m_hdr->positionList[mod.m_currentPosition];
+                    if (mod.ts != 0x20) pat = (uint8_t)(3 * mod.ts - 3 - pat);
 
                     for (int c = 0; c < 3; c++)
                     {
-                        module.m_channels[c].patternPtr =
-                            module.m_data[module.m_hdr->patternsPointer + 2 * (i + c) + 0] +
-                            module.m_data[module.m_hdr->patternsPointer + 2 * (i + c) + 1] * 0x100;
+                        mod.m_channels[c].patternPtr =
+                            mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 0] +
+                            mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 1] * 0x100;
                     }
-                    module.glob.noiseBase = 0;
+                    mod.m_global.noiseBase = 0;
                 }
-                ProcessPattern(m, chan);
+                ProcessPattern(m, c, m_regs[m][E_Shape]);
             }
         }
-        module.m_delayCounter = module.m_delay;
+        mod.m_delayCounter = mod.m_delay;
     }
     
-    uint8_t mixer = 0;
     int envAdd = 0;
-    ProcessInstrument(m, 0, mixer, envAdd);
-    ProcessInstrument(m, 1, mixer, envAdd);
-    ProcessInstrument(m, 2, mixer, envAdd);
+    m_regs[m][Mixer] = 0;
+    ProcessInstrument(m, 0, m_regs[m][A_Fine], m_regs[m][A_Coarse], m_regs[m][A_Volume], m_regs[m][Mixer], envAdd);
+    ProcessInstrument(m, 1, m_regs[m][B_Fine], m_regs[m][B_Coarse], m_regs[m][B_Volume], m_regs[m][Mixer], envAdd);
+    ProcessInstrument(m, 2, m_regs[m][C_Fine], m_regs[m][C_Coarse], m_regs[m][C_Volume], m_regs[m][Mixer], envAdd);
 
-    m_regs[m][Mixer] = mixer;
-    m_regs[m][N_Period] = (module.glob.noiseBase + module.glob.noiseAdd) & 0x1F;
+    uint8_t  noise = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
+    uint16_t etone = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8) + mod.m_global.curEnvSlide + envAdd;
 
-    for (int ch = 0; ch < 3; ch++) 
+    m_regs[m][N_Period] = noise;
+    m_regs[m][E_Fine  ] = (etone & 0xFF);
+    m_regs[m][E_Coarse] = (etone >> 8 & 0xFF);
+
+    if (mod.m_global.curEnvDelay > 0) 
     {
-        auto& _chan = module.m_channels[ch];
-        m_regs[m][A_Fine   + 2 * ch] = (_chan.tone & 0xFF);
-        m_regs[m][A_Coarse + 2 * ch] = (_chan.tone >> 8 & 0x0F);
-        m_regs[m][A_Volume + ch] = _chan.amplitude;
-    }
-
-    uint16_t env = module.glob.envBaseHi * 0x100 + module.glob.envBaseLo + envAdd + module.glob.curEnvSlide;
-    m_regs[m][E_Fine] = (env & 0xFF);
-    m_regs[m][E_Coarse] = (env >> 8 & 0xFF);
-
-    if (module.glob.curEnvDelay > 0) 
-    {
-        if (!--module.glob.curEnvDelay) 
+        if (--mod.m_global.curEnvDelay == 0) 
         {
-            module.glob.curEnvDelay = module.glob.envDelay;
-            module.glob.curEnvSlide += module.glob.envSlideAdd;
+            mod.m_global.curEnvDelay = mod.m_global.envDelay;
+            mod.m_global.curEnvSlide += mod.m_global.envSlideAdd;
         }
     }
 
     return loop;
 }
 
-void DecodePT3::ProcessPattern(int chip, Channel& chan)
+void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
 {
-    int PrNote = chan.note;
-    int PrSliding = chan.toneSliding;
+    auto& mod = m_module[m];
+    auto& cha = mod.m_channels[c];
+
+    int PrNote = cha.note;
+    int PrSliding = cha.toneSliding;
 
     uint8_t counter = 0;
     uint8_t f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0, f8 = 0, f9 = 0;
 
-    auto& _chip = m_module[chip];
-    for (;;) 
+    while (true) 
     {
-        uint8_t cc = _chip.m_data[chan.patternPtr];
-        if (0xF0 <= cc && cc <= 0xFF)
+        uint8_t byte = mod.m_data[cha.patternPtr];
+        if (0xF0 <= byte && byte <= 0xFF)
         {
-            uint8_t c1 = cc - 0xF0;
-            chan.ornamentPtr = _chip.m_hdr->ornamentsPointers[2 * c1] + 0x100 * _chip.m_hdr->ornamentsPointers[2 * c1 + 1];
-            chan.ornamentLoop = _chip.m_data[chan.ornamentPtr++];
-            chan.ornamentLen = _chip.m_data[chan.ornamentPtr++];
-            chan.patternPtr++;
+            int o = (byte - 0xF0);
+            cha.ornamentPtr  = mod.m_hdr->ornamentsPointers[o];
+            cha.ornamentLoop = mod.m_data[cha.ornamentPtr++];
+            cha.ornamentLen  = mod.m_data[cha.ornamentPtr++];
 
-            uint8_t c2 = _chip.m_data[chan.patternPtr] / 2;
-            chan.samplePtr = _chip.m_hdr->samplesPointers[2 * c2] + 0x100 * _chip.m_hdr->samplesPointers[2 * c2 + 1];
-            chan.sampleLoop = _chip.m_data[chan.samplePtr++];
-            chan.sampleLen = _chip.m_data[chan.samplePtr++];
-            chan.envelopeEnabled = false;
-            chan.ornamentPos = 0;
+            int s = mod.m_data[++cha.patternPtr] >> 1;
+            cha.samplePtr  = mod.m_hdr->samplesPointers[s];
+            cha.sampleLoop = mod.m_data[cha.samplePtr++];
+            cha.sampleLen  = mod.m_data[cha.samplePtr++];
+
+            cha.envelopeEnabled = false;
+            cha.ornamentPos = 0;
         }
-        else if (0xD1 <= cc && cc <= 0xEF) 
+        else if (0xD1 <= byte && byte <= 0xEF) 
         {
-            uint8_t c2 = cc - 0xD0;
-            chan.samplePtr = _chip.m_hdr->samplesPointers[2 * c2] + 0x100 * _chip.m_hdr->samplesPointers[2 * c2 + 1];
-            chan.sampleLoop = _chip.m_data[chan.samplePtr++];
-            chan.sampleLen = _chip.m_data[chan.samplePtr++];
+            int s = (byte - 0xD0);
+            cha.samplePtr  = mod.m_hdr->samplesPointers[s];
+            cha.sampleLoop = mod.m_data[cha.samplePtr++];
+            cha.sampleLen  = mod.m_data[cha.samplePtr++];
         }
-        else if (cc == 0xD0) 
+        else if (byte == 0xD0) 
         {
-            chan.patternPtr++;
+            cha.patternPtr++;
             break;
         }
-        else if (0xC1 <= cc && cc <= 0xCF) 
+        else if (0xC1 <= byte && byte <= 0xCF) 
         {
-            chan.volume = cc - 0xC0;
+            cha.volume = byte - 0xC0;
         }
-        else if (cc == 0xC0) 
+        else if (byte == 0xC0) 
         {
-            chan.samplePos = 0;
-            chan.volumeSliding = 0;
-            chan.noiseSliding = 0;
-            chan.envelopeSliding = 0;
-            chan.ornamentPos = 0;
-            chan.tonSlideCount = 0;
-            chan.toneSliding = 0;
-            chan.toneAcc = 0;
-            chan.currentOnOff = 0;
-            chan.enabled = false;
-            chan.patternPtr++;
+            cha.samplePos = 0;
+            cha.volumeSliding = 0;
+            cha.noiseSliding = 0;
+            cha.envelopeSliding = 0;
+            cha.ornamentPos = 0;
+            cha.tonSlideCount = 0;
+            cha.toneSliding = 0;
+            cha.toneAcc = 0;
+            cha.currentOnOff = 0;
+            cha.enabled = false;
+            cha.patternPtr++;
             break;
         }
-        else if (0xB2 <= cc && cc <= 0xBF) 
+        else if (0xB2 <= byte && byte <= 0xBF) 
         {
-            chan.envelopeEnabled = true;
-            m_regs[chip][E_Shape] = (cc - 0xB1);
-            _chip.glob.envBaseHi = _chip.m_data[++chan.patternPtr];
-            _chip.glob.envBaseLo = _chip.m_data[++chan.patternPtr];
-            chan.ornamentPos = 0;
-            _chip.glob.curEnvSlide = 0;
-            _chip.glob.curEnvDelay = 0;
+            cha.envelopeEnabled = true;
+            shape = (byte - 0xB1);
+            mod.m_global.envBaseHi = mod.m_data[++cha.patternPtr];
+            mod.m_global.envBaseLo = mod.m_data[++cha.patternPtr];
+            cha.ornamentPos = 0;
+            mod.m_global.curEnvSlide = 0;
+            mod.m_global.curEnvDelay = 0;
         }
-        else if (cc == 0xB1) 
+        else if (byte == 0xB1) 
         {
-            chan.numberOfNotesToSkip = _chip.m_data[++chan.patternPtr];
+            cha.noteSkip = mod.m_data[++cha.patternPtr];
         }
-        else if (cc == 0xB0) 
+        else if (byte == 0xB0) 
         {
-            chan.envelopeEnabled = false;
-            chan.ornamentPos = 0;
+            cha.envelopeEnabled = false;
+            cha.ornamentPos = 0;
         }
-        else if (0x50 <= cc && cc <= 0xAF) 
+        else if (0x50 <= byte && byte <= 0xAF) 
         {
-            chan.note = cc - 0x50;
-            chan.samplePos = 0;
-            chan.volumeSliding = 0;
-            chan.noiseSliding = 0;
-            chan.envelopeSliding = 0;
-            chan.ornamentPos = 0;
-            chan.tonSlideCount = 0;
-            chan.toneSliding = 0;
-            chan.toneAcc = 0;
-            chan.currentOnOff = 0;
-            chan.enabled = true;
-            chan.patternPtr++;
+            cha.note = (byte - 0x50);
+            cha.samplePos = 0;
+            cha.volumeSliding = 0;
+            cha.noiseSliding = 0;
+            cha.envelopeSliding = 0;
+            cha.ornamentPos = 0;
+            cha.tonSlideCount = 0;
+            cha.toneSliding = 0;
+            cha.toneAcc = 0;
+            cha.currentOnOff = 0;
+            cha.enabled = true;
+            cha.patternPtr++;
             break;
         }
-        else if (0x40 <= cc && cc <= 0x4F)
+        else if (0x40 <= byte && byte <= 0x4F)
         {
-            uint8_t c1 = cc - 0x40;
-            chan.ornamentPtr = _chip.m_hdr->ornamentsPointers[2 * c1] + 0x100 * _chip.m_hdr->ornamentsPointers[2 * c1 + 1];
-            chan.ornamentLoop = _chip.m_data[chan.ornamentPtr++];
-            chan.ornamentLen = _chip.m_data[chan.ornamentPtr++];
-            chan.ornamentPos = 0;
+            uint8_t o = (byte - 0x40);
+            cha.ornamentPtr  = mod.m_hdr->ornamentsPointers[o];
+            cha.ornamentLoop = mod.m_data[cha.ornamentPtr++];
+            cha.ornamentLen  = mod.m_data[cha.ornamentPtr++];
+            cha.ornamentPos  = 0;
         }
-        else if (0x20 <= cc && cc <= 0x3F) 
+        else if (0x20 <= byte && byte <= 0x3F) 
         {
-            _chip.glob.noiseBase = cc - 0x20;
+            mod.m_global.noiseBase = byte - 0x20;
         }
-        else if (0x10 <= cc && cc <= 0x1F) 
+        else if (0x10 <= byte && byte <= 0x1F) 
         {
-            chan.envelopeEnabled = (cc != 0x10);
-            if (chan.envelopeEnabled) 
+            cha.envelopeEnabled = (byte != 0x10);
+            if (cha.envelopeEnabled) 
             {
-                m_regs[chip][E_Shape] = (cc - 0x10);
-                _chip.glob.envBaseHi = _chip.m_data[++chan.patternPtr];
-                _chip.glob.envBaseLo = _chip.m_data[++chan.patternPtr];
-                _chip.glob.curEnvSlide = 0;
-                _chip.glob.curEnvDelay = 0;
+                shape = (byte - 0x10);
+                mod.m_global.envBaseHi = mod.m_data[++cha.patternPtr];
+                mod.m_global.envBaseLo = mod.m_data[++cha.patternPtr];
+                mod.m_global.curEnvSlide = 0;
+                mod.m_global.curEnvDelay = 0;
             }
 
-            uint8_t c2 = _chip.m_data[++chan.patternPtr] / 2;
-            chan.samplePtr = _chip.m_hdr->samplesPointers[2 * c2] + 0x100 * _chip.m_hdr->samplesPointers[2 * c2 + 1];
-            chan.sampleLoop = _chip.m_data[chan.samplePtr++];
-            chan.sampleLen = _chip.m_data[chan.samplePtr++];
-            chan.ornamentPos = 0;
+            int s = mod.m_data[++cha.patternPtr] >> 1;
+            cha.samplePtr   = mod.m_hdr->samplesPointers[s];
+            cha.sampleLoop  = mod.m_data[cha.samplePtr++];
+            cha.sampleLen   = mod.m_data[cha.samplePtr++];
+            cha.ornamentPos = 0;
         }
-        else if (cc == 0x09) f9 = ++counter;
-        else if (cc == 0x08) f8 = ++counter;
-        else if (cc == 0x05) f5 = ++counter;
-        else if (cc == 0x04) f4 = ++counter;
-        else if (cc == 0x03) f3 = ++counter;
-        else if (cc == 0x02) f2 = ++counter;
-        else if (cc == 0x01) f1 = ++counter;
+        else if (byte == 0x09) f9 = ++counter;
+        else if (byte == 0x08) f8 = ++counter;
+        else if (byte == 0x05) f5 = ++counter;
+        else if (byte == 0x04) f4 = ++counter;
+        else if (byte == 0x03) f3 = ++counter;
+        else if (byte == 0x02) f2 = ++counter;
+        else if (byte == 0x01) f1 = ++counter;
 
-        chan.patternPtr++;
+        cha.patternPtr++;
     }
 
     while (counter > 0) 
     {
         if (counter == f1) 
         {
-            chan.tonSlideDelay = _chip.m_data[chan.patternPtr++];
-            chan.tonSlideCount = chan.tonSlideDelay;
-            chan.tonSlideStep = (int16_t)(_chip.m_data[chan.patternPtr] + 0x100 * _chip.m_data[chan.patternPtr + 1]);
-            chan.patternPtr += 2;
-            chan.simpleGliss = true;
-            chan.currentOnOff = 0;
-            if (chan.tonSlideCount == 0 && m_ver >= 7)
-                chan.tonSlideCount++;
+            cha.tonSlideDelay = mod.m_data[cha.patternPtr++];
+            cha.tonSlideCount = cha.tonSlideDelay;
+            cha.tonSlideStep = (int16_t)(mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1]);
+            cha.patternPtr += 2;
+            cha.simpleGliss = true;
+            cha.currentOnOff = 0;
+            if (cha.tonSlideCount == 0 && m_version >= 7)
+                cha.tonSlideCount++;
         }
         else if (counter == f2) 
         {
-            chan.simpleGliss = false;
-            chan.currentOnOff = 0;
-            chan.tonSlideDelay = _chip.m_data[chan.patternPtr];
-            chan.tonSlideCount = chan.tonSlideDelay;
-            chan.patternPtr += 3;
-            uint16_t step = _chip.m_data[chan.patternPtr] + 0x100 * _chip.m_data[chan.patternPtr + 1];
-            chan.patternPtr += 2;
+            cha.simpleGliss = false;
+            cha.currentOnOff = 0;
+            cha.tonSlideDelay = mod.m_data[cha.patternPtr];
+            cha.tonSlideCount = cha.tonSlideDelay;
+            cha.patternPtr += 3;
+            uint16_t step = mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1];
+            cha.patternPtr += 2;
             int16_t signed_step = step;
-            chan.tonSlideStep = (signed_step < 0) ? -signed_step : signed_step;
-            chan.toneDelta = GetToneFromNote(chip, chan.note) - GetToneFromNote(chip, PrNote);
-            chan.slideToNote = chan.note;
-            chan.note = PrNote;
-            if (m_ver >= 6) chan.toneSliding = PrSliding;
-            if (chan.toneDelta - chan.toneSliding < 0)
-                chan.tonSlideStep = -chan.tonSlideStep;
+            cha.tonSlideStep = (signed_step < 0) ? -signed_step : signed_step;
+            cha.toneDelta = GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote);
+            cha.slideToNote = cha.note;
+            cha.note = PrNote;
+            if (m_version >= 6) cha.toneSliding = PrSliding;
+            if (cha.toneDelta - cha.toneSliding < 0)
+                cha.tonSlideStep = -cha.tonSlideStep;
         }
         else if (counter == f3) 
         {
-            chan.samplePos = _chip.m_data[chan.patternPtr++];
+            cha.samplePos = mod.m_data[cha.patternPtr++];
         }
         else if (counter == f4) 
         {
-            chan.ornamentPos = _chip.m_data[chan.patternPtr++];
+            cha.ornamentPos = mod.m_data[cha.patternPtr++];
         }
         else if (counter == f5) 
         {
-            chan.onOffDelay = _chip.m_data[chan.patternPtr++];
-            chan.offOnDelay = _chip.m_data[chan.patternPtr++];
-            chan.currentOnOff = chan.onOffDelay;
-            chan.tonSlideCount = 0;
-            chan.toneSliding = 0;
+            cha.onOffDelay = mod.m_data[cha.patternPtr++];
+            cha.offOnDelay = mod.m_data[cha.patternPtr++];
+            cha.currentOnOff = cha.onOffDelay;
+            cha.tonSlideCount = 0;
+            cha.toneSliding = 0;
         }
         else if (counter == f8) 
         {
-            _chip.glob.envDelay = _chip.m_data[chan.patternPtr++];
-            _chip.glob.curEnvDelay = _chip.glob.envDelay;
-            _chip.glob.envSlideAdd = _chip.m_data[chan.patternPtr] + 0x100 * _chip.m_data[chan.patternPtr + 1];
-            chan.patternPtr += 2;
+            mod.m_global.envDelay = mod.m_data[cha.patternPtr++];
+            mod.m_global.curEnvDelay = mod.m_global.envDelay;
+            mod.m_global.envSlideAdd = mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1];
+            cha.patternPtr += 2;
         }
         else if (counter == f9) 
         {
-            uint8_t b = _chip.m_data[chan.patternPtr++];
-            _chip.m_delay = b;
+            uint8_t b = mod.m_data[cha.patternPtr++];
+            mod.m_delay = b;
             if (m_isTS && m_module[1].ts != 0x20) 
             {
+                // ???
                 m_module[0].m_delay = b;
                 m_module[1].m_delay = b;
                 m_module[0].m_delayCounter = b;
@@ -528,131 +519,121 @@ void DecodePT3::ProcessPattern(int chip, Channel& chan)
         }
         counter--;
     }
-    chan.noteSkipCounter = chan.numberOfNotesToSkip;
+    cha.noteSkipCounter = cha.noteSkip;
 }
 
-void DecodePT3::ProcessInstrument(int m, int c, uint8_t& mixer, int& envAdd)
+void DecodePT3::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd)
 {
-    Module& module = m_module[m];
-    Channel& chan = module.m_channels[c];
+    auto& mod = m_module[m];
+    auto& cha = mod.m_channels[c];
 
-    if (chan.enabled) 
+    if (cha.enabled) 
     {
-        uint16_t sptr = (chan.samplePtr + 4 * chan.samplePos);
-        if (++chan.samplePos >= chan.sampleLen)
-            chan.samplePos = chan.sampleLoop;
+        uint16_t sptr = (cha.samplePtr + 4 * cha.samplePos);
+        if (++cha.samplePos >= cha.sampleLen)
+            cha.samplePos = cha.sampleLoop;
 
-        uint16_t optr = chan.ornamentPtr + chan.ornamentPos;
-        if (++chan.ornamentPos >= chan.ornamentLen)
-            chan.ornamentPos = chan.ornamentLoop;
+        uint16_t optr = cha.ornamentPtr + cha.ornamentPos;
+        if (++cha.ornamentPos >= cha.ornamentLen)
+            cha.ornamentPos = cha.ornamentLoop;
 
-        uint8_t sb0 = module.m_data[sptr + 0];
-        uint8_t sb1 = module.m_data[sptr + 1];
-        uint8_t sb2 = module.m_data[sptr + 2];
-        uint8_t sb3 = module.m_data[sptr + 3];
-        uint8_t ob0 = module.m_data[optr + 0];
+        uint8_t sb0 = mod.m_data[sptr + 0];
+        uint8_t sb1 = mod.m_data[sptr + 1];
+        uint8_t sb2 = mod.m_data[sptr + 2];
+        uint8_t sb3 = mod.m_data[sptr + 3];
+        uint8_t ob0 = mod.m_data[optr + 0];
 
-        chan.tone = sb2 | sb3 << 8;
-        chan.tone += chan.toneAcc;
-        if (sb1 & 0x40) chan.toneAcc = chan.tone;
+        uint16_t tone = (sb2 | sb3 << 8) + cha.toneAcc;
+        if (sb1 & 0x40) cha.toneAcc = tone;
 
-        int8_t note = (chan.note + ob0);
+        int8_t note = (cha.note + ob0);
         if (note < 0 ) note = 0;
         if (note > 95) note = 95;
 
-        int tone = GetToneFromNote(m, note);
-        chan.tone += (chan.toneSliding + tone);
-        chan.tone &= 0x0FFF;
+        tone += (cha.toneSliding + GetToneFromNote(m, note));
+        tfine = (tone & 0xFF);
+        tcoarse = (tone >> 8 & 0x0F);
 
-        if (chan.tonSlideCount > 0)
+        if (cha.tonSlideCount > 0)
         {
-            if (!--chan.tonSlideCount) 
+            if (!--cha.tonSlideCount) 
             {
-                chan.toneSliding += chan.tonSlideStep;
-                chan.tonSlideCount = chan.tonSlideDelay;
-                if (!chan.simpleGliss) 
+                cha.toneSliding += cha.tonSlideStep;
+                cha.tonSlideCount = cha.tonSlideDelay;
+                if (!cha.simpleGliss) 
                 {
-                    if ((chan.tonSlideStep < 0 && chan.toneSliding <= chan.toneDelta) ||
-                        (chan.tonSlideStep >= 0 && chan.toneSliding >= chan.toneDelta))
+                    if ((cha.tonSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
+                        (cha.tonSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
                     {
-                        chan.note = chan.slideToNote;
-                        chan.tonSlideCount = 0;
-                        chan.toneSliding = 0;
+                        cha.note = cha.slideToNote;
+                        cha.tonSlideCount = 0;
+                        cha.toneSliding = 0;
                     }
                 }
             }
         }
 
-        int volume = (sb1 & 0x0F);
         if (sb0 & 0b10000000) 
         {
             if (sb0 & 0b01000000)
-            {
-                if (chan.volumeSliding < +15) ++chan.volumeSliding;
-            }
+                { if (cha.volumeSliding < +15) ++cha.volumeSliding; }
             else
-            {
-                if (chan.volumeSliding > -15) --chan.volumeSliding;
-            }
+                { if (cha.volumeSliding > -15) --cha.volumeSliding; }
         }
-        volume += chan.volumeSliding;
-        if (volume < 0x0) volume = 0x0;
-        if (volume > 0xF) volume = 0xF;
+        int vol = (sb1 & 0x0F) + cha.volumeSliding;
+        if (vol < 0x0) vol = 0x0;
+        if (vol > 0xF) vol = 0xF;
 
-        if (m_ver <= 4) 
-            chan.amplitude = VolumeTable_33_34[chan.volume][volume];
+        if (m_version <= 4) 
+            volume = VolumeTable_33_34[cha.volume][vol];
         else 
-            chan.amplitude = VolumeTable_35[chan.volume][volume];
-
-        if (!(sb0 & 0b00000001) && chan.envelopeEnabled)
+            volume = VolumeTable_35[cha.volume][vol];
+        if (!(sb0 & 0b00000001) && cha.envelopeEnabled)
         {
-            chan.amplitude |= 0x10;
+            volume |= 0x10;
         }
 
         if (sb1 & 0b10000000) 
         {
             uint8_t envelopeSliding = (sb0 & 0b00100000)
-                ? ((sb0 >> 1) | 0xF0) + chan.envelopeSliding
-                : ((sb0 >> 1) & 0x0F) + chan.envelopeSliding;
+                ? ((sb0 >> 1) | 0xF0) + cha.envelopeSliding
+                : ((sb0 >> 1) & 0x0F) + cha.envelopeSliding;
             if (sb1 & 0b00100000)
             {
-                chan.envelopeSliding = envelopeSliding;
+                cha.envelopeSliding = envelopeSliding;
             }
             envAdd += envelopeSliding;
         }
         else 
         {
-            module.glob.noiseAdd = (sb0 >> 1) + chan.noiseSliding;
+            mod.m_global.noiseAdd = (sb0 >> 1) + cha.noiseSliding;
             if (sb1 & 0b00100000)
             {
-                chan.noiseSliding = module.glob.noiseAdd;
+                cha.noiseSliding = mod.m_global.noiseAdd;
             }
         }
         mixer |= (sb1 >> 1) & 0b01001000;
     }
-    else 
-    {
-        chan.amplitude = 0;
-    }
+    else volume = 0;
     mixer >>= 1;
 
-    if (chan.currentOnOff > 0) 
+    if (cha.currentOnOff > 0) 
     {
-        if (!--chan.currentOnOff) 
+        if (!--cha.currentOnOff) 
         {
-            chan.enabled ^= true;
-            chan.currentOnOff = (chan.enabled ? chan.onOffDelay : chan.offOnDelay);
+            cha.enabled ^= true;
+            cha.currentOnOff = (cha.enabled ? cha.onOffDelay : cha.offOnDelay);
         }
     }
 }
 
-int DecodePT3::GetToneFromNote(int chip, int note)
+int DecodePT3::GetToneFromNote(int m, int note)
 {
-    switch (m_module[chip].m_hdr->tonTableId)
+    switch (m_module[m].m_hdr->tonTableId)
     {
-    case  0: return (m_ver <= 3) ? NoteTable_PT_33_34r[note] : NoteTable_PT_34_35[note];
+    case  0: return (m_version <= 3) ? NoteTable_PT_33_34r[note] : NoteTable_PT_34_35[note];
     case  1: return NoteTable_ST[note];
-    case  2: return (m_ver <= 3) ? NoteTable_ASM_34r[note]  : NoteTable_ASM_34_35[note];
-    default: return (m_ver <= 3) ? NoteTable_REAL_34r[note] : NoteTable_REAL_34_35[note];
+    case  2: return (m_version <= 3) ? NoteTable_ASM_34r  [note] : NoteTable_ASM_34_35[note];
+    default: return (m_version <= 3) ? NoteTable_REAL_34r [note] : NoteTable_REAL_34_35[note];
     }
 }

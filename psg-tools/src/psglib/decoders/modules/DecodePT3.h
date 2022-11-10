@@ -7,14 +7,14 @@ class DecodePT3 : public ModuleDecoder
     #pragma pack(push, 1)
     struct Header
     {
-        char     musicName[0x63];
+        uint8_t  musicName[99];
         uint8_t  tonTableId;
         uint8_t  delay;
         uint8_t  numberOfPositions;
         uint8_t  loopPosition;
         uint16_t patternsPointer;
-        uint8_t  samplesPointers[32 * 2];
-        uint8_t  ornamentsPointers[16 * 2];
+        uint16_t samplesPointers[32];
+        uint16_t ornamentsPointers[16];
         uint8_t  positionList[1];
     };
     #pragma pack(pop)
@@ -24,6 +24,19 @@ class DecodePT3 : public ModuleDecoder
         uint16_t patternPtr;
         uint16_t ornamentPtr;
         uint16_t samplePtr;
+
+        uint8_t ornamentLoop;
+        uint8_t ornamentLen;
+        uint8_t ornamentPos;
+        uint8_t sampleLoop;
+        uint8_t sampleLen;
+        uint8_t samplePos;
+        uint8_t volume;
+        uint8_t noteSkip;
+        uint8_t note;
+        uint8_t slideToNote;
+
+        int8_t noteSkipCounter;
         
         int volumeSliding;
         int noiseSliding;
@@ -38,41 +51,24 @@ class DecodePT3 : public ModuleDecoder
         int tonSlideStep;
         int toneDelta;
 
-        int8_t noteSkipCounter;
-
-        uint8_t ornamentLoop;
-        uint8_t ornamentLen;
-        uint8_t ornamentPos;
-
-        uint8_t sampleLoop;
-        uint8_t sampleLen;
-        uint8_t samplePos;
-
-        uint8_t volume;
-        uint8_t numberOfNotesToSkip;
-        uint8_t note;
-        uint8_t slideToNote;
-        
+        bool simpleGliss;
         bool envelopeEnabled;
         bool enabled;
-        bool simpleGliss;
-
-        uint16_t tone;
-        uint8_t amplitude;
     };
 
     struct Global
     {
-        int curEnvSlide;
-        int envSlideAdd;
         uint8_t envBaseLo;
         uint8_t envBaseHi;
 
-        uint8_t noiseBase;
-        uint8_t noiseAdd;
+        int curEnvSlide;
+        int envSlideAdd;
 
         int8_t curEnvDelay;
         int8_t envDelay;
+
+        uint8_t noiseBase;
+        uint8_t noiseAdd;
     };
 
     struct Module
@@ -84,10 +80,9 @@ class DecodePT3 : public ModuleDecoder
         uint8_t m_delayCounter;
         uint8_t m_currentPosition;
         Channel m_channels[3];
+        Global  m_global;
 
-        Global glob;
         int ts;
-        
     };
 
     static const uint16_t NoteTable_PT_33_34r[];
@@ -110,14 +105,13 @@ protected:
     bool Play() override;
 
 private:
-    bool Play(int chip);
-    void ProcessPattern(int m, Channel& chan);
-    void ProcessInstrument(int m, int c, uint8_t& mixer, int& envAdd);
+    bool PlayModule(int m);
+    void ProcessPattern(int m, int c, uint8_t& shape);
+    void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd);
     int  GetToneFromNote(int m, int note);
     
 private:
-    uint32_t m_size;
-    uint8_t  m_ver;
-
+    int    m_size;
+    int    m_version;
     Module m_module[2];
 };
