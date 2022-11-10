@@ -61,21 +61,20 @@ public:
 
     struct Module
     {
-        bool VortexTrackerII = false;
-        std::string Version;
-        std::string Title;
-        std::string Author;
-        int NoteTable = 0;
-        int ChipFreq = 0;
-        int IntFreq = 0;
-        int Speed = 0;
-        List<int> PlayOrder;
+        bool isVT2 = false;
+        std::string version;
+        std::string title;
+        std::string author;
+        int noteTable = 0;
+        int chipFreq = 0;
+        int intFreq = 0;
+        int speed = 0;
 
+        List<int> positions;
         std::vector<Ornament> ornaments;
         std::vector<Sample>   samples;
         std::vector<Pattern>  patterns;
     };
-
     
 public:
     void Parse(std::istream& stream);
