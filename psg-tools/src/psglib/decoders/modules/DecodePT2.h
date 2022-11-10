@@ -23,7 +23,6 @@ class DecodePT2 : public ModuleDecoder
         uint16_t patternPtr;
         uint16_t ornamentPtr;
         uint16_t samplePtr;
-        uint16_t tone;
 
         uint8_t ornamentLoop;
         uint8_t ornamentLen;
@@ -35,8 +34,7 @@ class DecodePT2 : public ModuleDecoder
         uint8_t noteSkip;
         uint8_t note;
         uint8_t slideToNote;
-        uint8_t amplitude;
-        
+
         int8_t toneSliding;
         int8_t toneDelta;
         int8_t glissType;
@@ -59,12 +57,13 @@ protected:
     bool Play() override;
 
 private:
-    void ParsePattern(int ch);
-    void ParseSample(int ch, uint8_t& mixer);
+    void InitPattern();
+    void ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape);
+    void ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer);
 
 private:
     uint8_t m_delay;
     uint8_t m_delayCounter;
     uint8_t m_currentPosition;
-    Channel m_ch[3];
+    Channel m_channels[3];
 };

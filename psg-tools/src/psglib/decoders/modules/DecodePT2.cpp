@@ -72,7 +72,7 @@ void DecodePT2::Init()
     m_delayCounter = 1;
     m_currentPosition = 0;
 
-    for (Channel& chan : m_ch)
+    for (Channel& chan : m_channels)
     {
         memset(&chan, 0, sizeof(Channel));
         chan.ornamentPtr = header->ornamentsPointers[0];
@@ -81,11 +81,7 @@ void DecodePT2::Init()
         chan.volume = 0x0F;
     }
 
-    uint16_t patternPointer  = (header->patternsPointer + header->positionList[0] * 6);
-    m_ch[0].patternPtr = *(uint16_t*)(&m_data[patternPointer + 0]);
-    m_ch[1].patternPtr = *(uint16_t*)(&m_data[patternPointer + 2]);
-    m_ch[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
-
+    InitPattern();
     memset(&m_regs, 0, sizeof(m_regs));
 }
 
@@ -104,7 +100,7 @@ bool DecodePT2::Play()
     {
         for (int ch = 0; ch < 3; ++ch)
         {
-            auto& chan = m_ch[ch];
+            auto& chan = m_channels[ch];
             if (--chan.noteSkipCounter < 0)
             {
                 if (!ch && m_data[chan.patternPtr] == 0)
@@ -115,42 +111,36 @@ bool DecodePT2::Play()
                         m_currentPosition = hdr.loopPosition;
                         loop = true;
                     }
-
-                    uint16_t patternPointer  = (hdr.patternsPointer + hdr.positionList[m_currentPosition] * 6);
-                    m_ch[0].patternPtr = *(uint16_t*)(&m_data[patternPointer + 0]);
-                    m_ch[1].patternPtr = *(uint16_t*)(&m_data[patternPointer + 2]);
-                    m_ch[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
+                    InitPattern();
                 }
-                ParsePattern(ch);
+                ProcessPattern(ch, m_regs[0][E_Fine], m_regs[0][E_Coarse], m_regs[0][E_Shape]);
             }
         }
         m_delayCounter = m_delay;
     }
 
-    uint8_t mixer = 0x00;
-    ParseSample(0, mixer);
-    ParseSample(1, mixer);
-    ParseSample(2, mixer);
-
-    m_regs[0][Mixer   ] = mixer;
-    m_regs[0][A_Fine  ] = (m_ch[0].tone & 0xFF);
-    m_regs[0][A_Coarse] = (m_ch[0].tone >> 8 & 0x0F);
-    m_regs[0][B_Fine  ] = (m_ch[1].tone & 0xFF);
-    m_regs[0][B_Coarse] = (m_ch[1].tone >> 8 & 0x0F);
-    m_regs[0][C_Fine  ] = (m_ch[2].tone & 0xFF);
-    m_regs[0][C_Coarse] = (m_ch[2].tone >> 8 & 0x0F);
-    m_regs[0][A_Volume] = m_ch[0].amplitude;
-    m_regs[0][B_Volume] = m_ch[1].amplitude;
-    m_regs[0][C_Volume] = m_ch[2].amplitude;
+    m_regs[0][Mixer] = 0;
+    ProcessInstrument(0, m_regs[0][A_Fine], m_regs[0][A_Coarse], m_regs[0][A_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
+    ProcessInstrument(1, m_regs[0][B_Fine], m_regs[0][B_Coarse], m_regs[0][B_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
+    ProcessInstrument(2, m_regs[0][C_Fine], m_regs[0][C_Coarse], m_regs[0][C_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
     return loop;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void DecodePT2::ParsePattern(int ch)
+void DecodePT2::InitPattern()
+{
+    auto& hdr = reinterpret_cast<const Header&>(*m_data);
+    uint16_t patternPointer = (hdr.patternsPointer + hdr.positionList[m_currentPosition] * 6);
+    m_channels[0].patternPtr = *(uint16_t*)(&m_data[patternPointer + 0]);
+    m_channels[1].patternPtr = *(uint16_t*)(&m_data[patternPointer + 2]);
+    m_channels[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
+}
+
+void DecodePT2::ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
 {
     auto& hdr  = reinterpret_cast<const Header&>(*m_data);
-    auto& chan = m_ch[ch];
+    auto& chan = m_channels[ch];
 
     bool quit  = false;
     bool gliss = false;
@@ -199,9 +189,9 @@ void DecodePT2::ParsePattern(int ch)
         else if (val >= 0x71 && val <= 0x7e)
         {
             chan.envelopeEnabled = true;
-            m_regs[0][E_Shape] = val - 0x70;
-            m_regs[0][E_Fine] = m_data[++chan.patternPtr];
-            m_regs[0][E_Coarse] = m_data[++chan.patternPtr];
+            shape = (val - 0x70);
+            efine = m_data[++chan.patternPtr];
+            ecoarse = m_data[++chan.patternPtr];
         }
         else if (val == 0x70)
         {
@@ -263,9 +253,9 @@ void DecodePT2::ParsePattern(int ch)
     chan.noteSkipCounter = chan.noteSkip;
 }
 
-void DecodePT2::ParseSample(int ch, uint8_t& mixer)
+void DecodePT2::ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
 {
-    Channel& chan = m_ch[ch];
+    Channel& chan = m_channels[ch];
 
     if (chan.enabled)
     {
@@ -277,20 +267,21 @@ void DecodePT2::ParseSample(int ch, uint8_t& mixer)
         if (++chan.ornamentPos == chan.ornamentLen)
             chan.ornamentPos = chan.ornamentLoop;
 
-        uint8_t s0 = m_data[sptr + 0];
-        uint8_t s1 = m_data[sptr + 1];
-        uint8_t s2 = m_data[sptr + 2];
-        uint8_t o1 = m_data[optr + 0];
+        uint8_t sb0 = m_data[sptr + 0];
+        uint8_t sb1 = m_data[sptr + 1];
+        uint8_t sb2 = m_data[sptr + 2];
+        uint8_t ob0 = m_data[optr + 0];
 
-        chan.tone = s2 | ((s1 & 0x0F) << 8);
-        if (!(s0 & 0b00000100)) chan.tone = -chan.tone;
+        uint16_t tone = sb2 | ((sb1 & 0x0F) << 8);
+        if (!(sb0 & 0b00000100)) tone = -tone;
 
-        int8_t note = (chan.note + o1);
+        int8_t note = (chan.note + ob0);
         if (note < 0 ) note = 0;
         if (note > 95) note = 95;
 
-        chan.tone += (chan.toneSliding + NoteTable[note]);
-        chan.tone &= 0x0FFF;
+        tone += (chan.toneSliding + NoteTable[note]);
+        tfine = (tone & 0xFF);
+        tcoarse = (tone >> 8 & 0x0F);
 
         if (chan.glissType == 2)
         {
@@ -307,17 +298,16 @@ void DecodePT2::ParseSample(int ch, uint8_t& mixer)
             chan.toneSliding += chan.glissade;
         }
 
-        chan.amplitude = ((chan.volume * 17 + uint8_t(chan.volume > 7)) * (s1 >> 4) + 127) / 256;
-        if (chan.envelopeEnabled) chan.amplitude |= 0x10;
+        volume = ((chan.volume * 17 + uint8_t(chan.volume > 7)) * (sb1 >> 4) + 127) / 256;
+        if (chan.envelopeEnabled) volume |= 0x10;
 
-        if (s0 & 0b00000010) mixer |= 0b00001000;
-        if (s0 & 0b00000001) mixer |= 0b01000000;
+        if (sb0 & 0b00000010) mixer |= 0b00001000;
+        if (sb0 & 0b00000001) mixer |= 0b01000000;
         else
         {
-            uint8_t noise = ((s0 >> 3) + chan.additionToNoise);
-            m_regs[0][N_Period] = (noise & 0x1F);
+            noise = ((sb0 >> 3) + chan.additionToNoise) & 0x1F;
         }
     }
-    else chan.amplitude = 0;
+    else volume = 0;
     mixer >>= 1;
 }
