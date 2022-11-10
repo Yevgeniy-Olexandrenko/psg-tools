@@ -66,16 +66,16 @@ bool DecodePT2::Open(Stream& stream)
 
 void DecodePT2::Init()
 {
-    Header* header = (Header*)m_data;
+    auto& hdr = reinterpret_cast<const Header&>(*m_data);
 
-    m_delay = header->delay;
+    m_delay = hdr.delay;
     m_delayCounter = 1;
     m_currentPosition = 0;
 
     for (Channel& chan : m_channels)
     {
         memset(&chan, 0, sizeof(Channel));
-        chan.ornamentPtr = header->ornamentsPointers[0];
+        chan.ornamentPtr  = hdr.ornamentsPointers[0];
         chan.ornamentLen  = m_data[chan.ornamentPtr++];
         chan.ornamentLoop = m_data[chan.ornamentPtr++];
         chan.volume = 0x0F;
@@ -87,10 +87,10 @@ void DecodePT2::Init()
 
 void DecodePT2::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loopPosition)
 {
-    Header* header = (Header*)m_data;
+    auto& hdr = reinterpret_cast<const Header&>(*m_data);
     currPosition = m_currentPosition;
-    loopPosition = header->loopPosition;
-    lastPosition = header->numberOfPositions - 1;
+    loopPosition = hdr.loopPosition;
+    lastPosition = hdr.numberOfPositions - 1;
 }
 
 bool DecodePT2::Play()
@@ -98,12 +98,12 @@ bool DecodePT2::Play()
     bool loop = false;
     if (--m_delayCounter == 0)
     {
-        for (int ch = 0; ch < 3; ++ch)
+        for (int c = 0; c < 3; ++c)
         {
-            auto& chan = m_channels[ch];
+            Channel& chan = m_channels[c];
             if (--chan.noteSkipCounter < 0)
             {
-                if (!ch && m_data[chan.patternPtr] == 0)
+                if (!c && m_data[chan.patternPtr] == 0)
                 {
                     auto& hdr = reinterpret_cast<const Header&>(*m_data);
                     if (++m_currentPosition == hdr.numberOfPositions)
@@ -113,7 +113,7 @@ bool DecodePT2::Play()
                     }
                     InitPattern();
                 }
-                ProcessPattern(ch, m_regs[0][E_Fine], m_regs[0][E_Coarse], m_regs[0][E_Shape]);
+                ProcessPattern(c, m_regs[0][E_Fine], m_regs[0][E_Coarse], m_regs[0][E_Shape]);
             }
         }
         m_delayCounter = m_delay;
@@ -137,10 +137,10 @@ void DecodePT2::InitPattern()
     m_channels[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
 }
 
-void DecodePT2::ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
+void DecodePT2::ProcessPattern(int c, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
 {
-    auto& hdr  = reinterpret_cast<const Header&>(*m_data);
-    auto& chan = m_channels[ch];
+    auto& hdr = reinterpret_cast<const Header&>(*m_data);
+    Channel& chan = m_channels[c];
 
     bool quit  = false;
     bool gliss = false;
@@ -189,8 +189,8 @@ void DecodePT2::ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t
         else if (val >= 0x71 && val <= 0x7e)
         {
             chan.envelopeEnabled = true;
-            shape = (val - 0x70);
-            efine = m_data[++chan.patternPtr];
+            shape   = (val - 0x70);
+            efine   = m_data[++chan.patternPtr];
             ecoarse = m_data[++chan.patternPtr];
         }
         else if (val == 0x70)
@@ -253,9 +253,9 @@ void DecodePT2::ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t
     chan.noteSkipCounter = chan.noteSkip;
 }
 
-void DecodePT2::ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
+void DecodePT2::ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
 {
-    Channel& chan = m_channels[ch];
+    Channel& chan = m_channels[c];
 
     if (chan.enabled)
     {

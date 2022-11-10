@@ -58,8 +58,8 @@ protected:
 
 private:
     void InitPattern();
-    void ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape);
-    void ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer);
+    void ProcessPattern(int c, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape);
+    void ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer);
 
 private:
     uint8_t m_delay;

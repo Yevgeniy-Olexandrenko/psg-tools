@@ -21,32 +21,32 @@ class DecodePT3 : public ModuleDecoder
 
     struct Channel
     {
-        uint16_t addressInPattern;
-        uint16_t ornamentPointer;
-        uint16_t samplePointer;
+        uint16_t patternPtr;
+        uint16_t ornamentPtr;
+        uint16_t samplePtr;
         
-        int currentAmplitudeSliding;
-        int currentNoiseSliding;
-        int currentEnvelopeSliding;
+        int volumeSliding;
+        int noiseSliding;
+        int envelopeSliding;
         int tonSlideCount;
         int currentOnOff;
         int onOffDelay;
         int offOnDelay;
         int tonSlideDelay;
-        int currentTonSliding;
-        int tonAccumulator;
+        int toneSliding;
+        int toneAcc;
         int tonSlideStep;
-        int tonDelta;
+        int toneDelta;
 
         int8_t noteSkipCounter;
 
-        uint8_t loopOrnamentPosition;
-        uint8_t ornamentLength;
-        uint8_t positionInOrnament;
+        uint8_t ornamentLoop;
+        uint8_t ornamentLen;
+        uint8_t ornamentPos;
 
-        uint8_t loopSamplePosition;
-        uint8_t sampleLength;
-        uint8_t positionInSample;
+        uint8_t sampleLoop;
+        uint8_t sampleLen;
+        uint8_t samplePos;
 
         uint8_t volume;
         uint8_t numberOfNotesToSkip;
@@ -57,7 +57,7 @@ class DecodePT3 : public ModuleDecoder
         bool enabled;
         bool simpleGliss;
 
-        uint16_t ton;
+        uint16_t tone;
         uint8_t amplitude;
     };
 
@@ -67,14 +67,39 @@ class DecodePT3 : public ModuleDecoder
         int envSlideAdd;
         uint8_t envBaseLo;
         uint8_t envBaseHi;
+
         uint8_t noiseBase;
-        uint8_t delay;
-        uint8_t addToNoise;
-        uint8_t delayCounter;
-        uint8_t currentPosition;
+        uint8_t noiseAdd;
+
         int8_t curEnvDelay;
         int8_t envDelay;
     };
+
+    struct Module
+    {
+        uint8_t* m_data;
+        Header*  m_hdr;
+        
+        uint8_t m_delay;
+        uint8_t m_delayCounter;
+        uint8_t m_currentPosition;
+        Channel m_channels[3];
+
+        Global glob;
+        int ts;
+        
+    };
+
+    static const uint16_t NoteTable_PT_33_34r[];
+    static const uint16_t NoteTable_PT_34_35[];
+    static const uint16_t NoteTable_ST[];
+    static const uint16_t NoteTable_ASM_34r[];
+    static const uint16_t NoteTable_ASM_34_35[];
+    static const uint16_t NoteTable_REAL_34r[];
+    static const uint16_t NoteTable_REAL_34_35[];
+
+    static const uint8_t VolumeTable_33_34[16][16];
+    static const uint8_t VolumeTable_35[16][16];
 
 public:
 	bool Open(Stream& stream) override;
@@ -86,19 +111,13 @@ protected:
 
 private:
     bool Play(int chip);
-    void PatternInterpreter(int chip, Channel& chan);
-    void GetRegisters(int chip, Channel& chan, uint8_t& mixer, int& envAdd);
-    int  GetNoteFreq(int chip, int note);
+    void ProcessPattern(int m, Channel& chan);
+    void ProcessInstrument(int m, int c, uint8_t& mixer, int& envAdd);
+    int  GetToneFromNote(int m, int note);
     
 private:
     uint32_t m_size;
     uint8_t  m_ver;
 
-    struct {
-        Header*  header;
-        uint8_t* data;
-        Global   glob;
-        Channel  chan[3];
-        int      ts;
-    } m_chip[2];
+    Module m_module[2];
 };
