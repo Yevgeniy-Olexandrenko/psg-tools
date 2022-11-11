@@ -95,33 +95,63 @@ class DecodeVT2 : public ModuleDecoder
 {
     struct Channel
     {
-        //uint16_t patternPtr;
-        //uint16_t ornamentPtr;
-        //uint16_t samplePtr;
+        uint8_t ornamentIdx;
+        uint8_t ornamentLoop;
+        uint8_t ornamentLen;
+        uint8_t ornamentPos;
 
-        //uint8_t ornamentLoop;
-        //uint8_t ornamentLen;
-        //uint8_t ornamentPos;
-        //uint8_t sampleLoop;
-        //uint8_t sampleLen;
-        //uint8_t samplePos;
-        //uint8_t volume;
-        //uint8_t noteSkip;
-        //uint8_t note;
-        //uint8_t slideToNote;
+        uint8_t sampleIdx;
+        uint8_t sampleLoop;
+        uint8_t sampleLen;
+        uint8_t samplePos;
 
-        //int8_t toneSliding;
-        //int8_t toneDelta;
-        //int8_t glissType;
-        //int8_t glissade;
-        //int8_t additionToNoise;
-        //int8_t noteSkipCounter;
+        uint8_t volume;
+        uint8_t note;
+        uint8_t slideToNote;
 
-        //bool envelopeEnabled;
-        //bool enabled;
+        int volumeSliding;
+        int noiseSliding;
+        int envelopeSliding;
+        int tonSlideCount;
+        int currentOnOff;
+        int onOffDelay;
+        int offOnDelay;
+        int tonSlideDelay;
+        int toneSliding;
+        int toneAcc;
+        int tonSlideStep;
+        int toneDelta;
+
+        bool simpleGliss;
+        bool envelopeEnabled;
+        bool enabled;
     };
 
-    //static const uint16_t NoteTable[];
+    struct Global
+    {
+        uint8_t envBaseLo;
+        uint8_t envBaseHi;
+
+        int curEnvSlide;
+        int envSlideAdd;
+
+        int8_t curEnvDelay;
+        int8_t envDelay;
+
+        uint8_t noiseBase;
+        uint8_t noiseAdd;
+    };
+
+    struct Module
+    {
+        uint8_t m_delay;
+        uint8_t m_delayCounter;
+        uint8_t m_currentPosition;
+        uint8_t m_patternIdx;
+        uint8_t m_patternPos;
+        Channel m_channels[3];
+        Global  m_global;
+    };
 
 public:
     bool Open(Stream& stream) override;
@@ -132,14 +162,13 @@ protected:
     bool Play() override;
 
 private:
-    void InitPattern();
-    void ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape);
-    void ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer);
+    bool PlayModule(int m);
+    void ProcessPattern(int m, int c, uint8_t& shape);
+    void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd);
+    int  GetToneFromNote(int m, int note);
 
 private:
     VT2 m_vt2;
-    //uint8_t m_delay;
-    //uint8_t m_delayCounter;
-    //uint8_t m_currentPosition;
-    //Channel m_channels[3];
+    int m_version;
+    Module m_module[2];
 };

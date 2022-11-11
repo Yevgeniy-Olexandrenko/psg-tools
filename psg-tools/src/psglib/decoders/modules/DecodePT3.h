@@ -85,6 +85,7 @@ class DecodePT3 : public ModuleDecoder
         int ts;
     };
 
+public:
     static const uint16_t NoteTable_PT_33_34r[];
     static const uint16_t NoteTable_PT_34_35[];
     static const uint16_t NoteTable_ST[];

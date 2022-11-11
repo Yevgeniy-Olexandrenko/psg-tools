@@ -1,4 +1,5 @@
 #include "DecodeVT2.h"
+#include "DecodePT3.h"
 
 std::vector<std::string> split(std::string target, std::string delim)
 {
@@ -89,6 +90,13 @@ void VT2::ParseOrnament(std::string& line, std::istream& stream)
 {
 	Module& module = modules.back();
 	size_t  index  = std::stoi(line.substr(9, line.length() - 9 - 1));
+
+	if (module.ornaments.empty())
+	{
+		module.ornaments.emplace_back();
+		module.ornaments[0].positions.data.push_back(0);
+		module.ornaments[0].positions.loop = 0;
+	}
 
 	if (module.ornaments.size() <= index)
 		module.ornaments.resize(index + 1);
@@ -245,6 +253,8 @@ bool DecodeVT2::Open(Stream& stream)
 					stream.info.artist(module.author);
 					if (module.chipFreq)
 						stream.schip.clockValue(module.chipFreq);
+					if (m_isTS)
+						stream.schip.second.model(stream.schip.first.model());
 					if (module.intFreq)
 						stream.play.frameRate((module.intFreq + 500) / 1000);
 					stream.info.type("Vortex Tracker II (PT v" + module.version + ") module");
@@ -260,25 +270,317 @@ bool DecodeVT2::Open(Stream& stream)
 
 void DecodeVT2::Init()
 {
+	uint8_t ver = m_vt2.modules[0].version[2];
+	m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
+	m_isTS = (m_vt2.modules.size() > 1);
+
+	for (int m = 0; m < m_vt2.modules.size(); ++m)
+	{
+		auto& vtm = m_vt2.modules[m];
+		auto& mod = m_module[m];
+	
+		mod.m_delay = vtm.speed;
+		mod.m_delayCounter = 1;
+		mod.m_currentPosition = 0;
+		mod.m_patternIdx = vtm.positions[mod.m_currentPosition];
+		mod.m_patternPos = 0;
+
+		for (int c = 0; c < 3; ++c)
+		{
+			auto& cha = mod.m_channels[c];
+			memset(&cha, 0, sizeof(cha));
+
+			cha.ornamentIdx = 0;
+			cha.ornamentLoop = vtm.ornaments[cha.ornamentIdx].positions.loop;
+			cha.ornamentLen = vtm.ornaments[cha.ornamentIdx].positions.data.size();
+			cha.sampleIdx = 1;
+			cha.sampleLoop = vtm.samples[cha.sampleIdx].positions.loop;
+			cha.sampleLen = vtm.samples[cha.sampleIdx].positions.data.size();
+			cha.volume = 0xF;
+		}
+	}
+	memset(&m_regs, 0, sizeof(m_regs));
 }
 
 void DecodeVT2::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loopPosition)
 {
+	currPosition = m_module[0].m_currentPosition;
+	loopPosition = m_vt2.modules[0].positions.loop;
+	lastPosition = m_vt2.modules[0].positions.data.size() - 1;
 }
 
 bool DecodeVT2::Play()
 {
-	return false;
+	bool loop = PlayModule(0);
+	if (m_isTS) PlayModule(1);
+	return loop;
 }
 
-void DecodeVT2::InitPattern()
+bool DecodeVT2::PlayModule(int m)
 {
+	auto& vtm = m_vt2.modules[m];
+	auto& mod = m_module[m];
+
+	bool loop = false;
+	if (--mod.m_delayCounter == 0)
+	{
+		for (int c = 0; c < 3; ++c)
+		{
+			Channel& cha = mod.m_channels[c];
+			if (!c && mod.m_patternPos == vtm.patterns[mod.m_patternIdx].positions.size())
+			{
+				if (++mod.m_currentPosition == vtm.positions.data.size())
+				{
+					mod.m_currentPosition = vtm.positions.loop;
+					loop = true;
+				}
+
+				mod.m_patternIdx = vtm.positions[mod.m_currentPosition];
+				mod.m_patternPos = 0;
+				mod.m_global.noiseBase = 0;
+			}
+			ProcessPattern(m, c, m_regs[m][E_Shape]);
+		}
+		mod.m_patternPos++;
+		mod.m_delayCounter = mod.m_delay;
+	}
+
+	int envAdd = 0;
+	m_regs[m][Mixer] = 0;
+	ProcessInstrument(m, 0, m_regs[m][A_Fine], m_regs[m][A_Coarse], m_regs[m][A_Volume], m_regs[m][Mixer], envAdd);
+	ProcessInstrument(m, 1, m_regs[m][B_Fine], m_regs[m][B_Coarse], m_regs[m][B_Volume], m_regs[m][Mixer], envAdd);
+	ProcessInstrument(m, 2, m_regs[m][C_Fine], m_regs[m][C_Coarse], m_regs[m][C_Volume], m_regs[m][Mixer], envAdd);
+
+	uint8_t  noise = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
+	uint16_t etone = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8) + mod.m_global.curEnvSlide + envAdd;
+
+	m_regs[m][N_Period] = noise;
+	m_regs[m][E_Fine] = (etone & 0xFF);
+	m_regs[m][E_Coarse] = (etone >> 8 & 0xFF);
+
+	if (mod.m_global.curEnvDelay > 0)
+	{
+		if (--mod.m_global.curEnvDelay == 0)
+		{
+			mod.m_global.curEnvDelay = mod.m_global.envDelay;
+			mod.m_global.curEnvSlide += mod.m_global.envSlideAdd;
+		}
+	}
+
+	return loop;
 }
 
-void DecodeVT2::ProcessPattern(int ch, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
+void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 {
+	auto& vtm = m_vt2.modules[m];
+	auto& mod = m_module[m];
+	auto& cha = mod.m_channels[c];
+	auto& pln = vtm.patterns[mod.m_patternIdx].positions[mod.m_patternPos];
+
+	// TODO
+	int PrNote = cha.note;
+	int PrSliding = cha.toneSliding;
+
+	// sample
+	if (pln.chan[c].sample > 0)
+	{
+		cha.sampleIdx = pln.chan[c].sample;
+		cha.sampleLoop = vtm.samples[cha.sampleIdx].positions.loop;
+		cha.sampleLen = vtm.samples[cha.sampleIdx].positions.data.size();
+	}
+
+	// ornament
+	{
+		cha.ornamentIdx = pln.chan[c].ornament;
+		cha.ornamentLoop = vtm.ornaments[cha.ornamentIdx].positions.loop;
+		cha.ornamentLen = vtm.ornaments[cha.ornamentIdx].positions.data.size();
+		cha.ornamentPos = 0;
+	}
+
+	// envelope On
+	if (pln.chan[c].eshape > 0x0 && pln.chan[c].eshape < 0xF)
+	{
+		shape = pln.chan[c].eshape;
+		mod.m_global.envBaseHi = (pln.etone >> 8 & 0xFF);
+		mod.m_global.envBaseLo = (pln.etone & 0xFF);
+		mod.m_global.curEnvSlide = 0;
+		mod.m_global.curEnvDelay = 0;
+		cha.envelopeEnabled = true;
+		cha.ornamentPos = 0;
+	}
+
+	// envelope Off
+	if (pln.chan[c].eshape == 0xF)
+	{
+		cha.envelopeEnabled = false;
+		cha.ornamentPos = 0;
+	}
+
+	// noise
+	{
+		mod.m_global.noiseBase = pln.noise;
+	}
+
+	// volume
+	if (pln.chan[c].volume > 0)
+	{
+		cha.volume = pln.chan[c].volume;
+	}
+
+	// note On
+	if (pln.chan[c].note > 0)
+	{
+		cha.note = (pln.chan[c].note - 1);
+		cha.samplePos = 0;
+		cha.volumeSliding = 0;
+		cha.noiseSliding = 0;
+		cha.envelopeSliding = 0;
+		cha.ornamentPos = 0;
+		cha.tonSlideCount = 0;
+		cha.toneSliding = 0;
+		cha.toneAcc = 0;
+		cha.currentOnOff = 0;
+		cha.enabled = true;
+	}
+
+	// note Off
+	if (pln.chan[c].note < 0)
+	{
+		cha.samplePos = 0;
+		cha.volumeSliding = 0;
+		cha.noiseSliding = 0;
+		cha.envelopeSliding = 0;
+		cha.ornamentPos = 0;
+		cha.tonSlideCount = 0;
+		cha.toneSliding = 0;
+		cha.toneAcc = 0;
+		cha.currentOnOff = 0;
+		cha.enabled = false;
+	}
 }
 
-void DecodeVT2::ProcessInstrument(int ch, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
+void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd)
 {
+	auto& vtm = m_vt2.modules[m];
+	auto& mod = m_module[m];
+	auto& cha = mod.m_channels[c];
+
+	if (cha.enabled)
+	{
+		const auto& sampleLine = vtm.samples[cha.sampleIdx].positions[cha.samplePos];
+		if (++cha.samplePos >= cha.sampleLen) cha.samplePos = cha.sampleLoop;
+
+		const auto& ornamentLine = vtm.ornaments[cha.ornamentIdx].positions[cha.ornamentPos];
+		if (++cha.ornamentPos >= cha.ornamentLen) cha.ornamentPos = cha.ornamentLoop;
+
+		uint16_t tone = sampleLine.toneVal + cha.toneAcc;
+		if (sampleLine.toneAcc) cha.toneAcc = tone;
+
+		int8_t note = (cha.note + uint8_t(ornamentLine));
+		if (note < 0) note = 0;
+		if (note > 95) note = 95;
+
+		tone += (cha.toneSliding + GetToneFromNote(m, note));
+		tfine = (tone & 0xFF);
+		tcoarse = (tone >> 8 & 0x0F);
+
+		if (cha.tonSlideCount > 0)
+		{
+			if (!--cha.tonSlideCount)
+			{
+				cha.toneSliding += cha.tonSlideStep;
+				cha.tonSlideCount = cha.tonSlideDelay;
+				if (!cha.simpleGliss)
+				{
+					if ((cha.tonSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
+						(cha.tonSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
+					{
+						cha.note = cha.slideToNote;
+						cha.tonSlideCount = 0;
+						cha.toneSliding = 0;
+					}
+				}
+			}
+		}
+
+		// TODO: rewrite!
+		if (sampleLine.volumeAdd != 0)
+		{
+			if (sampleLine.volumeAdd > 0)
+			{
+				if (cha.volumeSliding < +15) ++cha.volumeSliding;
+			}
+			else
+			{
+				if (cha.volumeSliding > -15) --cha.volumeSliding;
+			}
+		}
+		int vol = sampleLine.volumeVal + cha.volumeSliding;
+		if (vol < 0x0) vol = 0x0;
+		if (vol > 0xF) vol = 0xF;
+
+		if (m_version <= 4)
+			volume = DecodePT3::VolumeTable_33_34[cha.volume][vol];
+		else
+			volume = DecodePT3::VolumeTable_35[cha.volume][vol];
+		if (sampleLine.e && cha.envelopeEnabled)
+		{
+			volume |= 0x10;
+		}
+
+		if (!sampleLine.n)
+		{
+			// TODO: rewrite!
+			uint8_t envelopeSliding = (sampleLine.noiseVal & 0b00010000)
+				? (uint8_t(sampleLine.noiseVal) | 0xF0) + cha.envelopeSliding
+				: (uint8_t(sampleLine.noiseVal) & 0x0F) + cha.envelopeSliding;
+			if (sampleLine.noiseAcc)
+			{
+				cha.envelopeSliding = envelopeSliding;
+			}
+			envAdd += envelopeSliding;
+		}
+		else
+		{
+			mod.m_global.noiseAdd = sampleLine.noiseVal + cha.noiseSliding;
+			if (sampleLine.noiseAcc)
+			{
+				cha.noiseSliding = mod.m_global.noiseAdd;
+			}
+		}
+		mixer |= uint8_t(!sampleLine.n) << 6;
+		mixer |= uint8_t(!sampleLine.t) << 3;
+	}
+	else volume = 0;
+	mixer >>= 1;
+
+	if (cha.currentOnOff > 0)
+	{
+		if (!--cha.currentOnOff)
+		{
+			cha.enabled ^= true;
+			cha.currentOnOff = (cha.enabled ? cha.onOffDelay : cha.offOnDelay);
+		}
+	}
+}
+
+int DecodeVT2::GetToneFromNote(int m, int note)
+{
+	switch (m_vt2.modules[m].noteTable)
+	{
+	case 0:
+		return (m_version <= 3) 
+			? DecodePT3::NoteTable_PT_33_34r[note]
+			: DecodePT3::NoteTable_PT_34_35[note];
+	case 1:
+		return DecodePT3::NoteTable_ST[note];
+	case 2:
+		return (m_version <= 3)
+			? DecodePT3::NoteTable_ASM_34r[note]
+			: DecodePT3::NoteTable_ASM_34_35[note];
+	default:
+		return (m_version <= 3)
+			? DecodePT3::NoteTable_REAL_34r[note]
+			: DecodePT3::NoteTable_REAL_34_35[note];
+	}
 }
