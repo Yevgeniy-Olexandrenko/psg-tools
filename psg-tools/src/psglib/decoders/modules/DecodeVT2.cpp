@@ -21,17 +21,15 @@ std::vector<std::string> split(std::string target, std::string delim)
 
 void parse(const std::string& str, VT2::List<int>& list)
 {
-	list.data.clear();
-	list.loop = 0;
+	list = VT2::List<int>();
+	list.loop(0);
 
 	std::vector<std::string> tokens = split(str, ",");
 	for (int i = 0; i < tokens.size(); ++i)
 	{
-		const std::string& token = tokens[i];
-
 		int offset = 0;
-		if (token[0] == 'L') { list.loop = i; offset = 1; }
-		list.data.push_back(std::stoi(token.substr(offset)));
+		if (tokens[i][0] == 'L') { list.loop(i); offset = 1; }
+		list.add(std::stoi(tokens[i].substr(offset)));
 	}
 }
 
@@ -62,7 +60,7 @@ void VT2::Parse(std::istream& stream)
 void VT2::ParseModule(std::istream& stream)
 {
 	modules.emplace_back();
-	Module& module = modules.back();
+	auto& module = modules.back();
 
 	std::string line;
 	while (std::getline(stream, line) && !line.empty())
@@ -88,40 +86,36 @@ void VT2::ParseModule(std::istream& stream)
 
 void VT2::ParseOrnament(std::string& line, std::istream& stream)
 {
-	Module& module = modules.back();
-	size_t  index  = std::stoi(line.substr(9, line.length() - 9 - 1));
+	auto& module = modules.back();
+	size_t index = std::stoi(line.substr(9, line.length() - 9 - 1));
 
 	if (module.ornaments.empty())
 	{
+		// empty ornament for index = 0
 		module.ornaments.emplace_back();
-		module.ornaments[0].positions.data.push_back(0);
-		module.ornaments[0].positions.loop = 0;
+		module.ornaments[0].add(0);
+		module.ornaments[0].loop(0);
 	}
 
 	if (module.ornaments.size() <= index)
 		module.ornaments.resize(index + 1);
-	Ornament& ornament = module.ornaments[index];
-
+	
 	if (std::getline(stream, line))
-	{
-		parse(line, ornament.positions);
-	}
+		parse(line, module.ornaments[index]);
 }
 
 void VT2::ParseSample(std::string& line, std::istream& stream)
 {
-	Module& module = modules.back();
-	size_t  index = std::stoi(line.substr(7, line.length() - 7 - 1));
+	auto& module = modules.back();
+	size_t index = std::stoi(line.substr(7, line.length() - 7 - 1));
 
 	if (module.samples.size() <= index)
 		module.samples.resize(index + 1);
-	Sample& sample = module.samples[index];
 
 	int pos = 0;
 	while (std::getline(stream, line) && !line.empty())
 	{
-		sample.positions.data.emplace_back();
-		Sample::Line& sampleLine = sample.positions.data.back();
+		auto& sampleLine = module.samples[index].add();
 		std::vector<std::string> tokens = split(line, " ");
 
 		sampleLine.t = (tokens[0][0] == 'T');
@@ -143,7 +137,7 @@ void VT2::ParseSample(std::string& line, std::istream& stream)
 
 		if (tokens.size() > 4 && tokens.back() == "L")
 		{
-			sample.positions.loop = pos;
+			module.samples[index].loop(pos);
 		}
 		pos++;
 	}
@@ -151,18 +145,15 @@ void VT2::ParseSample(std::string& line, std::istream& stream)
 
 void VT2::ParsePattern(std::string& line, std::istream& stream)
 {
-	Module& module = modules.back();
-	size_t  index = std::stoi(line.substr(8, line.length() - 8 - 1));
+	auto& module = modules.back();
+	size_t index = std::stoi(line.substr(8, line.length() - 8 - 1));
 
 	if (module.patterns.size() <= index)
 		module.patterns.resize(index + 1);
-	Pattern& pattern = module.patterns[index];
 
 	while (std::getline(stream, line) && !line.empty())
 	{
-		pattern.positions.emplace_back();
-		Pattern::Line& patternLine = pattern.positions.back();
-
+		auto& patternLine = module.patterns[index].add();
 		std::replace(line.begin(), line.end(), '.', '0');
 		std::vector<std::string> tokens = split(line, "|");
 
@@ -200,7 +191,7 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 
 		for (int i = 0; i < 3; ++i)
 		{
-			Pattern::Line::Chan& chan = patternLine.chan[i];
+			PatternLine::Chan& chan = patternLine.chan[i];
 			const std::string& token = tokens[2 + i];
 
 			chan.note = ParseNote(token, 0);
@@ -226,7 +217,7 @@ bool DecodeVT2::Open(Stream& stream)
 	if (CheckFileExt(stream, "vt2"))
 	{
 		std::ifstream fileStream;
-		fileStream.open(stream.file, std::fstream::binary);
+		fileStream.open(stream.file);
 
 		if (fileStream)
 		{
@@ -238,7 +229,7 @@ bool DecodeVT2::Open(Stream& stream)
 				bool isFileOk = true;
 				isFileOk &= !vt2.modules[0].version.empty();
 				isFileOk &=  vt2.modules[0].speed > 0;
-				isFileOk &= !vt2.modules[0].positions.data.empty();
+				isFileOk &= !vt2.modules[0].positions.empty();
 
 				if (isFileOk)
 				{
@@ -291,11 +282,11 @@ void DecodeVT2::Init()
 			memset(&cha, 0, sizeof(cha));
 
 			cha.ornamentIdx = 0;
-			cha.ornamentLoop = vtm.ornaments[cha.ornamentIdx].positions.loop;
-			cha.ornamentLen = vtm.ornaments[cha.ornamentIdx].positions.data.size();
+			cha.ornamentLoop = (uint8_t)vtm.ornaments[cha.ornamentIdx].loop();
+			cha.ornamentLen = (uint8_t)vtm.ornaments[cha.ornamentIdx].size();
 			cha.sampleIdx = 1;
-			cha.sampleLoop = vtm.samples[cha.sampleIdx].positions.loop;
-			cha.sampleLen = vtm.samples[cha.sampleIdx].positions.data.size();
+			cha.sampleLoop = (uint8_t)vtm.samples[cha.sampleIdx].loop();
+			cha.sampleLen = (uint8_t)vtm.samples[cha.sampleIdx].size();
 			cha.volume = 0xF;
 		}
 	}
@@ -305,8 +296,8 @@ void DecodeVT2::Init()
 void DecodeVT2::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loopPosition)
 {
 	currPosition = m_module[0].m_currentPosition;
-	loopPosition = m_vt2.modules[0].positions.loop;
-	lastPosition = m_vt2.modules[0].positions.data.size() - 1;
+	loopPosition = (uint8_t)m_vt2.modules[0].positions.loop();
+	lastPosition = (uint8_t)m_vt2.modules[0].positions.size() - 1;
 }
 
 bool DecodeVT2::Play()
@@ -327,11 +318,11 @@ bool DecodeVT2::PlayModule(int m)
 		for (int c = 0; c < 3; ++c)
 		{
 			Channel& cha = mod.m_channels[c];
-			if (!c && mod.m_patternPos == vtm.patterns[mod.m_patternIdx].positions.size())
+			if (!c && mod.m_patternPos == vtm.patterns[mod.m_patternIdx].size())
 			{
-				if (++mod.m_currentPosition == vtm.positions.data.size())
+				if (++mod.m_currentPosition == vtm.positions.size())
 				{
-					mod.m_currentPosition = vtm.positions.loop;
+					mod.m_currentPosition = (uint8_t)vtm.positions.loop();
 					loop = true;
 				}
 
@@ -375,9 +366,8 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	auto& vtm = m_vt2.modules[m];
 	auto& mod = m_module[m];
 	auto& cha = mod.m_channels[c];
-	auto& pln = vtm.patterns[mod.m_patternIdx].positions[mod.m_patternPos];
+	auto& pln = vtm.patterns[mod.m_patternIdx][mod.m_patternPos];
 
-	// TODO
 	int PrNote = cha.note;
 	int PrSliding = cha.toneSliding;
 
@@ -385,15 +375,15 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	if (pln.chan[c].sample > 0)
 	{
 		cha.sampleIdx = pln.chan[c].sample;
-		cha.sampleLoop = vtm.samples[cha.sampleIdx].positions.loop;
-		cha.sampleLen = vtm.samples[cha.sampleIdx].positions.data.size();
+		cha.sampleLoop = (uint8_t)vtm.samples[cha.sampleIdx].loop();
+		cha.sampleLen = (uint8_t)vtm.samples[cha.sampleIdx].size();
 	}
 
 	// ornament
 	{
 		cha.ornamentIdx = pln.chan[c].ornament;
-		cha.ornamentLoop = vtm.ornaments[cha.ornamentIdx].positions.loop;
-		cha.ornamentLen = vtm.ornaments[cha.ornamentIdx].positions.data.size();
+		cha.ornamentLoop = (uint8_t)vtm.ornaments[cha.ornamentIdx].loop();
+		cha.ornamentLen = (uint8_t)vtm.ornaments[cha.ornamentIdx].size();
 		cha.ornamentPos = 0;
 	}
 
@@ -417,6 +407,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	}
 
 	// noise
+	if (c == 1)
 	{
 		mod.m_global.noiseBase = pln.noise;
 	}
@@ -457,6 +448,80 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.currentOnOff = 0;
 		cha.enabled = false;
 	}
+
+	// commands
+	switch (pln.chan[c].command)
+	{
+	case 0x1: // tone slide down
+		cha.simpleGliss = true;
+		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideCount = cha.tonSlideDelay;
+		cha.tonSlideStep = +(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.currentOnOff = 0;
+		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		break;
+
+	case 0x2: // tone slide up
+		cha.simpleGliss = true;
+		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideCount = cha.tonSlideDelay;
+		cha.tonSlideStep = -(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.currentOnOff = 0;
+		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		break;
+
+	case 0x3: // tone portamento
+		cha.simpleGliss = false;
+		cha.currentOnOff = 0;
+		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideCount = cha.tonSlideDelay;
+		cha.tonSlideStep = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.toneDelta = (GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote));
+		cha.slideToNote = cha.note;
+		cha.note = PrNote;
+		if (m_version >= 6) cha.toneSliding = PrSliding;
+		if (cha.toneDelta - cha.toneSliding < 0) cha.tonSlideStep = -cha.tonSlideStep;
+		break;
+
+	case 0x4: // sample offset
+		cha.samplePos = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		break;
+
+	case 0x5: // ornament offset
+		cha.ornamentPos = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		break;
+
+	case 0x6: // vibrato
+		cha.onOffDelay = pln.chan[c].paramH;
+		cha.offOnDelay = pln.chan[c].paramL;
+		cha.currentOnOff = cha.onOffDelay;
+		cha.tonSlideCount = 0;
+		cha.toneSliding = 0;
+		break;
+
+	case 0x9: // envelope slide down
+		mod.m_global.envDelay = pln.chan[c].delay;
+		mod.m_global.curEnvDelay = mod.m_global.envDelay;
+		mod.m_global.envSlideAdd = +(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		break;
+
+	case 0xA: // envelope slide up
+		mod.m_global.envDelay = pln.chan[c].delay;
+		mod.m_global.curEnvDelay = mod.m_global.envDelay;
+		mod.m_global.envSlideAdd = -(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		break;
+
+	case 0xB: // set speed
+		uint8_t delay = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		mod.m_delay = delay;
+		if (m_isTS)
+		{
+			m_module[0].m_delay = delay;
+			m_module[0].m_delayCounter = delay;
+			m_module[1].m_delay = delay;
+		}
+		break;
+	}
 }
 
 void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd)
@@ -467,13 +532,13 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 
 	if (cha.enabled)
 	{
-		const auto& sampleLine = vtm.samples[cha.sampleIdx].positions[cha.samplePos];
+		const auto& sampleLine = vtm.samples[cha.sampleIdx][cha.samplePos];
 		if (++cha.samplePos >= cha.sampleLen) cha.samplePos = cha.sampleLoop;
 
-		const auto& ornamentLine = vtm.ornaments[cha.ornamentIdx].positions[cha.ornamentPos];
+		const auto& ornamentLine = vtm.ornaments[cha.ornamentIdx][cha.ornamentPos];
 		if (++cha.ornamentPos >= cha.ornamentLen) cha.ornamentPos = cha.ornamentLoop;
 
-		uint16_t tone = sampleLine.toneVal + cha.toneAcc;
+		uint16_t tone = (sampleLine.toneVal + cha.toneAcc);
 		if (sampleLine.toneAcc) cha.toneAcc = tone;
 
 		int8_t note = (cha.note + uint8_t(ornamentLine));

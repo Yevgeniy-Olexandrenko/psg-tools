@@ -5,60 +5,62 @@
 class VT2
 {
 public:
-    template <typename T> struct List
+    template <typename T> class List
     {
-        const T& operator[](size_t pos) const { return data[pos]; }
-        std::vector<T> data;
-        size_t loop;
+    public:
+        T& add(const T& t) { m_data.push_back(t); return m_data.back(); }
+        T& add() { m_data.emplace_back(); return m_data.back(); }
+
+        const T& operator[](size_t pos) const { return m_data[pos]; }
+        size_t size() const { return m_data.size(); }
+        bool empty() const { return m_data.empty(); }
+
+        void loop(size_t loop) { m_loop = loop; }
+        size_t loop() const { return m_loop; }
+
+    private:
+        std::vector<T> m_data;
+        size_t m_loop;
     };
 
-    struct Ornament
+    using OrnamentLine = int;
+    using SampleLine = struct
     {
-        List<int> positions;
+        bool t, n, e;
+        bool toneNeg;
+        int  toneVal;
+        bool toneAcc;
+        bool noiseNeg;
+        int  noiseVal;
+        bool noiseAcc;
+        int  volumeVal;
+        int  volumeAdd; // 0, -1, +1
     };
-
-    struct Sample
+    using PatternLine = struct
     {
-        struct Line
+        struct Chan
         {
-            bool t, n, e;
-            bool toneNeg;
-            int  toneVal;
-            bool toneAcc;
-            bool noiseNeg;
-            int  noiseVal;
-            bool noiseAcc;
-            int  volumeVal;
-            int  volumeAdd; // 0, -1, +1
+            int note;
+            int sample;
+            int eshape;
+            int ornament;
+            int volume;
+
+            int command;
+            int delay;
+            int paramH;
+            int paramL;
         };
-        List<Line> positions;
+
+        int  etone;
+        int  noise;
+        Chan chan[3];
     };
 
-    struct Pattern
-    {
-        struct Line
-        {
-            struct Chan
-            {
-                int note;
-                int sample;
-                int eshape;
-                int ornament;
-                int volume;
-
-                int command;
-                int delay;
-                int paramH;
-                int paramL;
-            };
-
-            int  etone;
-            int  noise;
-            Chan chan[3];
-        };
-        std::vector<Line> positions;
-    };
-
+    using Ornament = List<OrnamentLine>;
+    using Sample = List<SampleLine>;
+    using Pattern = List<PatternLine>;
+   
     struct Module
     {
         bool isVT2 = false;
@@ -87,8 +89,6 @@ private:
 
 public:
     std::vector<Module> modules;
-    
-
 };
 
 class DecodeVT2 : public ModuleDecoder
