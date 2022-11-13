@@ -336,7 +336,7 @@ bool DecodeVT2::PlayModule(int m)
 		mod.m_delayCounter = mod.m_delay;
 	}
 
-	int envAdd = 0;
+	int8_t envAdd = 0;
 	m_regs[m][Mixer] = 0;
 	ProcessInstrument(m, 0, m_regs[m][A_Fine], m_regs[m][A_Coarse], m_regs[m][A_Volume], m_regs[m][Mixer], envAdd);
 	ProcessInstrument(m, 1, m_regs[m][B_Fine], m_regs[m][B_Coarse], m_regs[m][B_Volume], m_regs[m][Mixer], envAdd);
@@ -391,11 +391,11 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	// envelope On
 	if (pln.chan[c].eshape > 0x0 && pln.chan[c].eshape < 0xF)
 	{
-		if (pln.chan[c].eshape != mod.m_global.envShape)
-		{
-			mod.m_global.envShape = pln.chan[c].eshape;
+//		if (pln.chan[c].eshape != mod.m_global.envShape)
+//		{
+//			mod.m_global.envShape = pln.chan[c].eshape;
 			shape = pln.chan[c].eshape;
-		}
+//		}
 		mod.m_global.envBaseHi = (pln.etone >> 8 & 0xFF);
 		mod.m_global.envBaseLo = (pln.etone & 0xFF);
 		mod.m_global.curEnvSlide = 0;
@@ -529,7 +529,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	}
 }
 
-void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd)
+void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd)
 {
 	auto& vtm = m_vt2.modules[m];
 	auto& mod = m_module[m];

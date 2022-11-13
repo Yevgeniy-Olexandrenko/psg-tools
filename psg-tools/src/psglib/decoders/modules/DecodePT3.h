@@ -108,7 +108,7 @@ protected:
 private:
     bool PlayModule(int m);
     void ProcessPattern(int m, int c, uint8_t& shape);
-    void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int& envAdd);
+    void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd);
     int  GetToneFromNote(int m, int note);
     
 private:
