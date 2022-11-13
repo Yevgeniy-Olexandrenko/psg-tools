@@ -204,7 +204,7 @@ void DecodePT3::Init()
         // try load Vortex II '02TS'
         uint16_t sz1 = m_data[m_size - 12] + 0x100 * m_data[m_size - 11];
         uint16_t sz2 = m_data[m_size - 6 ] + 0x100 * m_data[m_size - 5 ];
-        if (uint32_t(sz1 + sz2) < m_size && sz1 > 200 && sz2 > 200) 
+        if (uint32_t(sz1 + sz2) < uint32_t(m_size) && sz1 > 200 && sz2 > 200)
         {
             m_isTS = true;
             m_module[1].m_data = (m_data + sz1);
@@ -381,9 +381,9 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
             shape = (byte - 0xB1);
             mod.m_global.envBaseHi = mod.m_data[++cha.patternPtr];
             mod.m_global.envBaseLo = mod.m_data[++cha.patternPtr];
-            cha.ornamentPos = 0;
             mod.m_global.curEnvSlide = 0;
             mod.m_global.curEnvDelay = 0;
+            cha.ornamentPos = 0;
         }
         else if (byte == 0xB1) 
         {
@@ -455,32 +455,29 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
     {
         if (counter == f1) 
         {
+            cha.simpleGliss = true;
             cha.tonSlideDelay = mod.m_data[cha.patternPtr++];
             cha.tonSlideCount = cha.tonSlideDelay;
-            cha.tonSlideStep = (int16_t)(mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1]);
+            cha.tonSlideStep = *(int16_t*)(&mod.m_data[cha.patternPtr]);
             cha.patternPtr += 2;
-            cha.simpleGliss = true;
+            if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
             cha.currentOnOff = 0;
-            if (cha.tonSlideCount == 0 && m_version >= 7)
-                cha.tonSlideCount++;
         }
         else if (counter == f2) 
         {
             cha.simpleGliss = false;
-            cha.currentOnOff = 0;
             cha.tonSlideDelay = mod.m_data[cha.patternPtr];
             cha.tonSlideCount = cha.tonSlideDelay;
             cha.patternPtr += 3;
-            uint16_t step = mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1];
+            int16_t step = *(int16_t*)(&mod.m_data[cha.patternPtr]);
+            cha.tonSlideStep = (step < 0 ? -step : step);
             cha.patternPtr += 2;
-            int16_t signed_step = step;
-            cha.tonSlideStep = (signed_step < 0) ? -signed_step : signed_step;
-            cha.toneDelta = GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote);
+            cha.toneDelta = (GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote));
             cha.slideToNote = cha.note;
             cha.note = PrNote;
             if (m_version >= 6) cha.toneSliding = PrSliding;
-            if (cha.toneDelta - cha.toneSliding < 0)
-                cha.tonSlideStep = -cha.tonSlideStep;
+            if (cha.toneDelta - cha.toneSliding < 0) cha.tonSlideStep = -cha.tonSlideStep;
+            cha.currentOnOff = 0;
         }
         else if (counter == f3) 
         {
@@ -502,19 +499,18 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
         {
             mod.m_global.envDelay = mod.m_data[cha.patternPtr++];
             mod.m_global.curEnvDelay = mod.m_global.envDelay;
-            mod.m_global.envSlideAdd = mod.m_data[cha.patternPtr] + 0x100 * mod.m_data[cha.patternPtr + 1];
+            mod.m_global.envSlideAdd = *(int16_t*)(&mod.m_data[cha.patternPtr]);
             cha.patternPtr += 2;
         }
         else if (counter == f9) 
         {
-            uint8_t b = mod.m_data[cha.patternPtr++];
-            mod.m_delay = b;
+            uint8_t delay = mod.m_data[cha.patternPtr++];
+            mod.m_delay = delay;
             if (m_isTS && m_module[1].ts != 0x20) 
             {
-                // ???
-                m_module[0].m_delay = b;
-                m_module[1].m_delay = b;
-                m_module[0].m_delayCounter = b;
+                m_module[0].m_delay = delay;
+                m_module[0].m_delayCounter = delay;
+                m_module[1].m_delay = delay;
             }
         }
         counter--;
