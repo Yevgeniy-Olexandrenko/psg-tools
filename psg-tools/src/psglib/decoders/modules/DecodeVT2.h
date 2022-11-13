@@ -129,6 +129,7 @@ class DecodeVT2 : public ModuleDecoder
 
     struct Global
     {
+        uint8_t envShape;
         uint8_t envBaseLo;
         uint8_t envBaseHi;
 

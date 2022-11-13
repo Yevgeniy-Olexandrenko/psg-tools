@@ -372,7 +372,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	int PrSliding = cha.toneSliding;
 
 	// sample
-	if (pln.chan[c].sample > 0)
+	if (pln.chan[c].sample > 0 && pln.chan[c].note != 0)
 	{
 		cha.sampleIdx = pln.chan[c].sample;
 		cha.sampleLoop = (uint8_t)vtm.samples[cha.sampleIdx].loop();
@@ -380,6 +380,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	}
 
 	// ornament
+	if (pln.chan[c].ornament > 0 || pln.chan[c].eshape > 0x0)
 	{
 		cha.ornamentIdx = pln.chan[c].ornament;
 		cha.ornamentLoop = (uint8_t)vtm.ornaments[cha.ornamentIdx].loop();
@@ -390,7 +391,11 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	// envelope On
 	if (pln.chan[c].eshape > 0x0 && pln.chan[c].eshape < 0xF)
 	{
-		shape = pln.chan[c].eshape;
+		if (pln.chan[c].eshape != mod.m_global.envShape)
+		{
+			mod.m_global.envShape = pln.chan[c].eshape;
+			shape = pln.chan[c].eshape;
+		}
 		mod.m_global.envBaseHi = (pln.etone >> 8 & 0xFF);
 		mod.m_global.envBaseLo = (pln.etone & 0xFF);
 		mod.m_global.curEnvSlide = 0;
