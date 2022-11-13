@@ -27,10 +27,8 @@ public:
     using SampleLine = struct
     {
         bool t, n, e;
-        bool toneNeg;
         int  toneVal;
         bool toneAcc;
-        bool noiseNeg;
         int  noiseVal;
         bool noiseAcc;
         int  volumeVal;

@@ -122,12 +122,12 @@ void VT2::ParseSample(std::string& line, std::istream& stream)
 		sampleLine.n = (tokens[0][1] == 'N');
 		sampleLine.e = (tokens[0][2] == 'E');
 
-		sampleLine.toneNeg = (tokens[1][0] == '-');
 		parse(tokens[1], 1, 3, 16, sampleLine.toneVal);
+		if (tokens[1][0] == '-') sampleLine.toneVal *= -1;
 		sampleLine.toneAcc = (tokens[1][4] == '^');
 
-		sampleLine.noiseNeg = (tokens[2][0] == '-');
 		parse(tokens[2], 1, 2, 16, sampleLine.noiseVal);
+		if (tokens[2][0] == '-') sampleLine.noiseVal *= -1;
 		sampleLine.noiseAcc = (tokens[2][3] == '^');
 
 		parse(tokens[3], 0, 1, 16, sampleLine.volumeVal);
@@ -462,8 +462,8 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.tonSlideDelay = pln.chan[c].delay;
 		cha.tonSlideCount = cha.tonSlideDelay;
 		cha.tonSlideStep = +(pln.chan[c].paramL | pln.chan[c].paramH << 4);
-		cha.currentOnOff = 0;
 		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		cha.currentOnOff = 0;
 		break;
 
 	case 0x2: // tone slide up
@@ -471,13 +471,12 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.tonSlideDelay = pln.chan[c].delay;
 		cha.tonSlideCount = cha.tonSlideDelay;
 		cha.tonSlideStep = -(pln.chan[c].paramL | pln.chan[c].paramH << 4);
-		cha.currentOnOff = 0;
 		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		cha.currentOnOff = 0;
 		break;
 
 	case 0x3: // tone portamento
 		cha.simpleGliss = false;
-		cha.currentOnOff = 0;
 		cha.tonSlideDelay = pln.chan[c].delay;
 		cha.tonSlideCount = cha.tonSlideDelay;
 		cha.tonSlideStep = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
@@ -486,6 +485,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.note = PrNote;
 		if (m_version >= 6) cha.toneSliding = PrSliding;
 		if (cha.toneDelta - cha.toneSliding < 0) cha.tonSlideStep = -cha.tonSlideStep;
+		cha.currentOnOff = 0;
 		break;
 
 	case 0x4: // sample offset
@@ -573,17 +573,9 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 			}
 		}
 
-		// TODO: rewrite!
-		if (sampleLine.volumeAdd != 0)
+		if (cha.volumeSliding > -15 && cha.volumeSliding < +15)
 		{
-			if (sampleLine.volumeAdd > 0)
-			{
-				if (cha.volumeSliding < +15) ++cha.volumeSliding;
-			}
-			else
-			{
-				if (cha.volumeSliding > -15) --cha.volumeSliding;
-			}
+			cha.volumeSliding += sampleLine.volumeAdd;
 		}
 		int vol = sampleLine.volumeVal + cha.volumeSliding;
 		if (vol < 0x0) vol = 0x0;
@@ -593,30 +585,18 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 			volume = DecodePT3::VolumeTable_33_34[cha.volume][vol];
 		else
 			volume = DecodePT3::VolumeTable_35[cha.volume][vol];
-		if (sampleLine.e && cha.envelopeEnabled)
-		{
-			volume |= 0x10;
-		}
+		if (sampleLine.e && cha.envelopeEnabled) volume |= 0x10;
 
 		if (!sampleLine.n)
 		{
-			// TODO: rewrite!
-			uint8_t envelopeSliding = (sampleLine.noiseVal & 0b00010000)
-				? (uint8_t(sampleLine.noiseVal) | 0xF0) + cha.envelopeSliding
-				: (uint8_t(sampleLine.noiseVal) & 0x0F) + cha.envelopeSliding;
-			if (sampleLine.noiseAcc)
-			{
-				cha.envelopeSliding = envelopeSliding;
-			}
+			uint8_t envelopeSliding = uint8_t(sampleLine.noiseVal) + cha.envelopeSliding;
+			if (sampleLine.noiseAcc) cha.envelopeSliding = envelopeSliding;
 			envAdd += envelopeSliding;
 		}
 		else
 		{
-			mod.m_global.noiseAdd = sampleLine.noiseVal + cha.noiseSliding;
-			if (sampleLine.noiseAcc)
-			{
-				cha.noiseSliding = mod.m_global.noiseAdd;
-			}
+			mod.m_global.noiseAdd = (sampleLine.noiseVal & 0x1F) + cha.noiseSliding;
+			if (sampleLine.noiseAcc) cha.noiseSliding = mod.m_global.noiseAdd;
 		}
 		mixer |= uint8_t(!sampleLine.n) << 6;
 		mixer |= uint8_t(!sampleLine.t) << 3;
