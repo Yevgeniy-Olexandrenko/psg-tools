@@ -83,6 +83,7 @@ private:
     void ParseOrnament(std::string& line, std::istream& stream);
     void ParseSample(std::string& line, std::istream& stream);
     void ParsePattern(std::string& line, std::istream& stream);
+    int  GetToneFromNote(int note);
 
 public:
     std::vector<Module> modules;

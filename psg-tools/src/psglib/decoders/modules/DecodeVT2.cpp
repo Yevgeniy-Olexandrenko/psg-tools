@@ -181,7 +181,11 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 		if (tokens[0][2] == '-' || tokens[0][2] == '#')
 		{
 			int note = ParseNote(tokens[0], 1);
-			// TODO
+			if (note > 0)
+			{
+				int tone = GetToneFromNote(note - 1);
+				patternLine.etone = (tone + 8) / 16;
+			}
 		} 
 		else
 		parse(tokens[0], 16, patternLine.etone);
@@ -203,6 +207,24 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 			parse(token, 10, 1, 16, chan.cmdDelay);
 			parse(token, 11, 2, 16, chan.cmdParam);
 		}
+	}
+}
+
+int VT2::GetToneFromNote(int note)
+{
+	int version = modules.back().version[2];
+	switch (modules.back().noteTable)
+	{
+	case  0: return (version <= 3)
+		? DecodePT3::NoteTable_PT_33_34r[note]
+		: DecodePT3::NoteTable_PT_34_35[note];
+	case  1: return DecodePT3::NoteTable_ST[note];
+	case  2: return (version <= 3)
+		? DecodePT3::NoteTable_ASM_34r[note]
+		: DecodePT3::NoteTable_ASM_34_35[note];
+	default: return (version <= 3)
+		? DecodePT3::NoteTable_REAL_34r[note]
+		: DecodePT3::NoteTable_REAL_34_35[note];
 	}
 }
 
