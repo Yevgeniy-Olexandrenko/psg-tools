@@ -32,7 +32,7 @@ public:
         int  noiseVal;
         bool noiseAcc;
         int  volumeVal;
-        int  volumeAdd; // 0, -1, +1
+        int  volumeAdd;
     };
     using PatternLine = struct
     {
@@ -44,10 +44,9 @@ public:
             int ornament;
             int volume;
 
-            int command;
-            int delay;
-            int paramH;
-            int paramL;
+            int cmdType;
+            int cmdDelay;
+            int cmdParam;
         };
 
         int  etone;
@@ -56,8 +55,8 @@ public:
     };
 
     using Ornament = List<OrnamentLine>;
-    using Sample = List<SampleLine>;
-    using Pattern = List<PatternLine>;
+    using Sample   = List<SampleLine>;
+    using Pattern  = List<PatternLine>;
    
     struct Module
     {
@@ -127,7 +126,6 @@ class DecodeVT2 : public ModuleDecoder
 
     struct Global
     {
-        uint8_t envShape;
         uint8_t envBaseLo;
         uint8_t envBaseHi;
 

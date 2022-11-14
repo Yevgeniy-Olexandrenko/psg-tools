@@ -25,7 +25,7 @@ void parse(const std::string& str, VT2::List<int>& list)
 	list.loop(0);
 
 	std::vector<std::string> tokens = split(str, ",");
-	for (int i = 0; i < tokens.size(); ++i)
+	for (size_t i = 0; i < tokens.size(); ++i)
 	{
 		int offset = 0;
 		if (tokens[i][0] == 'L') { list.loop(i); offset = 1; }
@@ -112,8 +112,7 @@ void VT2::ParseSample(std::string& line, std::istream& stream)
 	if (module.samples.size() <= index)
 		module.samples.resize(index + 1);
 
-	int pos = 0;
-	while (std::getline(stream, line) && !line.empty())
+	for (int pos = 0; std::getline(stream, line) && !line.empty(); ++pos)
 	{
 		auto& sampleLine = module.samples[index].add();
 		std::vector<std::string> tokens = split(line, " ");
@@ -139,7 +138,6 @@ void VT2::ParseSample(std::string& line, std::istream& stream)
 		{
 			module.samples[index].loop(pos);
 		}
-		pos++;
 	}
 }
 
@@ -201,10 +199,9 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 			parse(token, 6, 1, 16, chan.ornament);
 			parse(token, 7, 1, 16, chan.volume);
 
-			parse(token,  9, 1, 16, chan.command);
-			parse(token, 10, 1, 16, chan.delay);
-			parse(token, 11, 1, 16, chan.paramH);
-			parse(token, 12, 1, 16, chan.paramL);
+			parse(token,  9, 1, 16, chan.cmdType);
+			parse(token, 10, 1, 16, chan.cmdDelay);
+			parse(token, 11, 2, 16, chan.cmdParam);
 		}
 	}
 }
@@ -214,7 +211,7 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 bool DecodeVT2::Open(Stream& stream)
 {
 	bool isDetected = false;
-	if (CheckFileExt(stream, "vt2"))
+	if (CheckFileExt(stream, { "vt2", "txt" }))
 	{
 		std::ifstream fileStream;
 		fileStream.open(stream.file);
@@ -265,7 +262,7 @@ void DecodeVT2::Init()
 	m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 	m_isTS = (m_vt2.modules.size() > 1);
 
-	for (int m = 0; m < m_vt2.modules.size(); ++m)
+	for (size_t m = 0; m < m_vt2.modules.size(); ++m)
 	{
 		auto& vtm = m_vt2.modules[m];
 		auto& mod = m_module[m];
@@ -346,7 +343,7 @@ bool DecodeVT2::PlayModule(int m)
 	uint16_t etone = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8) + mod.m_global.curEnvSlide + envAdd;
 
 	m_regs[m][N_Period] = noise;
-	m_regs[m][E_Fine] = (etone & 0xFF);
+	m_regs[m][E_Fine  ] = (etone & 0xFF);
 	m_regs[m][E_Coarse] = (etone >> 8 & 0xFF);
 
 	if (mod.m_global.curEnvDelay > 0)
@@ -391,11 +388,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	// envelope On
 	if (pln.chan[c].eshape > 0x0 && pln.chan[c].eshape < 0xF)
 	{
-//		if (pln.chan[c].eshape != mod.m_global.envShape)
-//		{
-//			mod.m_global.envShape = pln.chan[c].eshape;
-			shape = pln.chan[c].eshape;
-//		}
+		shape = pln.chan[c].eshape;
 		mod.m_global.envBaseHi = (pln.etone >> 8 & 0xFF);
 		mod.m_global.envBaseLo = (pln.etone & 0xFF);
 		mod.m_global.curEnvSlide = 0;
@@ -455,31 +448,31 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	}
 
 	// commands
-	switch (pln.chan[c].command)
+	switch (pln.chan[c].cmdType)
 	{
 	case 0x1: // tone slide down
 		cha.simpleGliss = true;
-		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideDelay = pln.chan[c].cmdDelay;
 		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = +(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.tonSlideStep = +pln.chan[c].cmdParam;
 		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
 		cha.currentOnOff = 0;
 		break;
 
 	case 0x2: // tone slide up
 		cha.simpleGliss = true;
-		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideDelay = pln.chan[c].cmdDelay;
 		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = -(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.tonSlideStep = -pln.chan[c].cmdParam;
 		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
 		cha.currentOnOff = 0;
 		break;
 
 	case 0x3: // tone portamento
 		cha.simpleGliss = false;
-		cha.tonSlideDelay = pln.chan[c].delay;
+		cha.tonSlideDelay = pln.chan[c].cmdDelay;
 		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.tonSlideStep = pln.chan[c].cmdParam;
 		cha.toneDelta = (GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote));
 		cha.slideToNote = cha.note;
 		cha.note = PrNote;
@@ -489,41 +482,40 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		break;
 
 	case 0x4: // sample offset
-		cha.samplePos = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.samplePos = pln.chan[c].cmdParam;
 		break;
 
 	case 0x5: // ornament offset
-		cha.ornamentPos = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		cha.ornamentPos = pln.chan[c].cmdParam;
 		break;
 
 	case 0x6: // vibrato
-		cha.onOffDelay = pln.chan[c].paramH;
-		cha.offOnDelay = pln.chan[c].paramL;
+		cha.onOffDelay = pln.chan[c].cmdParam >> 4 & 0xF;
+		cha.offOnDelay = pln.chan[c].cmdParam & 0xF;
 		cha.currentOnOff = cha.onOffDelay;
 		cha.tonSlideCount = 0;
 		cha.toneSliding = 0;
 		break;
 
 	case 0x9: // envelope slide down
-		mod.m_global.envDelay = pln.chan[c].delay;
+		mod.m_global.envDelay = pln.chan[c].cmdDelay;
 		mod.m_global.curEnvDelay = mod.m_global.envDelay;
-		mod.m_global.envSlideAdd = +(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		mod.m_global.envSlideAdd = +pln.chan[c].cmdParam;
 		break;
 
 	case 0xA: // envelope slide up
-		mod.m_global.envDelay = pln.chan[c].delay;
+		mod.m_global.envDelay = pln.chan[c].cmdDelay;
 		mod.m_global.curEnvDelay = mod.m_global.envDelay;
-		mod.m_global.envSlideAdd = -(pln.chan[c].paramL | pln.chan[c].paramH << 4);
+		mod.m_global.envSlideAdd = -pln.chan[c].cmdParam;
 		break;
 
 	case 0xB: // set speed
-		uint8_t delay = (pln.chan[c].paramL | pln.chan[c].paramH << 4);
-		mod.m_delay = delay;
+		mod.m_delay = pln.chan[c].cmdParam;
 		if (m_isTS)
 		{
-			m_module[0].m_delay = delay;
-			m_module[0].m_delayCounter = delay;
-			m_module[1].m_delay = delay;
+			m_module[0].m_delay = mod.m_delay;
+			m_module[0].m_delayCounter = mod.m_delay;
+			m_module[1].m_delay = mod.m_delay;
 		}
 		break;
 	}
@@ -581,10 +573,9 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 		if (vol < 0x0) vol = 0x0;
 		if (vol > 0xF) vol = 0xF;
 
-		if (m_version <= 4)
-			volume = DecodePT3::VolumeTable_33_34[cha.volume][vol];
-		else
-			volume = DecodePT3::VolumeTable_35[cha.volume][vol];
+		volume = m_version <= 4 
+			? DecodePT3::VolumeTable_33_34[cha.volume][vol]
+			: DecodePT3::VolumeTable_35[cha.volume][vol];
 		if (sampleLine.e && cha.envelopeEnabled) volume |= 0x10;
 
 		if (!sampleLine.n)
@@ -618,19 +609,15 @@ int DecodeVT2::GetToneFromNote(int m, int note)
 {
 	switch (m_vt2.modules[m].noteTable)
 	{
-	case 0:
-		return (m_version <= 3) 
-			? DecodePT3::NoteTable_PT_33_34r[note]
-			: DecodePT3::NoteTable_PT_34_35[note];
-	case 1:
-		return DecodePT3::NoteTable_ST[note];
-	case 2:
-		return (m_version <= 3)
-			? DecodePT3::NoteTable_ASM_34r[note]
-			: DecodePT3::NoteTable_ASM_34_35[note];
-	default:
-		return (m_version <= 3)
-			? DecodePT3::NoteTable_REAL_34r[note]
-			: DecodePT3::NoteTable_REAL_34_35[note];
+	case  0: return (m_version <= 3)
+		? DecodePT3::NoteTable_PT_33_34r[note]
+		: DecodePT3::NoteTable_PT_34_35[note];
+	case  1: return DecodePT3::NoteTable_ST[note];
+	case  2: return (m_version <= 3)
+		? DecodePT3::NoteTable_ASM_34r[note]
+		: DecodePT3::NoteTable_ASM_34_35[note];
+	default: return (m_version <= 3)
+		? DecodePT3::NoteTable_REAL_34r[note]
+		: DecodePT3::NoteTable_REAL_34_35[note];
 	}
 }

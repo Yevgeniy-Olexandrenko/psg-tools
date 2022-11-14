@@ -134,48 +134,51 @@ const std::string VTSignature = "Vortex Tracker II";
 bool DecodePT3::Open(Stream& stream)
 {
     bool isDetected = false;
-    std::ifstream fileStream;
-    fileStream.open(stream.file, std::fstream::binary);
-
-    if (fileStream)
+    if (CheckFileExt(stream, { "pt3", "ts" }))
     {
-        uint8_t signature[30];
-        fileStream.read((char*)signature, 30);
+        std::ifstream fileStream;
+        fileStream.open(stream.file, std::fstream::binary);
 
-        bool isPT = !memcmp(signature, PTSignature.data(), PTSignature.size());
-        bool isVT = !memcmp(signature, VTSignature.data(), VTSignature.size());
-
-        if (isPT || isVT)
+        if (fileStream)
         {
-            fileStream.seekg(0, fileStream.end);
-            m_size = (int)fileStream.tellg();
+            uint8_t signature[30];
+            fileStream.read((char*)signature, 30);
 
-            m_data = new uint8_t[m_size];
-            fileStream.seekg(0, fileStream.beg);
-            fileStream.read((char*)m_data, m_size);
+            bool isPT = !memcmp(signature, PTSignature.data(), PTSignature.size());
+            bool isVT = !memcmp(signature, VTSignature.data(), VTSignature.size());
 
-            Init();
-            isDetected = true;
-
-            stream.info.title(ReadString(&m_data[0x1E], 32));
-            stream.info.artist(ReadString(&m_data[0x42], 32));
-            stream.info.type(ReadString(&m_data[0x00], isVT ? 21 : 14) + " module");
-
-            if (m_module[0].m_hdr->tonTableId == 1)
+            if (isPT || isVT)
             {
-                stream.schip.clock(Chip::Clock::F1773400);
-            }
-            else if (m_module[0].m_hdr->tonTableId == 2 && m_version > 3)
-            {
-                stream.schip.clock(Chip::Clock::F1750000);
-            }
+                fileStream.seekg(0, fileStream.end);
+                m_size = (int)fileStream.tellg();
 
-            if (m_isTS)
-            {
-                stream.schip.second.model(stream.schip.first.model());
+                m_data = new uint8_t[m_size];
+                fileStream.seekg(0, fileStream.beg);
+                fileStream.read((char*)m_data, m_size);
+
+                Init();
+                isDetected = true;
+
+                stream.info.title(ReadString(&m_data[0x1E], 32));
+                stream.info.artist(ReadString(&m_data[0x42], 32));
+                stream.info.type(ReadString(&m_data[0x00], isVT ? 21 : 14) + " module");
+
+                if (m_module[0].m_hdr->tonTableId == 1)
+                {
+                    stream.schip.clock(Chip::Clock::F1773400);
+                }
+                else if (m_module[0].m_hdr->tonTableId == 2 && m_version > 3)
+                {
+                    stream.schip.clock(Chip::Clock::F1750000);
+                }
+
+                if (m_isTS)
+                {
+                    stream.schip.second.model(stream.schip.first.model());
+                }
             }
+            fileStream.close();
         }
-        fileStream.close();
     }
 	return isDetected;
 }
@@ -580,10 +583,9 @@ void DecodePT3::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
         if (vol < 0x0) vol = 0x0;
         if (vol > 0xF) vol = 0xF;
 
-        if (m_version <= 4) 
-            volume = VolumeTable_33_34[cha.volume][vol];
-        else 
-            volume = VolumeTable_35[cha.volume][vol];
+        volume = m_version <= 4
+            ? DecodePT3::VolumeTable_33_34[cha.volume][vol]
+            : DecodePT3::VolumeTable_35[cha.volume][vol];
         if (!(sb0 & 0b00000001) && cha.envelopeEnabled)
         {
             volume |= 0x10;
@@ -627,9 +629,15 @@ int DecodePT3::GetToneFromNote(int m, int note)
 {
     switch (m_module[m].m_hdr->tonTableId)
     {
-    case  0: return (m_version <= 3) ? NoteTable_PT_33_34r[note] : NoteTable_PT_34_35[note];
-    case  1: return NoteTable_ST[note];
-    case  2: return (m_version <= 3) ? NoteTable_ASM_34r  [note] : NoteTable_ASM_34_35[note];
-    default: return (m_version <= 3) ? NoteTable_REAL_34r [note] : NoteTable_REAL_34_35[note];
+    case  0: return (m_version <= 3)
+        ? DecodePT3::NoteTable_PT_33_34r[note]
+        : DecodePT3::NoteTable_PT_34_35[note];
+    case  1: return DecodePT3::NoteTable_ST[note];
+    case  2: return (m_version <= 3)
+        ? DecodePT3::NoteTable_ASM_34r[note]
+        : DecodePT3::NoteTable_ASM_34_35[note];
+    default: return (m_version <= 3)
+        ? DecodePT3::NoteTable_REAL_34r[note]
+        : DecodePT3::NoteTable_REAL_34_35[note];
     }
 }
