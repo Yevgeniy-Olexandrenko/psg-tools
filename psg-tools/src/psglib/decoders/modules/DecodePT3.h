@@ -86,18 +86,6 @@ class DecodePT3 : public ModuleDecoder
     };
 
 public:
-    static const uint16_t NoteTable_PT_33_34r[];
-    static const uint16_t NoteTable_PT_34_35[];
-    static const uint16_t NoteTable_ST[];
-    static const uint16_t NoteTable_ASM_34r[];
-    static const uint16_t NoteTable_ASM_34_35[];
-    static const uint16_t NoteTable_REAL_34r[];
-    static const uint16_t NoteTable_REAL_34_35[];
-
-    static const uint8_t VolumeTable_33_34[16][16];
-    static const uint8_t VolumeTable_35[16][16];
-
-public:
 	bool Open(Stream& stream) override;
 
 protected:
@@ -109,7 +97,7 @@ private:
     bool PlayModule(int m);
     void ProcessPattern(int m, int c, uint8_t& shape);
     void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd);
-    int  GetToneFromNote(int m, int note);
+    int  GetTonePeriod(int m, int note);
     
 private:
     int    m_size;

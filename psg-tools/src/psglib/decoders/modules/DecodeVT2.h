@@ -83,7 +83,7 @@ private:
     void ParseOrnament(std::string& line, std::istream& stream);
     void ParseSample(std::string& line, std::istream& stream);
     void ParsePattern(std::string& line, std::istream& stream);
-    int  GetToneFromNote(int note);
+    int  GetTonePeriod(int note);
 
 public:
     std::vector<Module> modules;
@@ -163,7 +163,7 @@ private:
     bool PlayModule(int m);
     void ProcessPattern(int m, int c, uint8_t& shape);
     void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd);
-    int  GetToneFromNote(int m, int note);
+    int  GetTonePeriod(int m, int note);
 
 private:
     VT2 m_vt2;

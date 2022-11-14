@@ -46,8 +46,6 @@ class DecodePT2 : public ModuleDecoder
         bool enabled;
     };
 
-    static const uint16_t NoteTable[];
-
 public:
     bool Open(Stream& stream) override;
 

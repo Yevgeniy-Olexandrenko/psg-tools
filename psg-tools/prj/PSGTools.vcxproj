@@ -49,6 +49,7 @@
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeSTC.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeSTP.cpp" />
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeVT2.cpp" />
+    <ClCompile Include="..\src\psglib\decoders\modules\SharedTables.cpp" />
     <ClCompile Include="..\src\psglib\decoders\streams\DecodeAYM.cpp" />
     <ClCompile Include="..\src\psglib\decoders\streams\DecodePSG.cpp" />
     <ClCompile Include="..\src\psglib\decoders\streams\DecodeRSF.cpp" />
@@ -117,6 +118,7 @@
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeSTC.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeSTP.h" />
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeVT2.h" />
+    <ClInclude Include="..\src\psglib\decoders\modules\SharedTables.h" />
     <ClInclude Include="..\src\psglib\decoders\streams\DecodeAYM.h" />
     <ClInclude Include="..\src\psglib\decoders\streams\DecodePSG.h" />
     <ClInclude Include="..\src\psglib\decoders\streams\DecodeRSF.h" />

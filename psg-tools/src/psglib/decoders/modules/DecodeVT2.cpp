@@ -1,5 +1,5 @@
 #include "DecodeVT2.h"
-#include "DecodePT3.h"
+#include "SharedTables.h"
 
 std::vector<std::string> split(std::string target, std::string delim)
 {
@@ -183,8 +183,8 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 			int note = ParseNote(tokens[0], 1);
 			if (note > 0)
 			{
-				int tone = GetToneFromNote(note - 1);
-				patternLine.etone = (tone + 8) / 16;
+				int period = GetTonePeriod(note - 1);
+				patternLine.etone = (period + 8) / 16;
 			}
 		} 
 		else
@@ -193,16 +193,14 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 
 		for (int i = 0; i < 3; ++i)
 		{
-			PatternLine::Chan& chan = patternLine.chan[i];
+			PatternLine::Chan& chan  = patternLine.chan[i];
 			const std::string& token = tokens[2 + i];
 
 			chan.note = ParseNote(token, 0);
-
-			parse(token, 4, 1, 32, chan.sample);
-			parse(token, 5, 1, 16, chan.eshape);
-			parse(token, 6, 1, 16, chan.ornament);
-			parse(token, 7, 1, 16, chan.volume);
-
+			parse(token,  4, 1, 32, chan.sample);
+			parse(token,  5, 1, 16, chan.eshape);
+			parse(token,  6, 1, 16, chan.ornament);
+			parse(token,  7, 1, 16, chan.volume);
 			parse(token,  9, 1, 16, chan.cmdType);
 			parse(token, 10, 1, 16, chan.cmdDelay);
 			parse(token, 11, 2, 16, chan.cmdParam);
@@ -210,21 +208,21 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 	}
 }
 
-int VT2::GetToneFromNote(int note)
+int VT2::GetTonePeriod(int note)
 {
 	int version = modules.back().version[2];
 	switch (modules.back().noteTable)
 	{
 	case  0: return (version <= 3)
-		? DecodePT3::NoteTable_PT_33_34r[note]
-		: DecodePT3::NoteTable_PT_34_35[note];
-	case  1: return DecodePT3::NoteTable_ST[note];
+		? NoteTable_PT_33_34r[note]
+		: NoteTable_PT_34_35[note];
+	case  1: return NoteTable_ST[note];
 	case  2: return (version <= 3)
-		? DecodePT3::NoteTable_ASM_34r[note]
-		: DecodePT3::NoteTable_ASM_34_35[note];
+		? NoteTable_ASM_34r[note]
+		: NoteTable_ASM_34_35[note];
 	default: return (version <= 3)
-		? DecodePT3::NoteTable_REAL_34r[note]
-		: DecodePT3::NoteTable_REAL_34_35[note];
+		? NoteTable_REAL_34r[note]
+		: NoteTable_REAL_34_35[note];
 	}
 }
 
@@ -495,7 +493,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.tonSlideDelay = pln.chan[c].cmdDelay;
 		cha.tonSlideCount = cha.tonSlideDelay;
 		cha.tonSlideStep = pln.chan[c].cmdParam;
-		cha.toneDelta = (GetToneFromNote(m, cha.note) - GetToneFromNote(m, PrNote));
+		cha.toneDelta = (GetTonePeriod(m, cha.note) - GetTonePeriod(m, PrNote));
 		cha.slideToNote = cha.note;
 		cha.note = PrNote;
 		if (m_version >= 6) cha.toneSliding = PrSliding;
@@ -564,7 +562,7 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 		if (note < 0) note = 0;
 		if (note > 95) note = 95;
 
-		tone += (cha.toneSliding + GetToneFromNote(m, note));
+		tone += (cha.toneSliding + GetTonePeriod(m, note));
 		tfine = (tone & 0xFF);
 		tcoarse = (tone >> 8 & 0x0F);
 
@@ -596,8 +594,8 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 		if (vol > 0xF) vol = 0xF;
 
 		volume = m_version <= 4 
-			? DecodePT3::VolumeTable_33_34[cha.volume][vol]
-			: DecodePT3::VolumeTable_35[cha.volume][vol];
+			? VolumeTable_33_34[cha.volume][vol]
+			: VolumeTable_35[cha.volume][vol];
 		if (sampleLine.e && cha.envelopeEnabled) volume |= 0x10;
 
 		if (!sampleLine.n)
@@ -627,19 +625,19 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 	}
 }
 
-int DecodeVT2::GetToneFromNote(int m, int note)
+int DecodeVT2::GetTonePeriod(int m, int note)
 {
 	switch (m_vt2.modules[m].noteTable)
 	{
 	case  0: return (m_version <= 3)
-		? DecodePT3::NoteTable_PT_33_34r[note]
-		: DecodePT3::NoteTable_PT_34_35[note];
-	case  1: return DecodePT3::NoteTable_ST[note];
+		? NoteTable_PT_33_34r[note]
+		: NoteTable_PT_34_35[note];
+	case  1: return NoteTable_ST[note];
 	case  2: return (m_version <= 3)
-		? DecodePT3::NoteTable_ASM_34r[note]
-		: DecodePT3::NoteTable_ASM_34_35[note];
+		? NoteTable_ASM_34r[note]
+		: NoteTable_ASM_34_35[note];
 	default: return (m_version <= 3)
-		? DecodePT3::NoteTable_REAL_34r[note]
-		: DecodePT3::NoteTable_REAL_34_35[note];
+		? NoteTable_REAL_34r[note]
+		: NoteTable_REAL_34_35[note];
 	}
 }
