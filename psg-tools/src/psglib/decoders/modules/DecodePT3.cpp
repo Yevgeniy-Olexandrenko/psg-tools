@@ -74,10 +74,10 @@ void DecodePT3::Init()
     uint8_t ver = m_module[0].m_hdr->musicName[13];
     m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 
-    m_module[0].ts = m_module[1].ts = 0x20;
+    m_module[0].TS = m_module[1].TS = 0x20;
     int TS = m_module[0].m_hdr->musicName[98];
     m_isTS = (TS != 0x20);
-    if (m_isTS) m_module[1].ts = TS;
+    if (m_isTS) m_module[1].TS = TS;
     else if (m_size > 400 && !memcmp(m_data + m_size - 4, "02TS", 4)) 
     { 
         // try load Vortex II '02TS'
@@ -91,20 +91,15 @@ void DecodePT3::Init()
         }
     }
 
-    for (auto& mod : m_module) 
+    for (int m = 0;  m < 2; ++m) 
     {
+        auto& mod = m_module[m];
         mod.m_delay = mod.m_hdr->delay;
         mod.m_delayCounter = 1;
+        InitPattern(m);
 
-        uint8_t pat = mod.m_hdr->positionList[0];
-        if (mod.ts != 0x20) pat = (uint8_t)(3 * mod.ts - 3 - pat);
-
-        for (int c = 0; c < 3; ++c) 
+        for (auto& cha : mod.m_channels) 
         {
-            auto& cha = mod.m_channels[c];
-            cha.patternPtr =
-                mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 0] +
-                mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 1] * 0x100;
             cha.ornamentPtr = mod.m_hdr->ornamentsPointers[0];
             cha.ornamentLoop = mod.m_data[cha.ornamentPtr++];
             cha.ornamentLen = mod.m_data[cha.ornamentPtr++];
@@ -152,15 +147,7 @@ bool DecodePT3::PlayModule(int m)
                         loop = true;
                     }
 
-                    uint8_t pat = mod.m_hdr->positionList[mod.m_currentPosition];
-                    if (mod.ts != 0x20) pat = (uint8_t)(3 * mod.ts - 3 - pat);
-
-                    for (int c = 0; c < 3; c++)
-                    {
-                        mod.m_channels[c].patternPtr =
-                            mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 0] +
-                            mod.m_data[mod.m_hdr->patternsPointer + 2 * (pat + c) + 1] * 0x100;
-                    }
+                    InitPattern(m);
                     mod.m_global.noiseBase = 0;
                 }
                 ProcessPattern(m, c, m_regs[m][E_Shape]);
@@ -192,6 +179,16 @@ bool DecodePT3::PlayModule(int m)
     }
 
     return loop;
+}
+
+void DecodePT3::InitPattern(int m)
+{
+    auto& mod = m_module[m];
+    uint8_t pat = mod.m_hdr->positionList[mod.m_currentPosition];
+    if (mod.TS != 0x20) pat = (uint8_t)(3 * mod.TS - 3 - pat);
+    mod.m_channels[0].patternPtr = *(uint16_t*)(&mod.m_data[mod.m_hdr->patternsPointer + 2 * pat + 0]);
+    mod.m_channels[1].patternPtr = *(uint16_t*)(&mod.m_data[mod.m_hdr->patternsPointer + 2 * pat + 2]);
+    mod.m_channels[2].patternPtr = *(uint16_t*)(&mod.m_data[mod.m_hdr->patternsPointer + 2 * pat + 4]);
 }
 
 void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
@@ -237,7 +234,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
         }
         else if (0xC1 <= byte && byte <= 0xCF) 
         {
-            cha.volume = byte - 0xC0;
+            cha.volume = (byte - 0xC0);
         }
         else if (byte == 0xC0) 
         {
@@ -299,7 +296,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
         }
         else if (0x20 <= byte && byte <= 0x3F) 
         {
-            mod.m_global.noiseBase = byte - 0x20;
+            mod.m_global.noiseBase = (byte - 0x20);
         }
         else if (0x10 <= byte && byte <= 0x1F) 
         {
@@ -385,7 +382,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
         {
             uint8_t delay = mod.m_data[cha.patternPtr++];
             mod.m_delay = delay;
-            if (m_isTS && m_module[1].ts != 0x20) 
+            if (m_isTS && m_module[1].TS != 0x20) 
             {
                 m_module[0].m_delay = delay;
                 m_module[0].m_delayCounter = delay;
