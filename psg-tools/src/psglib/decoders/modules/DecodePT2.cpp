@@ -19,7 +19,7 @@ const uint16_t DecodePT2::NoteTable[] = // PT3NoteTable_ST
 bool DecodePT2::Open(Stream& stream)
 {
     bool isDetected = false;
-    if (CheckFileExt(stream, "pt2"))
+    if (CheckFileExt(stream, { "pt2" }))
     {
         std::ifstream fileStream;
         fileStream.open(stream.file, std::fstream::binary);

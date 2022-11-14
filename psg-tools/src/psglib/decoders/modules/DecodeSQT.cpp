@@ -27,7 +27,7 @@ namespace
 bool DecodeSQT::Open(Stream& stream)
 {
     bool isDetected = false;
-    if (CheckFileExt(stream, "sqt"))
+    if (CheckFileExt(stream, { "sqt" }))
     {
         std::ifstream fileStream;
         fileStream.open(stream.file, std::fstream::binary);

@@ -1,11 +1,14 @@
 #include "Decoder.h"
 
-bool Decoder::CheckFileExt(const Stream& stream, const std::string& ext) const
+bool Decoder::CheckFileExt(const Stream& stream, const std::vector<std::string>& exts) const
 {
-    auto check_ext = "." + ext;
     auto extension = stream.file.extension().string();
-    std::for_each(extension.begin(), extension.end(), [](char& c) { c = ::tolower(c); });
-    return (extension == check_ext);
+    std::for_each(extension.begin(), extension.end(), ::tolower);
+    for (const auto& ext : exts)
+    {
+        if (extension == "." + ext) return true;
+    }
+    return false;
 }
 
 std::string Decoder::ReadString(uint8_t* ptr, uint8_t size) const

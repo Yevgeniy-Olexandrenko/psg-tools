@@ -24,7 +24,7 @@ namespace
 bool DecodeSTC::Open(Stream& stream)
 {
     bool isDetected = false;
-    if (CheckFileExt(stream, "stc"))
+    if (CheckFileExt(stream, { "stc" }))
     {
         std::ifstream fileStream;
         fileStream.open(stream.file, std::fstream::binary);

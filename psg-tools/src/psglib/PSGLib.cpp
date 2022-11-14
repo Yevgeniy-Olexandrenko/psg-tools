@@ -34,7 +34,7 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
-const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|sqt|stc|stp|vt2|psg|rsf|vgm|vgz|vtx|ym" };
+const std::string FileDecoder::FileTypes{ "asc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg|rsf" };
 
 bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)

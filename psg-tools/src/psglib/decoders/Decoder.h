@@ -15,7 +15,7 @@ public:
 	virtual void Close (Stream& stream) = 0;
 
 protected:
-	bool CheckFileExt(const Stream& stream, const std::string& ext) const;
+	bool CheckFileExt(const Stream& stream, const std::vector<std::string>& exts) const;
 	std::string ReadString(uint8_t* ptr, uint8_t size) const;
 };
 
