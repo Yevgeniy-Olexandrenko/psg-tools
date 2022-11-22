@@ -243,7 +243,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
             cha.noiseSliding = 0;
             cha.envelopeSliding = 0;
             cha.ornamentPos = 0;
-            cha.tonSlideCount = 0;
+            cha.toneSlideCount = 0;
             cha.toneSliding = 0;
             cha.toneAcc = 0;
             cha.currentOnOff = 0;
@@ -278,7 +278,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
             cha.noiseSliding = 0;
             cha.envelopeSliding = 0;
             cha.ornamentPos = 0;
-            cha.tonSlideCount = 0;
+            cha.toneSlideCount = 0;
             cha.toneSliding = 0;
             cha.toneAcc = 0;
             cha.currentOnOff = 0;
@@ -332,27 +332,27 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
         if (counter == f1) 
         {
             cha.simpleGliss = true;
-            cha.tonSlideDelay = mod.m_data[cha.patternPtr++];
-            cha.tonSlideCount = cha.tonSlideDelay;
-            cha.tonSlideStep = *(int16_t*)(&mod.m_data[cha.patternPtr]);
+            cha.toneSlideDelay = mod.m_data[cha.patternPtr++];
+            cha.toneSlideCount = cha.toneSlideDelay;
+            cha.toneSlideStep = *(int16_t*)(&mod.m_data[cha.patternPtr]);
             cha.patternPtr += 2;
-            if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+            if (cha.toneSlideCount == 0 && m_version >= 7) cha.toneSlideCount++;
             cha.currentOnOff = 0;
         }
         else if (counter == f2) 
         {
             cha.simpleGliss = false;
-            cha.tonSlideDelay = mod.m_data[cha.patternPtr];
-            cha.tonSlideCount = cha.tonSlideDelay;
+            cha.toneSlideDelay = mod.m_data[cha.patternPtr];
+            cha.toneSlideCount = cha.toneSlideDelay;
             cha.patternPtr += 3;
             int16_t step = *(int16_t*)(&mod.m_data[cha.patternPtr]);
-            cha.tonSlideStep = (step < 0 ? -step : step);
+            cha.toneSlideStep = (step < 0 ? -step : step);
             cha.patternPtr += 2;
             cha.toneDelta = (GetTonePeriod(m, cha.note) - GetTonePeriod(m, PrNote));
             cha.slideToNote = cha.note;
             cha.note = PrNote;
             if (m_version >= 6) cha.toneSliding = PrSliding;
-            if (cha.toneDelta - cha.toneSliding < 0) cha.tonSlideStep = -cha.tonSlideStep;
+            if (cha.toneDelta - cha.toneSliding < 0) cha.toneSlideStep = -cha.toneSlideStep;
             cha.currentOnOff = 0;
         }
         else if (counter == f3) 
@@ -368,7 +368,7 @@ void DecodePT3::ProcessPattern(int m, int c, uint8_t& shape)
             cha.onOffDelay = mod.m_data[cha.patternPtr++];
             cha.offOnDelay = mod.m_data[cha.patternPtr++];
             cha.currentOnOff = cha.onOffDelay;
-            cha.tonSlideCount = 0;
+            cha.toneSlideCount = 0;
             cha.toneSliding = 0;
         }
         else if (counter == f8) 
@@ -426,19 +426,19 @@ void DecodePT3::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
         tfine = (tone & 0xFF);
         tcoarse = (tone >> 8 & 0x0F);
 
-        if (cha.tonSlideCount > 0)
+        if (cha.toneSlideCount > 0)
         {
-            if (!--cha.tonSlideCount) 
+            if (!--cha.toneSlideCount) 
             {
-                cha.toneSliding += cha.tonSlideStep;
-                cha.tonSlideCount = cha.tonSlideDelay;
+                cha.toneSliding += cha.toneSlideStep;
+                cha.toneSlideCount = cha.toneSlideDelay;
                 if (!cha.simpleGliss) 
                 {
-                    if ((cha.tonSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
-                        (cha.tonSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
+                    if ((cha.toneSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
+                        (cha.toneSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
                     {
                         cha.note = cha.slideToNote;
-                        cha.tonSlideCount = 0;
+                        cha.toneSlideCount = 0;
                         cha.toneSliding = 0;
                     }
                 }

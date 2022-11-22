@@ -21,12 +21,12 @@ bool DecodePSC::Open(Stream& stream)
                 fileStream.read((char*)(&header), std::min((int)sizeof(Header), fileSize));
 
                 bool isHeaderOk = true;
-                isHeaderOk &= (header.PSC_OrnamentsPointer < fileSize);
+                isHeaderOk &= (header.ornamentsPointer < fileSize);
             //  isHeaderOk &= (header.PSC_OrnamentsPointer >= 0x4C + 0x02);
             //  isHeaderOk &= (header.PSC_OrnamentsPointer <= 0x4C + 0x40);
-                isHeaderOk &= (header.PSC_OrnamentsPointer % 2 == 0);
+                isHeaderOk &= (header.ornamentsPointer % 2 == 0);
             //  isHeaderOk &= (header.PSC_SamplesPointers[0] + 0x4C + 0x05 <= fileSize);
-                isHeaderOk &= (header.PSC_PatternsPointer + 11 < fileSize);
+                isHeaderOk &= (header.patternsPointer + 11 < fileSize);
 
                 if (isHeaderOk)
                 {
@@ -53,52 +53,31 @@ void DecodePSC::Init()
 {
     auto& hdr = reinterpret_cast<const Header&>(*m_data);
 
-    m_version = 7;
-    if (hdr.PSC_MusicName[0x08] >= '0' && hdr.PSC_MusicName[0x08] <= '9')
-        m_version = (hdr.PSC_MusicName[0x08] - '0');
+    uint8_t ver = hdr.musicName[0x08];
+    m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 7;
 
-    DelayCounter = 1;
-    Delay = hdr.PSC_Delay;
-    Positions_Pointer = hdr.PSC_PatternsPointer;
-    Lines_Counter = 1;
-    Noise_Base = 0;
+    m_delay = hdr.delay;
+    m_delayCounter = 1;
+    m_positionsPtr = hdr.patternsPointer;
+    m_linesCounter = 1;
+    m_noiseBase = 0;
 
-    PSC_A.num = 0;
-    PSC_B.num = 1;
-    PSC_C.num = 2;
+    for (int c = 0; c < 3; ++c)
+    {
+        auto& cha = m_channels[c];
 
-    PSC_A.SamplePointer = hdr.PSC_SamplesPointers[0];
-    if (m_version > 3) PSC_A.SamplePointer += 0x4C;
-    PSC_B.SamplePointer = PSC_A.SamplePointer;
-    PSC_C.SamplePointer = PSC_A.SamplePointer;
-    PSC_A.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer]);
-    if (m_version > 3) PSC_A.OrnamentPointer += hdr.PSC_OrnamentsPointer;
-    PSC_B.OrnamentPointer = PSC_A.OrnamentPointer;
-    PSC_C.OrnamentPointer = PSC_A.OrnamentPointer;
+        cha.samplePtr = hdr.samplesPointers[0];
+        if (m_version > 3) cha.samplePtr += 0x4C;
+        cha.ornamentPtr = (uint16_t&)(m_data[hdr.ornamentsPointer]);
+        if (m_version > 3) cha.ornamentPtr += hdr.ornamentsPointer;
 
-    PSC_A.Break_Ornament_Loop = false;
-    PSC_A.Ornament_Enabled = false;
-    PSC_A.Enabled = false;
-    PSC_A.Break_Sample_Loop = false;
-    PSC_A.Ton_Slide_Enabled = false;
-    PSC_A.Note_Skip_Counter = 1;
-    PSC_A.Ton = 0;
-
-    PSC_B.Break_Ornament_Loop = false;
-    PSC_B.Ornament_Enabled = false;
-    PSC_B.Enabled = false;
-    PSC_B.Break_Sample_Loop = false;
-    PSC_B.Ton_Slide_Enabled = false;
-    PSC_B.Note_Skip_Counter = 1;
-    PSC_B.Ton = 0;
-
-    PSC_C.Break_Ornament_Loop = false;
-    PSC_C.Ornament_Enabled = false;
-    PSC_C.Enabled = false;
-    PSC_C.Break_Sample_Loop = false;
-    PSC_C.Ton_Slide_Enabled = false;
-    PSC_C.Note_Skip_Counter = 1;
-    PSC_C.Ton = 0;
+        cha.breakOrnamentLoop = false;
+        cha.ornamentEnabled = false;
+        cha.enabled = false;
+        cha.breakSampleLoop = false;
+        cha.toneSlideEnabled = false;
+        cha.noteSkipCounter = 1;
+    }
     memset(&m_regs, 0, sizeof(m_regs));
 }
 
@@ -108,140 +87,128 @@ void DecodePSC::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loop
 
 bool DecodePSC::Play()
 {
+    uint8_t* regs = m_regs[0];
+
     bool loop = false;
-    if (--DelayCounter <= 0)
+    if (!--m_delayCounter)
     {
-        if (--Lines_Counter <= 0)
+        if (!--m_linesCounter)
         {
-            if (m_data[Positions_Pointer + 1] == 255)
+            if (m_data[m_positionsPtr + 1] == 0xFF)
             {
-                Positions_Pointer = *(uint16_t*)(&m_data[Positions_Pointer + 2]);
+                m_positionsPtr = (uint16_t&)(m_data[m_positionsPtr + 2]);
                 loop = true;
             }
-            Lines_Counter = m_data[Positions_Pointer + 1];
+            m_linesCounter = m_data[m_positionsPtr + 1];
 
-            PSC_A.Address_In_Pattern = *(uint16_t*)(&m_data[Positions_Pointer + 2]);
-            PSC_B.Address_In_Pattern = *(uint16_t*)(&m_data[Positions_Pointer + 4]);
-            PSC_C.Address_In_Pattern = *(uint16_t*)(&m_data[Positions_Pointer + 6]);
-            Positions_Pointer += 8;
+            m_channels[0].patternPtr = (uint16_t&)(m_data[m_positionsPtr + 2]);
+            m_channels[1].patternPtr = (uint16_t&)(m_data[m_positionsPtr + 4]);
+            m_channels[2].patternPtr = (uint16_t&)(m_data[m_positionsPtr + 6]);
+            m_positionsPtr += 8;
 
-            PSC_A.Note_Skip_Counter = 1;
-            PSC_B.Note_Skip_Counter = 1;
-            PSC_C.Note_Skip_Counter = 1;
+            m_channels[0].noteSkipCounter = 1;
+            m_channels[1].noteSkipCounter = 1;
+            m_channels[2].noteSkipCounter = 1;
         }
-        if (--PSC_A.Note_Skip_Counter == 0) PatternInterpreter(PSC_A);
-        if (--PSC_B.Note_Skip_Counter == 0) PatternInterpreter(PSC_B);
-        if (--PSC_C.Note_Skip_Counter == 0) PatternInterpreter(PSC_C);
 
-        PSC_A.Noise_Accumulator += Noise_Base;
-        PSC_B.Noise_Accumulator += Noise_Base;
-        PSC_C.Noise_Accumulator += Noise_Base;
-        DelayCounter = Delay;
+        if (!--m_channels[0].noteSkipCounter) ProcessPattern(0, (uint16_t&)regs[A_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
+        if (!--m_channels[1].noteSkipCounter) ProcessPattern(1, (uint16_t&)regs[B_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
+        if (!--m_channels[2].noteSkipCounter) ProcessPattern(2, (uint16_t&)regs[C_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
+
+        m_channels[0].Noise_Accumulator += m_noiseBase;
+        m_channels[1].Noise_Accumulator += m_noiseBase;
+        m_channels[2].Noise_Accumulator += m_noiseBase;
+
+        m_delayCounter = m_delay;
     }
 
-    uint8_t TempMixer = 0;
-    GetRegisters(PSC_A, TempMixer);
-    GetRegisters(PSC_B, TempMixer);
-    GetRegisters(PSC_C, TempMixer);
-
-    m_regs[0][Mixer] = TempMixer;
-    m_regs[0][A_Fine] = (PSC_A.Ton & 0xff);
-    m_regs[0][A_Coarse] = ((PSC_A.Ton >> 8) & 0xf);
-    m_regs[0][B_Fine] = (PSC_B.Ton & 0xff);
-    m_regs[0][B_Coarse] = ((PSC_B.Ton >> 8) & 0xf);
-    m_regs[0][C_Fine] = (PSC_C.Ton & 0xff);
-    m_regs[0][C_Coarse] = ((PSC_C.Ton >> 8) & 0xf);
-    m_regs[0][A_Volume] = PSC_A.Amplitude;
-    m_regs[0][B_Volume] = PSC_B.Amplitude;
-    m_regs[0][C_Volume] = PSC_C.Amplitude;
+    regs[Mixer] = 0;
+    ProcessInstrument(0, (uint16_t&)regs[A_Fine], regs[N_Period], regs[Mixer], regs[A_Volume], (uint16_t&)regs[E_Fine]);
+    ProcessInstrument(1, (uint16_t&)regs[B_Fine], regs[N_Period], regs[Mixer], regs[B_Volume], (uint16_t&)regs[E_Fine]);
+    ProcessInstrument(2, (uint16_t&)regs[C_Fine], regs[N_Period], regs[Mixer], regs[C_Volume], (uint16_t&)regs[E_Fine]);
     return loop;
 }
 
-void DecodePSC::PatternInterpreter(Channel& chan)
+void DecodePSC::ProcessPattern(int c, uint16_t& tperiod, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
 {
     auto& hdr = reinterpret_cast<const Header&>(*m_data);
+    auto& cha = m_channels[c];
 
     bool quit;
     bool b1b, b2b, b3b, b4b, b5b, b6b, b7b;
     quit = b1b = b2b = b3b = b4b = b5b = b6b = b7b = false;
     do
     {
-        uint8_t val = m_data[chan.Address_In_Pattern];
+        uint8_t val = m_data[cha.patternPtr];
         if (val >= 0xc0)
         {
-            chan.Note_Skip_Counter = val - 0xbf;
+            cha.noteSkipCounter = (val - 0xbf);
             quit = true;
         }
         else if (val >= 0xa0 && val <= 0xbf)
         {
             int o = (val - 0xa0);
-            chan.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer + o * 2]);
-            if (m_version > 3) chan.OrnamentPointer += hdr.PSC_OrnamentsPointer;
+            cha.ornamentPtr = (uint16_t&)(m_data[hdr.ornamentsPointer + o * 2]);
+            if (m_version > 3) cha.ornamentPtr += hdr.ornamentsPointer;
         }
         else if (val >= 0x7e && val <= 0x9f)
         {
             if (val >= 0x80)
             {
                 int s = (val - 0x80);
-                chan.SamplePointer = hdr.PSC_SamplesPointers[s];
-                if (m_version > 3) chan.SamplePointer += 0x4C;
+                cha.samplePtr = hdr.samplesPointers[s];
+                if (m_version > 3) cha.samplePtr += 0x4C;
             }
         }
         else if (val == 0x6b)
         {
-            chan.Address_In_Pattern++;
-            chan.Addition_To_Ton = m_data[chan.Address_In_Pattern];
+            cha.additionToTone = m_data[++cha.patternPtr];
             b5b = true;
         }
         else if (val == 0x6c)
         {
-            chan.Address_In_Pattern++;
-            chan.Addition_To_Ton = -(int8_t)(m_data[chan.Address_In_Pattern]);
+            cha.additionToTone = -(int8_t)(m_data[++cha.patternPtr]);
             b5b = true;
         }
         else if (val == 0x6d)
         {
             b4b = true;
-            chan.Address_In_Pattern++;
-            chan.Addition_To_Ton = m_data[chan.Address_In_Pattern];
+            cha.additionToTone = m_data[++cha.patternPtr];
         }
         else if (val == 0x6e)
         {
-            chan.Address_In_Pattern++;
-            Delay = m_data[chan.Address_In_Pattern];
+            m_delay = m_data[++cha.patternPtr];
         }
         else if (val == 0x6f)
         {
             b1b = true;
-            chan.Address_In_Pattern++;
+            cha.patternPtr++;
         }
         else if (val == 0x70)
         {
             b3b = true;
-            chan.Address_In_Pattern++;
-            chan.Volume_Counter1 = m_data[chan.Address_In_Pattern];
+            cha.Volume_Counter1 = m_data[++cha.patternPtr];
         }
         else if (val == 0x71)
         {
-            chan.Break_Ornament_Loop = true;
-            chan.Address_In_Pattern++;
+            cha.breakOrnamentLoop = true;
+            cha.patternPtr++;
         }
         else if (val == 0x7a)
         {
-            chan.Address_In_Pattern++;
-            if (chan.num == 1)
+            cha.patternPtr++;
+            if (c == 1)
             {
-                m_regs[0][E_Shape] = m_data[chan.Address_In_Pattern] & 15;
-                m_regs[0][E_Fine] = m_data[chan.Address_In_Pattern + 1];
-                m_regs[0][E_Coarse] = m_data[chan.Address_In_Pattern + 2];
-                chan.Address_In_Pattern += 2;
+                shape   = (m_data[cha.patternPtr] & 0x0F);
+                efine   = m_data[++cha.patternPtr];
+                ecoarse = m_data[++cha.patternPtr];
             }
         }
         else if (val == 0x7b)
         {
-            chan.Address_In_Pattern++;
-            if (chan.num == 1)
-                Noise_Base = m_data[chan.Address_In_Pattern];
+            cha.patternPtr++;
+            if (c == 1)
+                m_noiseBase = m_data[cha.patternPtr];
         }
         else if (val == 0x7c)
         {
@@ -250,99 +217,100 @@ void DecodePSC::PatternInterpreter(Channel& chan)
         }
         else if (val == 0x7d)
         {
-            chan.Break_Sample_Loop = true;
+            cha.breakSampleLoop = true;
         }
         else if (val >= 0x58 && val <= 0x66)
         {
-            chan.Initial_Volume = val - 0x57;
-            chan.Envelope_Enabled = false;
+            cha.Initial_Volume = (val - 0x57);
+            cha.envelopeEnabled = false;
             b6b = true;
         }
         else if (val == 0x57)
         {
-            chan.Initial_Volume = 0xf;
-            chan.Envelope_Enabled = true;
+            cha.Initial_Volume = 0xf;
+            cha.envelopeEnabled = true;
             b6b = true;
         }
         else if (val <= 0x56)
         {
-            chan.Note = val;
+            cha.note = val;
             b6b = true;
             b7b = true;
         }
         else
         {
-            chan.Address_In_Pattern++;
+            cha.patternPtr++;
         }
-        chan.Address_In_Pattern++;
+        cha.patternPtr++;
     } while (!quit);
 
     if (b7b)
     {
-        chan.Break_Ornament_Loop = false;
-        chan.Ornament_Enabled = true;
-        chan.Enabled = true;
-        chan.Break_Sample_Loop = false;
-        chan.Ton_Slide_Enabled = false;
-        chan.Ton_Accumulator = 0;
-        chan.Current_Ton_Sliding = 0;
-        chan.Noise_Accumulator = 0;
-        chan.Volume_Counter = 0;
-        chan.Position_In_Sample = 0;
-        chan.Position_In_Ornament = 0;
+        cha.breakOrnamentLoop = false;
+        cha.ornamentEnabled = true;
+        cha.enabled = true;
+        cha.breakSampleLoop = false;
+        cha.toneSlideEnabled = false;
+        cha.toneAcc = 0;
+        cha.toneSliding = 0;
+        cha.Noise_Accumulator = 0;
+        cha.Volume_Counter = 0;
+        cha.samplePos = 0;
+        cha.ornamentPos = 0;
     }
     if (b6b)
     {
-        chan.Volume = chan.Initial_Volume;
+        cha.volume = cha.Initial_Volume;
     }
     if (b5b)
     {
-        chan.Gliss = false;
-        chan.Ton_Slide_Enabled = true;
+        cha.glissade = false;
+        cha.toneSlideEnabled = true;
     }
     if (b4b)
     {
-        chan.Current_Ton_Sliding = chan.Ton - NoteTable_ASM[chan.Note];
-        chan.Gliss = true;
-        if (chan.Current_Ton_Sliding >= 0)
-            chan.Addition_To_Ton = -chan.Addition_To_Ton;
-        chan.Ton_Slide_Enabled = true;
+        cha.toneSliding = (tperiod - NoteTable_ASM[cha.note]);
+        cha.glissade = true;
+        if (cha.toneSliding >= 0)
+            cha.additionToTone = -cha.additionToTone;
+        cha.toneSlideEnabled = true;
     }
     if (b3b)
     {
-        chan.Volume_Counter = chan.Volume_Counter1;
-        chan.Volume_Inc = true;
-        if ((chan.Volume_Counter & 0x40) != 0)
+        cha.Volume_Counter = cha.Volume_Counter1;
+        cha.volumeInc = true;
+        if ((cha.Volume_Counter & 0x40) != 0)
         {
-            chan.Volume_Counter = -(int8_t)(chan.Volume_Counter | 128);
-            chan.Volume_Inc = false;
+            cha.Volume_Counter = -(int8_t)(cha.Volume_Counter | 128);
+            cha.volumeInc = false;
         }
-        chan.Volume_Counter_Init = chan.Volume_Counter;
+        cha.Volume_Counter_Init = cha.Volume_Counter;
     }
     if (b2b)
     {
-        chan.Break_Ornament_Loop = false;
-        chan.Ornament_Enabled = false;
-        chan.Enabled = false;
-        chan.Break_Sample_Loop = false;
-        chan.Ton_Slide_Enabled = false;
+        cha.breakOrnamentLoop = false;
+        cha.ornamentEnabled = false;
+        cha.enabled = false;
+        cha.breakSampleLoop = false;
+        cha.toneSlideEnabled = false;
     }
     if (b1b)
-        chan.Ornament_Enabled = false;
+        cha.ornamentEnabled = false;
 }
 
-void DecodePSC::GetRegisters(Channel& chan, uint8_t& mixer)
+void DecodePSC::ProcessInstrument(int c, uint16_t& tperiod, uint8_t& noise, uint8_t& mixer, uint8_t& volume, uint16_t& eperiod)
 {
     uint8_t j, b;
 
-    if (chan.Enabled)
+    auto& cha = m_channels[c];
+    if (cha.enabled)
     {
-        j = chan.Note;
-        if (chan.Ornament_Enabled)
+        j = cha.note;
+        if (cha.ornamentEnabled)
         {
-            b = m_data[chan.OrnamentPointer + chan.Position_In_Ornament * 2];
-            chan.Noise_Accumulator += b;
-            j += m_data[chan.OrnamentPointer + chan.Position_In_Ornament * 2 + 1];
+            b = m_data[cha.ornamentPtr + cha.ornamentPos * 2];
+            cha.Noise_Accumulator += b;
+            j += m_data[cha.ornamentPtr + cha.ornamentPos * 2 + 1];
             if ((int8_t)j < 0)
                 j += 0x56;
             if (j > 0x55)
@@ -350,100 +318,92 @@ void DecodePSC::GetRegisters(Channel& chan, uint8_t& mixer)
             if (j > 0x55)
                 j = 0x55;
             if ((b & 128) == 0)
-                chan.Loop_Ornament_Position = chan.Position_In_Ornament;
+                cha.ornamentLoop = cha.ornamentPos;
             if ((b & 64) == 0)
             {
-                if (!chan.Break_Ornament_Loop)
-                    chan.Position_In_Ornament = chan.Loop_Ornament_Position;
+                if (!cha.breakOrnamentLoop)
+                    cha.ornamentPos = cha.ornamentLoop;
                 else
                 {
-                    chan.Break_Ornament_Loop = false;
+                    cha.breakOrnamentLoop = false;
                     if ((b & 32) == 0)
-                        chan.Ornament_Enabled = false;
-                    chan.Position_In_Ornament++;
+                        cha.ornamentEnabled = false;
+                    cha.ornamentPos++;
                 }
             }
             else
             {
                 if ((b & 32) == 0)
-                    chan.Ornament_Enabled = false;
-                chan.Position_In_Ornament++;
+                    cha.ornamentEnabled = false;
+                cha.ornamentPos++;
             }
         }
-        chan.Note = j;
-        chan.Ton = *(uint16_t*)(&m_data[chan.SamplePointer + chan.Position_In_Sample * 6]);
-        chan.Ton_Accumulator += chan.Ton;
-        chan.Ton = NoteTable_ASM[j] + chan.Ton_Accumulator;
-        if (chan.Ton_Slide_Enabled)
+        cha.note = j;
+        tperiod = *(uint16_t*)(&m_data[cha.samplePtr + cha.samplePos * 6]);
+        cha.toneAcc += tperiod;
+        tperiod = NoteTable_ASM[j] + cha.toneAcc;
+        if (cha.toneSlideEnabled)
         {
-            chan.Current_Ton_Sliding += chan.Addition_To_Ton;
-            if (chan.Gliss && (((chan.Current_Ton_Sliding < 0) && (chan.Addition_To_Ton <= 0)) || ((chan.Current_Ton_Sliding >= 0) && (chan.Addition_To_Ton >= 0))))
-                chan.Ton_Slide_Enabled = false;
-            chan.Ton += chan.Current_Ton_Sliding;
+            cha.toneSliding += cha.additionToTone;
+            if (cha.glissade && (((cha.toneSliding < 0) && (cha.additionToTone <= 0)) || ((cha.toneSliding >= 0) && (cha.additionToTone >= 0))))
+                cha.toneSlideEnabled = false;
+            tperiod += cha.toneSliding;
         }
-        chan.Ton = chan.Ton & 0xfff;
-        b = m_data[chan.SamplePointer + chan.Position_In_Sample * 6 + 4];
+        tperiod &= 0x0FFF;
+
+        b = m_data[cha.samplePtr + cha.samplePos * 6 + 4];
         mixer |= ((b & 9) << 3);
         j = 0;
-        if ((b & 2) != 0)
-            j++;
-        if ((b & 4) != 0)
-            j--;
-        if (chan.Volume_Counter > 0)
+        if ((b & 2) != 0) j++;
+        if ((b & 4) != 0) j--;
+        if (cha.Volume_Counter > 0)
         {
-            chan.Volume_Counter--;
-            if (chan.Volume_Counter == 0)
+            cha.Volume_Counter--;
+            if (cha.Volume_Counter == 0)
             {
-                if (chan.Volume_Inc)
-                    j++;
-                else
-                    j--;
-                chan.Volume_Counter = chan.Volume_Counter_Init;
+                if (cha.volumeInc) j++; else j--;
+                cha.Volume_Counter = cha.Volume_Counter_Init;
             }
         }
-        chan.Volume += j;
-        if ((int8_t)chan.Volume < 0)
-            chan.Volume = 0;
-        else if (chan.Volume > 15)
-            chan.Volume = 15;
-        chan.Amplitude = ((chan.Volume + 1) * (m_data[chan.SamplePointer + chan.Position_In_Sample * 6 + 3] & 15)) >> 4;
-        if (chan.Envelope_Enabled && ((b & 16) == 0))
-            chan.Amplitude = chan.Amplitude | 16;
-        if (((chan.Amplitude & 16) != 0) && ((b & 8) != 0))
+        cha.volume += j;
+        if ((int8_t)cha.volume < 0)
+            cha.volume = 0;
+        else if (cha.volume > 15)
+            cha.volume = 15;
+        volume = ((cha.volume + 1) * (m_data[cha.samplePtr + cha.samplePos * 6 + 3] & 15)) >> 4;
+        if (cha.envelopeEnabled && ((b & 16) == 0)) volume |= 16;
+
+        if (((volume & 16) != 0) && ((b & 8) != 0))
         {
-            uint16_t env = m_regs[0][E_Fine] | m_regs[0][E_Coarse] << 8;
-            env += (int8_t)(m_data[chan.SamplePointer + chan.Position_In_Sample * 6 + 2]);
-            m_regs[0][E_Fine] = (env & 0xff);
-            m_regs[0][E_Coarse] = ((env >> 8) & 0xff);
+            eperiod += (int8_t)(m_data[cha.samplePtr + cha.samplePos * 6 + 2]);
         }
         else
         {
-            chan.Noise_Accumulator += m_data[chan.SamplePointer + chan.Position_In_Sample * 6 + 2];
+            cha.Noise_Accumulator += m_data[cha.samplePtr + cha.samplePos * 6 + 2];
             if ((b & 8) == 0)
-                m_regs[0][N_Period] = (chan.Noise_Accumulator & 31);
+                noise = (cha.Noise_Accumulator & 31);
         }
         if ((b & 128) == 0)
-            chan.Loop_Sample_Position = chan.Position_In_Sample;
+            cha.sampleLoop = cha.samplePos;
         if ((b & 64) == 0)
         {
-            if (!chan.Break_Sample_Loop)
-                chan.Position_In_Sample = chan.Loop_Sample_Position;
+            if (!cha.breakSampleLoop)
+                cha.samplePos = cha.sampleLoop;
             else
             {
-                chan.Break_Sample_Loop = false;
+                cha.breakSampleLoop = false;
                 if ((b & 32) == 0)
-                    chan.Enabled = false;
-                chan.Position_In_Sample++;
+                    cha.enabled = false;
+                cha.samplePos++;
             }
         }
         else
         {
             if ((b & 32) == 0)
-                chan.Enabled = false;
-            chan.Position_In_Sample++;
+                cha.enabled = false;
+            cha.samplePos++;
         }
     }
-    else
-        chan.Amplitude = 0;
+    else volume = 0;
     mixer >>= 1;
 }

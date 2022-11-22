@@ -34,6 +34,7 @@ protected:
 
 protected:
 	bool m_isTS = false;
+	uint8_t m_version = 0;
 
 	FrameId m_loop  = 0;
 	FrameId m_frame = 0;

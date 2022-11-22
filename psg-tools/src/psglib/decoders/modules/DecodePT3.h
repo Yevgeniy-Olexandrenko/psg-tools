@@ -41,14 +41,14 @@ class DecodePT3 : public ModuleDecoder
         int volumeSliding;
         int noiseSliding;
         int envelopeSliding;
-        int tonSlideCount;
+        int toneSlideCount;
         int currentOnOff;
         int onOffDelay;
         int offOnDelay;
-        int tonSlideDelay;
+        int toneSlideDelay;
         int toneSliding;
         int toneAcc;
-        int tonSlideStep;
+        int toneSlideStep;
         int toneDelta;
 
         bool simpleGliss;
@@ -102,6 +102,5 @@ private:
     
 private:
     int    m_size;
-    int    m_version;
     Module m_module[2];
 };

@@ -445,7 +445,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.noiseSliding = 0;
 		cha.envelopeSliding = 0;
 		cha.ornamentPos = 0;
-		cha.tonSlideCount = 0;
+		cha.toneSlideCount = 0;
 		cha.toneSliding = 0;
 		cha.toneAcc = 0;
 		cha.currentOnOff = 0;
@@ -460,7 +460,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.noiseSliding = 0;
 		cha.envelopeSliding = 0;
 		cha.ornamentPos = 0;
-		cha.tonSlideCount = 0;
+		cha.toneSlideCount = 0;
 		cha.toneSliding = 0;
 		cha.toneAcc = 0;
 		cha.currentOnOff = 0;
@@ -472,32 +472,32 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	{
 	case 0x1: // tone slide down
 		cha.simpleGliss = true;
-		cha.tonSlideDelay = pln.chan[c].cmdDelay;
-		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = +pln.chan[c].cmdParam;
-		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		cha.toneSlideDelay = pln.chan[c].cmdDelay;
+		cha.toneSlideCount = cha.toneSlideDelay;
+		cha.toneSlideStep = +pln.chan[c].cmdParam;
+		if (cha.toneSlideCount == 0 && m_version >= 7) cha.toneSlideCount++;
 		cha.currentOnOff = 0;
 		break;
 
 	case 0x2: // tone slide up
 		cha.simpleGliss = true;
-		cha.tonSlideDelay = pln.chan[c].cmdDelay;
-		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = -pln.chan[c].cmdParam;
-		if (cha.tonSlideCount == 0 && m_version >= 7) cha.tonSlideCount++;
+		cha.toneSlideDelay = pln.chan[c].cmdDelay;
+		cha.toneSlideCount = cha.toneSlideDelay;
+		cha.toneSlideStep = -pln.chan[c].cmdParam;
+		if (cha.toneSlideCount == 0 && m_version >= 7) cha.toneSlideCount++;
 		cha.currentOnOff = 0;
 		break;
 
 	case 0x3: // tone portamento
 		cha.simpleGliss = false;
-		cha.tonSlideDelay = pln.chan[c].cmdDelay;
-		cha.tonSlideCount = cha.tonSlideDelay;
-		cha.tonSlideStep = pln.chan[c].cmdParam;
+		cha.toneSlideDelay = pln.chan[c].cmdDelay;
+		cha.toneSlideCount = cha.toneSlideDelay;
+		cha.toneSlideStep = pln.chan[c].cmdParam;
 		cha.toneDelta = (GetTonePeriod(m, cha.note) - GetTonePeriod(m, PrNote));
 		cha.slideToNote = cha.note;
 		cha.note = PrNote;
 		if (m_version >= 6) cha.toneSliding = PrSliding;
-		if (cha.toneDelta - cha.toneSliding < 0) cha.tonSlideStep = -cha.tonSlideStep;
+		if (cha.toneDelta - cha.toneSliding < 0) cha.toneSlideStep = -cha.toneSlideStep;
 		cha.currentOnOff = 0;
 		break;
 
@@ -513,7 +513,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		cha.onOffDelay = pln.chan[c].cmdParam >> 4 & 0xF;
 		cha.offOnDelay = pln.chan[c].cmdParam & 0xF;
 		cha.currentOnOff = cha.onOffDelay;
-		cha.tonSlideCount = 0;
+		cha.toneSlideCount = 0;
 		cha.toneSliding = 0;
 		break;
 
@@ -566,19 +566,19 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 		tfine = (tone & 0xFF);
 		tcoarse = (tone >> 8 & 0x0F);
 
-		if (cha.tonSlideCount > 0)
+		if (cha.toneSlideCount > 0)
 		{
-			if (!--cha.tonSlideCount)
+			if (!--cha.toneSlideCount)
 			{
-				cha.toneSliding += cha.tonSlideStep;
-				cha.tonSlideCount = cha.tonSlideDelay;
+				cha.toneSliding += cha.toneSlideStep;
+				cha.toneSlideCount = cha.toneSlideDelay;
 				if (!cha.simpleGliss)
 				{
-					if ((cha.tonSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
-						(cha.tonSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
+					if ((cha.toneSlideStep < 0 && cha.toneSliding <= cha.toneDelta) ||
+						(cha.toneSlideStep >= 0 && cha.toneSliding >= cha.toneDelta))
 					{
 						cha.note = cha.slideToNote;
-						cha.tonSlideCount = 0;
+						cha.toneSlideCount = 0;
 						cha.toneSliding = 0;
 					}
 				}
