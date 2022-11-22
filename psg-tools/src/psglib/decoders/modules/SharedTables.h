@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+extern const uint16_t NoteTable_ASM        [86];
 extern const uint16_t NoteTable_PT_33_34r  [96];
 extern const uint16_t NoteTable_PT_34_35   [96];
 extern const uint16_t NoteTable_ST         [96];

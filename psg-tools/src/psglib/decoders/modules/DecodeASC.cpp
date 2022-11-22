@@ -1,24 +1,5 @@
 #include "DecodeASC.h"
-
-namespace
-{
-    const uint16_t ASCNoteTable[] =
-    {
-        0x0edc, 0x0e07, 0x0d3e, 0x0c80, 0x0bcc, 0x0b22, 0x0a82, 0x09ec,
-        0x095c, 0x08d6, 0x0858, 0x07e0, 0x076e, 0x0704, 0x069f, 0x0640,
-        0x05e6, 0x0591, 0x0541, 0x04f6, 0x04ae, 0x046b, 0x042c, 0x03f0,
-        0x03b7, 0x0382, 0x034f, 0x0320, 0x02f3, 0x02c8, 0x02a1, 0x027b,
-        0x0257, 0x0236, 0x0216, 0x01f8, 0x01dc, 0x01c1, 0x01a8, 0x0190,
-        0x0179, 0x0164, 0x0150, 0x013d, 0x012c, 0x011b, 0x010b, 0x00fc,
-        0x00ee, 0x00e0, 0x00d4, 0x00c8, 0x00bd, 0x00b2, 0x00a8, 0x009f,
-        0x0096, 0x008d, 0x0085, 0x007e, 0x0077, 0x0070, 0x006a, 0x0064,
-        0x005e, 0x0059, 0x0054, 0x0050, 0x004b, 0x0047, 0x0043, 0x003f,
-        0x003c, 0x0038, 0x0035, 0x0032, 0x002f, 0x002d, 0x002a, 0x0028,
-        0x0026, 0x0024, 0x0022, 0x0020, 0x001e, 0x001c
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
+#include "SharedTables.h"
 
 bool DecodeASC::Open(Stream& stream)
 {
@@ -277,7 +258,7 @@ void DecodeASC::PatternInterpreter(Channel& chan)
             chan.addressInPattern++;
             initOfSampleDisabled = true;
             if (m_data[chan.addressInPattern + 1] < 0x56)
-                deltaTon = ASCNoteTable[chan.note] + (chan.currentTonSliding / 16) - ASCNoteTable[m_data[chan.addressInPattern + 1]];
+                deltaTon = NoteTable_ASM[chan.note] + (chan.currentTonSliding / 16) - NoteTable_ASM[m_data[chan.addressInPattern + 1]];
             else
                 deltaTon = chan.currentTonSliding / 16;
             deltaTon = deltaTon << 4;
@@ -294,7 +275,7 @@ void DecodeASC::PatternInterpreter(Channel& chan)
             chan.addressInPattern++;
             if (m_data[chan.addressInPattern + 1] < 0x56)
             {
-                deltaTon = ASCNoteTable[chan.note] - ASCNoteTable[m_data[chan.addressInPattern + 1]];
+                deltaTon = NoteTable_ASM[chan.note] - NoteTable_ASM[m_data[chan.addressInPattern + 1]];
             }
             else
                 deltaTon = chan.currentTonSliding / 16;
@@ -437,7 +418,7 @@ void DecodeASC::GetRegisters(Channel& chan, uint8_t& mixer)
         if (note < 0) note = 0;
         else if (note > 0x55) note = 0x55;
 
-        chan.ton = (ASCNoteTable[note] + chan.tonDeviation + (chan.currentTonSliding / 16)) & 0xfff;
+        chan.ton = (NoteTable_ASM[note] + chan.tonDeviation + (chan.currentTonSliding / 16)) & 0xfff;
         if (chan.tonSlidingCounter != 0)
         {
             if ((int8_t)(chan.tonSlidingCounter) > 0)
