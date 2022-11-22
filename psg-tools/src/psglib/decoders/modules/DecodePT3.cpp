@@ -81,9 +81,9 @@ void DecodePT3::Init()
     else if (m_size > 400 && !memcmp(m_data + m_size - 4, "02TS", 4)) 
     { 
         // try load Vortex II '02TS'
-        uint16_t sz1 = m_data[m_size - 12] + 0x100 * m_data[m_size - 11];
-        uint16_t sz2 = m_data[m_size - 6 ] + 0x100 * m_data[m_size - 5 ];
-        if (uint32_t(sz1 + sz2) < uint32_t(m_size) && sz1 > 200 && sz2 > 200)
+        int sz1 = (m_data[m_size - 12] | m_data[m_size - 11] << 8);
+        int sz2 = (m_data[m_size - 6 ] | m_data[m_size - 5 ] << 8);
+        if (sz1 + sz2 < m_size && sz1 > 200 && sz2 > 200)
         {
             m_isTS = true;
             m_module[1].m_data = (m_data + sz1);
@@ -173,7 +173,7 @@ bool DecodePT3::PlayModule(int m)
     {
         if (--mod.m_global.curEnvDelay == 0) 
         {
-            mod.m_global.curEnvDelay = mod.m_global.envDelay;
+            mod.m_global.curEnvDelay  = mod.m_global.envDelay;
             mod.m_global.curEnvSlide += mod.m_global.envSlideAdd;
         }
     }
