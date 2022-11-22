@@ -22,10 +22,10 @@ bool DecodePSC::Open(Stream& stream)
 
                 bool isHeaderOk = true;
                 isHeaderOk &= (header.PSC_OrnamentsPointer < fileSize);
-                isHeaderOk &= (header.PSC_OrnamentsPointer >= 0x4C + 0x02);
-                isHeaderOk &= (header.PSC_OrnamentsPointer <= 0x4C + 0x40);
+            //  isHeaderOk &= (header.PSC_OrnamentsPointer >= 0x4C + 0x02);
+            //  isHeaderOk &= (header.PSC_OrnamentsPointer <= 0x4C + 0x40);
                 isHeaderOk &= (header.PSC_OrnamentsPointer % 2 == 0);
-                isHeaderOk &= (header.PSC_SamplesPointers[0] + 0x4C + 0x05 <= fileSize);
+            //  isHeaderOk &= (header.PSC_SamplesPointers[0] + 0x4C + 0x05 <= fileSize);
                 isHeaderOk &= (header.PSC_PatternsPointer + 11 < fileSize);
 
                 if (isHeaderOk)
@@ -37,7 +37,7 @@ bool DecodePSC::Open(Stream& stream)
                     Init();
                     isDetected = true;
 
-                    std::string ver((const char*)&m_data[0x05], 4);
+                    std::string ver("1.00"); ver[3] += m_version;
                     stream.info.title(ReadString(&m_data[0x19], 20));
                     stream.info.artist(ReadString(&m_data[0x31], 20));
                     stream.info.type("Pro Sound Creator v" + ver + " module");
@@ -53,6 +53,10 @@ void DecodePSC::Init()
 {
     auto& hdr = reinterpret_cast<const Header&>(*m_data);
 
+    m_version = 7;
+    if (hdr.PSC_MusicName[0x08] >= '0' && hdr.PSC_MusicName[0x08] <= '9')
+        m_version = (hdr.PSC_MusicName[0x08] - '0');
+
     DelayCounter = 1;
     Delay = hdr.PSC_Delay;
     Positions_Pointer = hdr.PSC_PatternsPointer;
@@ -63,10 +67,12 @@ void DecodePSC::Init()
     PSC_B.num = 1;
     PSC_C.num = 2;
 
-    PSC_A.SamplePointer = hdr.PSC_SamplesPointers[0] + 0x4C;
+    PSC_A.SamplePointer = hdr.PSC_SamplesPointers[0];
+    if (m_version > 3) PSC_A.SamplePointer += 0x4C;
     PSC_B.SamplePointer = PSC_A.SamplePointer;
     PSC_C.SamplePointer = PSC_A.SamplePointer;
-    PSC_A.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer]) + hdr.PSC_OrnamentsPointer;
+    PSC_A.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer]);
+    if (m_version > 3) PSC_A.OrnamentPointer += hdr.PSC_OrnamentsPointer;
     PSC_B.OrnamentPointer = PSC_A.OrnamentPointer;
     PSC_C.OrnamentPointer = PSC_A.OrnamentPointer;
 
@@ -169,14 +175,16 @@ void DecodePSC::PatternInterpreter(Channel& chan)
         else if (val >= 0xa0 && val <= 0xbf)
         {
             int o = (val - 0xa0);
-            chan.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer + o * 2]) + hdr.PSC_OrnamentsPointer;
+            chan.OrnamentPointer = *(uint16_t*)(&m_data[hdr.PSC_OrnamentsPointer + o * 2]);
+            if (m_version > 3) chan.OrnamentPointer += hdr.PSC_OrnamentsPointer;
         }
         else if (val >= 0x7e && val <= 0x9f)
         {
             if (val >= 0x80)
             {
                 int s = (val - 0x80);
-                chan.SamplePointer = hdr.PSC_SamplesPointers[s] + 0x4C;
+                chan.SamplePointer = hdr.PSC_SamplesPointers[s];
+                if (m_version > 3) chan.SamplePointer += 0x4C;
             }
         }
         else if (val == 0x6b)

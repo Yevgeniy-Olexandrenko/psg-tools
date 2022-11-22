@@ -62,6 +62,7 @@ private:
     void GetRegisters(Channel& chan, uint8_t& mixer);
 
 private:
+    int m_version;
     uint8_t Delay;
     uint8_t DelayCounter;
     uint8_t Lines_Counter;
