@@ -87,9 +87,9 @@ void DecodePSC::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loop
 
 bool DecodePSC::Play()
 {
-    uint8_t* regs = m_regs[0];
-
     bool loop = false;
+    auto regs = m_regs[0];
+
     if (!--m_delayCounter)
     {
         if (!--m_linesCounter)

@@ -97,7 +97,7 @@ private:
     bool PlayModule(int m);
     void InitPattern(int m);
     void ProcessPattern(int m, int c, uint8_t& shape);
-    void ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd);
+    void ProcessInstrument(int m, int c, uint16_t& tperiod, uint8_t& mixer, uint8_t& volume, int8_t& envAdd);
     int  GetTonePeriod(int m, int note);
     
 private:

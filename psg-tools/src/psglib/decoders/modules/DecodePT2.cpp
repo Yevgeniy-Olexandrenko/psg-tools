@@ -81,14 +81,16 @@ void DecodePT2::Loop(uint8_t& currPosition, uint8_t& lastPosition, uint8_t& loop
 bool DecodePT2::Play()
 {
     bool loop = false;
-    if (--m_delayCounter == 0)
+    auto regs = m_regs[0];
+
+    if (!--m_delayCounter)
     {
         for (int c = 0; c < 3; ++c)
         {
             auto& cha = m_channels[c];
             if (--cha.noteSkipCounter < 0)
             {
-                if (!c && m_data[cha.patternPtr] == 0)
+                if (!c && !m_data[cha.patternPtr])
                 {
                     auto& hdr = reinterpret_cast<const Header&>(*m_data);
                     if (++m_currentPosition == hdr.numberOfPositions)
@@ -98,16 +100,16 @@ bool DecodePT2::Play()
                     }
                     InitPattern();
                 }
-                ProcessPattern(c, m_regs[0][E_Fine], m_regs[0][E_Coarse], m_regs[0][E_Shape]);
+                ProcessPattern(c, regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
             }
         }
         m_delayCounter = m_delay;
     }
 
-    m_regs[0][Mixer] = 0;
-    ProcessInstrument(0, m_regs[0][A_Fine], m_regs[0][A_Coarse], m_regs[0][A_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
-    ProcessInstrument(1, m_regs[0][B_Fine], m_regs[0][B_Coarse], m_regs[0][B_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
-    ProcessInstrument(2, m_regs[0][C_Fine], m_regs[0][C_Coarse], m_regs[0][C_Volume], m_regs[0][N_Period], m_regs[0][Mixer]);
+    regs[Mixer] = 0;
+    ProcessInstrument(0, (uint16_t&)regs[A_Fine], regs[N_Period], regs[Mixer], regs[A_Volume]);
+    ProcessInstrument(1, (uint16_t&)regs[B_Fine], regs[N_Period], regs[Mixer], regs[B_Volume]);
+    ProcessInstrument(2, (uint16_t&)regs[C_Fine], regs[N_Period], regs[Mixer], regs[C_Volume]);
     return loop;
 }
 
@@ -117,9 +119,9 @@ void DecodePT2::InitPattern()
 {
     auto& hdr = reinterpret_cast<const Header&>(*m_data);
     uint16_t patternPointer = (hdr.patternsPointer + hdr.positionList[m_currentPosition] * 6);
-    m_channels[0].patternPtr = *(uint16_t*)(&m_data[patternPointer + 0]);
-    m_channels[1].patternPtr = *(uint16_t*)(&m_data[patternPointer + 2]);
-    m_channels[2].patternPtr = *(uint16_t*)(&m_data[patternPointer + 4]);
+    m_channels[0].patternPtr = (uint16_t&)(m_data[patternPointer + 0]);
+    m_channels[1].patternPtr = (uint16_t&)(m_data[patternPointer + 2]);
+    m_channels[2].patternPtr = (uint16_t&)(m_data[patternPointer + 4]);
 }
 
 void DecodePT2::ProcessPattern(int c, uint8_t& efine, uint8_t& ecoarse, uint8_t& shape)
@@ -234,7 +236,7 @@ void DecodePT2::ProcessPattern(int c, uint8_t& efine, uint8_t& ecoarse, uint8_t&
     cha.noteSkipCounter = cha.noteSkip;
 }
 
-void DecodePT2::ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& noise, uint8_t& mixer)
+void DecodePT2::ProcessInstrument(int c, uint16_t& tperiod, uint8_t& noise, uint8_t& mixer, uint8_t& volume)
 {
     auto& cha = m_channels[c];
     if (cha.enabled)
@@ -260,8 +262,7 @@ void DecodePT2::ProcessInstrument(int c, uint8_t& tfine, uint8_t& tcoarse, uint8
         if (note > 95) note = 95;
 
         tone += (cha.toneSliding + NoteTable_ST[note]);
-        tfine = (tone & 0xFF);
-        tcoarse = (tone >> 8 & 0x0F);
+        tperiod = (tone & 0x0FFF);
 
         if (cha.glissType == 2)
         {

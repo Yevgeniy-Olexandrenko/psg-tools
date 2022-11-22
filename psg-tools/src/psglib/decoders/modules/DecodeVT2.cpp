@@ -282,7 +282,7 @@ void DecodeVT2::Init()
 	m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 	m_isTS = (m_vt2.modules.size() > 1);
 
-	for (size_t m = 0; m < m_vt2.modules.size(); ++m)
+	for (int m = 0; m < m_vt2.modules.size(); ++m)
 	{
 		auto& vtm = m_vt2.modules[m];
 		auto& mod = m_module[m];
@@ -293,11 +293,9 @@ void DecodeVT2::Init()
 		mod.m_patternIdx = vtm.positions[mod.m_currentPosition];
 		mod.m_patternPos = 0;
 
-		for (int c = 0; c < 3; ++c)
+		for (auto& cha : mod.m_channels)
 		{
-			auto& cha = mod.m_channels[c];
 			memset(&cha, 0, sizeof(cha));
-
 			cha.ornamentIdx = 0;
 			cha.ornamentLoop = (uint8_t)vtm.ornaments[cha.ornamentIdx].loop();
 			cha.ornamentLen = (uint8_t)vtm.ornaments[cha.ornamentIdx].size();
@@ -326,15 +324,16 @@ bool DecodeVT2::Play()
 
 bool DecodeVT2::PlayModule(int m)
 {
+	bool loop = false;
+	auto regs = m_regs[m];
 	auto& vtm = m_vt2.modules[m];
 	auto& mod = m_module[m];
 
-	bool loop = false;
-	if (--mod.m_delayCounter == 0)
+	if (!--mod.m_delayCounter)
 	{
 		for (int c = 0; c < 3; ++c)
 		{
-			Channel& cha = mod.m_channels[c];
+			auto& cha = mod.m_channels[c];
 			if (!c && mod.m_patternPos == vtm.patterns[mod.m_patternIdx].size())
 			{
 				if (++mod.m_currentPosition == vtm.positions.size())
@@ -347,28 +346,25 @@ bool DecodeVT2::PlayModule(int m)
 				mod.m_patternPos = 0;
 				mod.m_global.noiseBase = 0;
 			}
-			ProcessPattern(m, c, m_regs[m][E_Shape]);
+			ProcessPattern(m, c, regs[E_Shape]);
 		}
 		mod.m_patternPos++;
 		mod.m_delayCounter = mod.m_delay;
 	}
 
+	regs[Mixer] = 0;
 	int8_t envAdd = 0;
-	m_regs[m][Mixer] = 0;
-	ProcessInstrument(m, 0, m_regs[m][A_Fine], m_regs[m][A_Coarse], m_regs[m][A_Volume], m_regs[m][Mixer], envAdd);
-	ProcessInstrument(m, 1, m_regs[m][B_Fine], m_regs[m][B_Coarse], m_regs[m][B_Volume], m_regs[m][Mixer], envAdd);
-	ProcessInstrument(m, 2, m_regs[m][C_Fine], m_regs[m][C_Coarse], m_regs[m][C_Volume], m_regs[m][Mixer], envAdd);
+	ProcessInstrument(m, 0, (uint16_t&)regs[A_Fine], regs[Mixer], regs[A_Volume], envAdd);
+	ProcessInstrument(m, 1, (uint16_t&)regs[B_Fine], regs[Mixer], regs[B_Volume], envAdd);
+	ProcessInstrument(m, 2, (uint16_t&)regs[C_Fine], regs[Mixer], regs[C_Volume], envAdd);
 
-	uint8_t  noise = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
-	uint16_t etone = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8) + mod.m_global.curEnvSlide + envAdd;
-
-	m_regs[m][N_Period] = noise;
-	m_regs[m][E_Fine  ] = (etone & 0xFF);
-	m_regs[m][E_Coarse] = (etone >> 8 & 0xFF);
+	uint16_t envBase = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8);
+	(uint16_t&)regs[E_Fine] = (envBase + envAdd + mod.m_global.curEnvSlide);
+	regs[N_Period] = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
 
 	if (mod.m_global.curEnvDelay > 0)
 	{
-		if (--mod.m_global.curEnvDelay == 0)
+		if (!--mod.m_global.curEnvDelay)
 		{
 			mod.m_global.curEnvDelay = mod.m_global.envDelay;
 			mod.m_global.curEnvSlide += mod.m_global.envSlideAdd;
@@ -541,7 +537,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 	}
 }
 
-void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse, uint8_t& volume, uint8_t& mixer, int8_t& envAdd)
+void DecodeVT2::ProcessInstrument(int m, int c, uint16_t& tperiod, uint8_t& mixer, uint8_t& volume, int8_t& envAdd)
 {
 	auto& vtm = m_vt2.modules[m];
 	auto& mod = m_module[m];
@@ -559,12 +555,11 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint8_t& tfine, uint8_t& tcoarse
 		if (sampleLine.toneAcc) cha.toneAcc = tone;
 
 		int8_t note = (cha.note + uint8_t(ornamentLine));
-		if (note < 0) note = 0;
+		if (note < 0 ) note = 0;
 		if (note > 95) note = 95;
 
 		tone += (cha.toneSliding + GetTonePeriod(m, note));
-		tfine = (tone & 0xFF);
-		tcoarse = (tone >> 8 & 0x0F);
+		tperiod = (tone & 0x0FFF);
 
 		if (cha.toneSlideCount > 0)
 		{
