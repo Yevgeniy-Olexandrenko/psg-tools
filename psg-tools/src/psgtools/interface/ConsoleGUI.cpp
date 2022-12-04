@@ -560,10 +560,13 @@ namespace gui
         }
 
         // prepare fake frame
-        Frame fakeFrame;
-        fakeFrame[0].SetExpMode(isExpMode);
-        fakeFrame[1].SetExpMode(isExpMode);
-        fakeFrame.ResetChanges();
+        static Frame fakeFrame;
+        if (fakeFrame[0].IsExpMode() != isExpMode || fakeFrame[1].IsExpMode() != isExpMode)
+        {
+            fakeFrame[0].SetExpMode(isExpMode);
+            fakeFrame[1].SetExpMode(isExpMode);
+            fakeFrame.ResetChanges();
+        }
 
         // print frames
         for (int i = int(frameId - range1), y = 1; i <= int(frameId + range2); ++i, ++y)
