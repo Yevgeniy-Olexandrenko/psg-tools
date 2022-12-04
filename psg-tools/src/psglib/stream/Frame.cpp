@@ -96,12 +96,18 @@ Frame& Frame::operator+=(const Frame& other)
 {
 	for (int chip = 0; chip < 2; ++chip)
 	{
+		// case when the chip mode is switching
 		if (m_regs[chip].IsExpMode() != other.m_regs[chip].IsExpMode())
 		{
-			m_regs[chip].SetExpMode(other.m_regs[chip].IsExpMode());
+			for (Register reg = BankA_Fst; reg <= BankB_Lst; ++reg)
+			{
+				m_regs[chip].GetData(reg) = other.m_regs[chip].GetData(reg);
+			}
+			m_regs[chip].ResetChanges(true);
 		}
 
-		for (Register reg = BankA_Fst; reg <= BankB_Lst; ++reg)
+		// case when the chip data is simply updating
+		else for (Register reg = BankA_Fst; reg <= BankB_Lst; ++reg)
 		{
 			m_regs[chip].Update(reg, other.m_regs[chip].Read(reg));
 		}

@@ -222,6 +222,9 @@ void SoundChip::WriteDirect(uint8_t reg, uint8_t data)
 	case AY_EASHAPE:
 		if (m_chipType == ChipType::AY8930)
 		{
+#if 1
+			m_mode = (data >> 4) & 0x0F;
+#else
 			const uint8_t old_mode = m_mode;
 			m_mode = (data >> 4) & 0x0F;
 			if (old_mode != m_mode)
@@ -236,6 +239,7 @@ void SoundChip::WriteDirect(uint8_t reg, uint8_t data)
 					}
 				}
 			}
+#endif
 		}
 		m_envelope[0].SetShape(m_regs[AY_EASHAPE]);
 		break;
