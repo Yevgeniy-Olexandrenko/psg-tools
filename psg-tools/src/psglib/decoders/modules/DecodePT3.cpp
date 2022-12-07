@@ -37,7 +37,10 @@ bool DecodePT3::Open(Stream& stream)
 
                 stream.info.title(ReadString(&m_data[0x1E], 32));
                 stream.info.artist(ReadString(&m_data[0x42], 32));
-                stream.info.type(ReadString(&m_data[0x00], isVT ? 21 : 14) + " module");
+                if (isVT)
+                    stream.info.type(VTSignature + " (PT v3." + std::string(1, '0' + m_version) + ") module");
+                else
+                    stream.info.type(ReadString(&m_data[0x00], 14) + " module");
 
                 if (m_module[0].m_hdr->tonTableId == 1)
                 {
@@ -71,11 +74,11 @@ void DecodePT3::Init()
     m_module[0].m_hdr  = (Header*)m_module[0].m_data;
     m_module[1].m_hdr  = (Header*)m_module[1].m_data;
     
-    uint8_t ver = m_module[0].m_hdr->musicName[13];
+    uint8_t ver = m_module[0].m_hdr->musicName[0x0D];
     m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 
     m_module[0].TS = m_module[1].TS = 0x20;
-    int TS = m_module[0].m_hdr->musicName[98];
+    int TS = m_module[0].m_hdr->musicName[0x62];
     m_isTS = (TS != 0x20);
     if (m_isTS) m_module[1].TS = TS;
     else if (m_size > 400 && !memcmp(m_data + m_size - 4, "02TS", 4)) 
