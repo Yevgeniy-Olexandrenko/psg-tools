@@ -7,7 +7,7 @@
 
 namespace gui
 {
-	const int k_consoleWidth  = 100;
+	const int k_consoleWidth  = 108;
 	const int k_consoleHeight = 40;
 
 	void Init(const std::wstring& title);

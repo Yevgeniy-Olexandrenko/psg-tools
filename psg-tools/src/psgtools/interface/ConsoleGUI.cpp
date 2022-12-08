@@ -1,4 +1,4 @@
-#include <iomanip>
+﻿#include <iomanip>
 #include <sstream>
 #include <array>
 
@@ -537,27 +537,24 @@ namespace gui
 	size_t PrintStreamFrames(const Stream& stream, int frameId, const Output::Enables& enables)
 	{
         size_t height = m_framesBuffer.h;
+        size_t width  = m_framesBuffer.w - 2;
         size_t range1 = (height - 2) / 2;
         size_t range2 = (height - 2) - range1;
         bool isTwoChips = stream.IsSecondChipUsed();
         bool isExpMode  = stream.IsExpandedModeUsed();
 
         // prepare console for drawing
-        m_framesBuffer.clear();
-        cursor::show(false);
-        for (int i = 0; i < m_framesBuffer.h; ++i) std::cout << std::endl;
-        terminal::cursor::move_up(m_framesBuffer.h);
+        if (frameId == 0) { m_framesBuffer.clear(); cursor::show(false); }
+        for (int i = 0; i < height; ++i) std::cout << std::endl;
+        terminal::cursor::move_up(height);
 
         // print header
         int regs_w = isExpMode ? k_headerForExpMode.length() : k_headerForComMode.length();
-        int offset = ((m_framesBuffer.w - 2 - 6) - (isTwoChips ? 2 * regs_w + 1 : regs_w)) / 2;
+        int dump_w = 6 + (isTwoChips ? 2 * regs_w : regs_w);
+        int offset = 1 + (width - dump_w) / 2;
         m_framesBuffer.position(offset, 0).color(FG_DARK_CYAN).draw("FRAME").move(1, 0);
         printRegistersHeader(isExpMode);
-        if (isTwoChips)
-        {
-            m_framesBuffer.move(1, 0);
-            printRegistersHeader(isExpMode);
-        }
+        if (isTwoChips) printRegistersHeader(isExpMode);
 
         // prepare fake frame
         static Frame fakeFrame;
@@ -590,12 +587,100 @@ namespace gui
 
             // print frame registers
             printRegistersValues(0, frame, highlight, enables);
-            if (isTwoChips)
+            if (isTwoChips) printRegistersValues(1, frame, highlight, enables);
+        }
+
+        //
+        const auto ComputeChannelLevel = [&](int chip, int chan)
+        {
+            const Register vregs[]{ A_Volume, B_Volume, C_Volume };
+            const Register sregs[]{ EA_Shape, EB_Shape, EC_Shape };
+
+            const Frame& frame = stream.play.GetFrame(frameId);
+
+            uint8_t mixer = ((frame[chip].GetData(Mixer) >> chan) & 0b00001001);
+            uint8_t volume = frame[chip].GetData(vregs[chan]);
+            if (frame[chip].IsExpMode()) volume >>= 1;
+
+            if (volume & 0x10)
             {
-                m_framesBuffer.draw(' ');
-                printRegistersValues(1, frame, highlight, enables);
+                uint8_t shape = (frame[chip].GetData(frame[chip].IsExpMode() ? sregs[chan] : E_Shape) & 0x0F);
+                volume = ((shape == 0x08 || shape == 0x0A || shape == 0x0C || shape == 0x0E) ? 0x0F : 0x00);
+            }
+            else if (mixer == 0b00001001)
+            {
+                volume = 0;
+            }
+
+            const float c_volumeToLevel[] =
+            {
+                0.000f, 0.000f, 0.005f, 0.008f, 0.011f, 0.014f, 0.017f, 0.020f,
+                0.024f, 0.030f, 0.035f, 0.040f, 0.049f, 0.058f, 0.068f, 0.078f,
+                0.093f, 0.111f, 0.130f, 0.148f, 0.177f, 0.212f, 0.246f, 0.281f,
+                0.334f, 0.400f, 0.467f, 0.534f, 0.635f, 0.758f, 0.880f, 1.000f
+            };
+
+            volume <<= 1; ++volume;
+            return c_volumeToLevel[volume &= 0x1F];
+        };
+
+        //
+        float levelL;
+        float levelR;
+
+        float levelA0 = ComputeChannelLevel(0, 0);
+        float levelB0 = ComputeChannelLevel(0, 1);
+        float levelC0 = ComputeChannelLevel(0, 2);
+
+        if (isTwoChips)
+        {
+            float levelA1 = ComputeChannelLevel(1, 0);
+            float levelB1 = ComputeChannelLevel(1, 1);
+            float levelC1 = ComputeChannelLevel(1, 2);
+
+            levelL = (levelA0 + levelA1 + levelB0 + levelB1) / 4.f;
+            levelR = (levelC0 + levelC1 + levelB0 + levelB1) / 4.f;
+        }
+        else
+        {
+            levelL = (levelA0 + 0.5f * levelB0) / 1.5f;
+            levelR = (levelC0 + 0.5f * levelB0) / 1.5f;
+        }
+
+        for (size_t y = 0; y < height; ++y)
+        {
+            for (size_t x = 1; x <= offset - 3; ++x)
+            {
+                size_t di = (y * m_framesBuffer.w + x);
+                size_t si = (y * m_framesBuffer.w + x + 1);
+                m_framesBuffer.buffer[di] = m_framesBuffer.buffer[si];
+            }
+            for (size_t x = width; x >= offset + dump_w + 2; --x)
+            {
+                size_t di = (y * m_framesBuffer.w + x);
+                size_t si = (y * m_framesBuffer.w + x - 1);
+                m_framesBuffer.buffer[di] = m_framesBuffer.buffer[si];
             }
         }
+
+        size_t half_h = (height / 2);
+        size_t last_y = (half_h - 1);
+        for (size_t y = 0; y < half_h; ++y)
+        {
+            wchar_t charL = (y < int(levelL* half_h + 0.5f) ? '|' : ' ');
+            wchar_t charR = (y < int(levelR* half_h + 0.5f) ? '|' : ' ');
+
+            SHORT colorL = (y == last_y ? FG_RED : FG_GREY);
+            SHORT colorD = (y == last_y ? FG_DARK_RED : FG_DARK_GREY);
+            
+            m_framesBuffer.position(offset - 2, last_y - y).color(colorL).draw(charL);
+            m_framesBuffer.position(offset - 2, half_h + y).color(colorD).draw(charL);
+
+            m_framesBuffer.position(offset + dump_w + 1, last_y - y).color(colorL).draw(charR);
+            m_framesBuffer.position(offset + dump_w + 1, half_h + y).color(colorD).draw(charR);
+        }
+
+
         m_framesBuffer.render();
         cursor::move_down(int(height));
         return height;
