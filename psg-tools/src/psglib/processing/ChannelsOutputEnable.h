@@ -5,19 +5,19 @@
 
 class ChannelsOutputEnable : public Processing
 {
-    std::array<bool, 5> m_enables;
     int m_count;
+    std::array<bool, 5> m_enables;
 
 public:
     ChannelsOutputEnable(const Chip& dstChip)
-        : m_count(dstChip.count())
-    {
-        for (auto& enable : m_enables) enable = true;
-    }
+        : m_enables{ true, true, true, true, true }
+        , m_count(dstChip.count())
 
-    void SetEnables(const std::array<bool, 5>& enables)
+    {}
+
+    std::array<bool, 5>& GetEnables()
     {
-        m_enables = enables;
+        return m_enables;
     }
 
 #ifdef Enable_ChannelsOutputEnable

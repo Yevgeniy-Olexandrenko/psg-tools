@@ -112,7 +112,7 @@ void PlayFiles::OnFramePlaying(const Stream& stream, FrameId frameId)
     }
 
     if (!m_hideStream)
-    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_enables);
+    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_output);
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
@@ -245,7 +245,7 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
         FrameId frameId = -1;
         while (result == Action::Nothing)
         {
-            m_output.SetEnables(m_enables);
+            m_output.GetEnables() = m_enables;
             gui::Update();
 
             if (m_sPrint || m_player.GetFrameId() != frameId)

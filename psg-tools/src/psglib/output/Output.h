@@ -23,9 +23,13 @@ public:
 	void Close();
 
 	using Enables = std::array<bool, 5>;
-	void SetEnables(const Enables& enables);
+	const Enables& GetEnables() const;
+	Enables& GetEnables();
 
 	std::string toString() const;
+
+	float GetLevelL() const;
+	float GetLevelR() const;
 
 protected:
 	using Data = std::vector<std::pair<uint8_t, uint8_t>>;
@@ -37,11 +41,15 @@ protected:
 	virtual void DeviceClose() = 0;
 
 private:
-	void Reset() override;
+	void  Reset() override;
 	const Frame& operator()(const Frame& frame) override;
+
+	void  ComputeLevels();
+	float ComputeChannelLevel(int chip, int chan);
 
 private:
 	Chip m_dchip;
 	bool m_isOpened;
 	ProcChain m_procChain;
+	float m_levels[2];
 };
