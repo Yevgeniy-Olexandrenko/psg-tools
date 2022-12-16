@@ -26,10 +26,8 @@ public:
 	const Enables& GetEnables() const;
 	Enables& GetEnables();
 
+	void GetLevels(float& L, float& R) const;
 	std::string toString() const;
-
-	float GetLevelL() const;
-	float GetLevelR() const;
 
 protected:
 	using Data = std::vector<std::pair<uint8_t, uint8_t>>;
@@ -43,13 +41,10 @@ protected:
 private:
 	void  Reset() override;
 	const Frame& operator()(const Frame& frame) override;
-
-	void  ComputeLevels();
-	float ComputeChannelLevel(int chip, int chan);
+	float ComputeChannelLevel(int chip, int chan) const;
 
 private:
 	Chip m_dchip;
 	bool m_isOpened;
 	ProcChain m_procChain;
-	float m_levels[2];
 };

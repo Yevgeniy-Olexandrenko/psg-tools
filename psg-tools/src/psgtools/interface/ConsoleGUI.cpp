@@ -9,7 +9,7 @@ namespace gui
 {
     using namespace terminal;
 
-	PrintBuffer   m_framesBuffer(k_consoleWidth, 12);
+	PrintBuffer   m_framesBuffer(k_consoleWidth, 16);
     KeyboardInput m_keyboardInput;
 
     bool SetConsoleSize(SHORT x, SHORT y)
@@ -230,7 +230,7 @@ namespace gui
         bool m_playing;
 
     public:
-        Coloring(bool playing, bool enabled, bool withEnvelope, bool withNoise, bool withAccent)
+        Coloring(bool playing, bool enabled, bool withTone, bool withNoise, bool withEnvelope)
             : m_color0(FG_DARK_GREY)
             , m_color1(FG_DARK_GREY)
             , m_playing(playing)
@@ -242,12 +242,7 @@ namespace gui
             }
             else if (enabled)
             {
-                m_color1 = (withEnvelope ? FG_YELLOW : (withNoise ? FG_CYAN : FG_GREEN));
-                if (withAccent)
-                {
-                    m_color0 |= BG_DARK_BLUE;
-                    m_color1 |= BG_DARK_BLUE;
-                }
+                m_color1 = (withEnvelope ? FG_YELLOW : (withNoise ? FG_CYAN : (withTone ? FG_GREEN : FG_RED)));
             }
         }
 
@@ -279,23 +274,28 @@ namespace gui
 
     void printRegistersValuesForCompatibleMode(int chip, const Frame& frame, bool playing, const Output::Enables& enables)
     {
-        uint8_t mixer = frame[chip].Read(Mixer);
-        uint8_t vol_a = frame[chip].Read(A_Volume);
-        uint8_t vol_b = frame[chip].Read(B_Volume);
-        uint8_t vol_c = frame[chip].Read(C_Volume);
+        uint8_t mixer = frame[chip].GetData(Mixer);
+        uint8_t vol_a = frame[chip].GetData(A_Volume);
+        uint8_t vol_b = frame[chip].GetData(B_Volume);
+        uint8_t vol_c = frame[chip].GetData(C_Volume);
+        uint8_t shape = frame[chip].GetData(E_Shape);
 
+        bool enableTA = !(mixer & 0b00000001);
+        bool enableTB = !(mixer & 0b00000010);
+        bool enableTC = !(mixer & 0b00000100);
         bool enableNA = !(mixer & 0b00001000);
         bool enableNB = !(mixer & 0b00010000);
         bool enableNC = !(mixer & 0b00100000);
         bool enableEA = (vol_a & 0x10);
         bool enableEB = (vol_b & 0x10);
         bool enableEC = (vol_c & 0x10);
+        bool periodic = (shape == 0x08 || shape == 0x0A || shape == 0x0C || shape == 0x0E);
 
         Coloring coloringM
         {
             playing,
             (enables[0] || enables[1] || enables[2] || enables[4]),
-            false,
+            ((enables[0] && enableTA) || (enables[1] && enableTB) || (enables[2] && enableTC)),
             enables[4] && (enableNA || enableNB || enableNC),
             false
         };
@@ -303,41 +303,42 @@ namespace gui
         {
             playing,
             enables[0],
-            enables[3] && enableEA,
+            enables[0] && enableTA,
             enables[4] && enableNA,
-            frame[chip].IsChangedPeriod(A_Period) && frame[chip].IsChanged(A_Volume)
+            enables[3] && enableEA && periodic,
+           
         };
         Coloring coloringB
         { 
             playing,
             enables[1],
-            enables[3] && enableEB,
+            enables[1] && enableTB,
             enables[4] && enableNB,
-            frame[chip].IsChangedPeriod(B_Period) && frame[chip].IsChanged(B_Volume)
+            enables[3] && enableEB && periodic,
         };
         Coloring coloringC
         { 
             playing,
             enables[2],
-            enables[3] && enableEC,
+            enables[2] && enableTC,
             enables[4] && enableNC,
-            frame[chip].IsChangedPeriod(C_Period) && frame[chip].IsChanged(C_Volume)
-        };
-        Coloring coloringN
-        { 
-            playing,
-            enables[4],
-            false, 
-            (enableNA || enableNB || enableNC),
-            false 
+            enables[3] && enableEC && periodic,
         };
         Coloring coloringE
         { 
             playing,
             enables[3],
-            (enableEA || enableEB || enableEC),
-            false, 
-            frame[chip].IsChangedPeriod(E_Period) && frame[chip].IsChanged(E_Shape)
+            false,
+            false,
+            (enableEA || enableEB || enableEC)
+        };
+        Coloring coloringN
+        {
+            playing,
+            enables[4],
+            false,
+            (enableNA || enableNB || enableNC),
+            false
         };
 
         uint16_t color = (playing ? BG_DARK_MAGENTA | FG_CYAN : FG_CYAN);
@@ -375,128 +376,120 @@ namespace gui
 
     void printRegistersValuesForExpandedMode(int chip, const Frame& frame, bool playing, const Output::Enables& enables)
     {
-        uint8_t mixer = frame[chip].Read(Mixer);
-        uint8_t vol_a = frame[chip].Read(A_Volume);
-        uint8_t vol_b = frame[chip].Read(B_Volume);
-        uint8_t vol_c = frame[chip].Read(C_Volume);
+        //uint8_t mixer = frame[chip].Read(Mixer);
+        //uint8_t vol_a = frame[chip].Read(A_Volume);
+        //uint8_t vol_b = frame[chip].Read(B_Volume);
+        //uint8_t vol_c = frame[chip].Read(C_Volume);
 
-        bool enableNA = !(mixer & 0b00001000);
-        bool enableNB = !(mixer & 0b00010000);
-        bool enableNC = !(mixer & 0b00100000);
-        bool enableEA = (vol_a & 0x20);
-        bool enableEB = (vol_b & 0x20);
-        bool enableEC = (vol_c & 0x20);
+        //bool enableNA = !(mixer & 0b00001000);
+        //bool enableNB = !(mixer & 0b00010000);
+        //bool enableNC = !(mixer & 0b00100000);
+        //bool enableEA = (vol_a & 0x20);
+        //bool enableEB = (vol_b & 0x20);
+        //bool enableEC = (vol_c & 0x20);
 
-        Coloring coloringM
-        {
-            playing,
-            (enables[0] || enables[1] || enables[2] || enables[4]),
-            false,
-            enables[4] && (enableNA || enableNB || enableNC),
-            false
-        };
-        Coloring coloringA
-        {
-            playing,
-            enables[0],
-            enables[3] && enableEA,
-            enables[4] && enableNA,
-            frame[chip].IsChangedPeriod(A_Period) && frame[chip].IsChanged(A_Volume)
-        };
-        Coloring coloringB
-        {
-            playing,
-            enables[1],
-            enables[3] && enableEB,
-            enables[4] && enableNB,
-            frame[chip].IsChangedPeriod(B_Period) && frame[chip].IsChanged(B_Volume)
-        };
-        Coloring coloringC
-        {
-            playing,
-            enables[2],
-            enables[3] && enableEC,
-            enables[4] && enableNC,
-            frame[chip].IsChangedPeriod(C_Period) && frame[chip].IsChanged(C_Volume)
-        };
-        Coloring coloringN
-        {
-            playing,
-            enables[4],
-            false,
-            (enableNA || enableNB || enableNC),
-            false
-        };
-        Coloring coloringEA
-        {
-            playing,
-            enables[3],
-            enableEA,
-            false,
-            frame[chip].IsChangedPeriod(EA_Period) && frame[chip].IsChanged(EA_Shape)
-        };
-        Coloring coloringEB
-        {
-            playing,
-            enables[3],
-            enableEB,
-            false,
-            frame[chip].IsChangedPeriod(EB_Period) && frame[chip].IsChanged(EB_Shape)
-        };
-        Coloring coloringEC
-        {
-            playing,
-            enables[3],
-            enableEC,
-            false,
-            frame[chip].IsChangedPeriod(EC_Period) && frame[chip].IsChanged(EC_Shape)
-        };
+        //Coloring coloringM
+        //{
+        //    playing,
+        //    (enables[0] || enables[1] || enables[2] || enables[4]),
+        //    false,
+        //    enables[4] && (enableNA || enableNB || enableNC)
+        //};
+        //Coloring coloringA
+        //{
+        //    playing,
+        //    enables[0],
+        //    enables[3] && enableEA,
+        //    enables[4] && enableNA
+        //};
+        //Coloring coloringB
+        //{
+        //    playing,
+        //    enables[1],
+        //    enables[3] && enableEB,
+        //    enables[4] && enableNB
+        //};
+        //Coloring coloringC
+        //{
+        //    playing,
+        //    enables[2],
+        //    enables[3] && enableEC,
+        //    enables[4] && enableNC
+        //};
+        //Coloring coloringEA
+        //{
+        //    playing,
+        //    enables[3],
+        //    enableEA,
+        //    false
+        //};
+        //Coloring coloringEB
+        //{
+        //    playing,
+        //    enables[3],
+        //    enableEB,
+        //    false
+        //};
+        //Coloring coloringEC
+        //{
+        //    playing,
+        //    enables[3],
+        //    enableEC,
+        //    false
+        //};
+        //Coloring coloringN
+        //{
+        //    playing,
+        //    enables[4],
+        //    false,
+        //    (enableNA || enableNB || enableNC)
+        //};
        
-        uint16_t color = (playing ? BG_DARK_MAGENTA | FG_CYAN : FG_CYAN);
-        m_framesBuffer.color(color).draw('|');
-        printRegisterValue(chip, frame, Mixer, coloringM);
+        //uint16_t color = (playing ? BG_DARK_MAGENTA | FG_CYAN : FG_CYAN);
+        //m_framesBuffer.color(color).draw('|');
+        //printRegisterValue(chip, frame, Mixer, coloringM);
 
-        m_framesBuffer.color(color).draw('|');
-        printRegisterValue(chip, frame, A_Coarse,  coloringA);
-        printRegisterValue(chip, frame, A_Fine,    coloringA);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, A_Volume,  coloringA);
-        printRegisterValue(chip, frame, A_Duty,    coloringA);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EA_Coarse, coloringEA);
-        printRegisterValue(chip, frame, EA_Fine,   coloringEA);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EA_Shape,  coloringEA);
+        //m_framesBuffer.color(color).draw('|');
+        //printRegisterValue(chip, frame, A_Coarse,  coloringA);
+        //printRegisterValue(chip, frame, A_Fine,    coloringA);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, A_Volume,  coloringA);
+        //printRegisterValue(chip, frame, A_Duty,    coloringA);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EA_Coarse, coloringEA);
+        //printRegisterValue(chip, frame, EA_Fine,   coloringEA);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EA_Shape,  coloringEA);
 
-        m_framesBuffer.color(color).draw('|');
-        printRegisterValue(chip, frame, B_Coarse,  coloringB);
-        printRegisterValue(chip, frame, B_Fine,    coloringB);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, B_Volume,  coloringB);
-        printRegisterValue(chip, frame, B_Duty,    coloringB);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EB_Coarse, coloringEB);
-        printRegisterValue(chip, frame, EB_Fine,   coloringEB);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EB_Shape,  coloringEB);
+        //m_framesBuffer.color(color).draw('|');
+        //printRegisterValue(chip, frame, B_Coarse,  coloringB);
+        //printRegisterValue(chip, frame, B_Fine,    coloringB);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, B_Volume,  coloringB);
+        //printRegisterValue(chip, frame, B_Duty,    coloringB);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EB_Coarse, coloringEB);
+        //printRegisterValue(chip, frame, EB_Fine,   coloringEB);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EB_Shape,  coloringEB);
 
-        m_framesBuffer.color(color).draw('|');
-        printRegisterValue(chip, frame, C_Coarse,  coloringC);
-        printRegisterValue(chip, frame, C_Fine,    coloringC);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, C_Volume,  coloringC);
-        printRegisterValue(chip, frame, C_Duty,    coloringC);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EC_Coarse, coloringEC);
-        printRegisterValue(chip, frame, EC_Fine,   coloringEC);
-        m_framesBuffer.draw(' ');
-        printRegisterValue(chip, frame, EC_Shape,  coloringEC);
-        m_framesBuffer.color(color).draw('|');
+        //m_framesBuffer.color(color).draw('|');
+        //printRegisterValue(chip, frame, C_Coarse,  coloringC);
+        //printRegisterValue(chip, frame, C_Fine,    coloringC);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, C_Volume,  coloringC);
+        //printRegisterValue(chip, frame, C_Duty,    coloringC);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EC_Coarse, coloringEC);
+        //printRegisterValue(chip, frame, EC_Fine,   coloringEC);
+        //m_framesBuffer.draw(' ');
+        //printRegisterValue(chip, frame, EC_Shape,  coloringEC);
+        //m_framesBuffer.color(color).draw('|');
 
-        printRegisterValue(chip, frame, N_AndMask, coloringN);
-        printRegisterValue(chip, frame, N_OrMask,  coloringN);
-        printRegisterValue(chip, frame, N_Period,  coloringN);
-        m_framesBuffer.color(color).draw('|');
+        //printRegisterValue(chip, frame, N_AndMask, coloringN);
+        //printRegisterValue(chip, frame, N_OrMask,  coloringN);
+        //printRegisterValue(chip, frame, N_Period,  coloringN);
+        //m_framesBuffer.color(color).draw('|');
     }
 
     void printRegistersValues(int chip, const Frame& frame, bool playing, const Output::Enables& enables)
@@ -591,8 +584,8 @@ namespace gui
         }
 
         // print levels
-        float levelL = output.GetLevelL();
-        float levelR = output.GetLevelR();
+        float levelL, levelR;
+        output.GetLevels(levelL, levelR);
         for (int y = 0; y < height; ++y)
         {
             for (int x = 1; x <= offset - 3; ++x)
@@ -614,13 +607,13 @@ namespace gui
             wchar_t charL = (y < int(levelL* half_h + 0.5f) ? '|' : ' ');
             wchar_t charR = (y < int(levelR* half_h + 0.5f) ? '|' : ' ');
 
-            SHORT colorL = (y == last_y ? FG_RED : FG_GREY);
-            SHORT colorD = (y == last_y ? FG_DARK_RED : FG_DARK_GREY);
+            SHORT colorU = (y == last_y ? FG_RED : (y == 0 ? FG_CYAN : FG_GREY));
+            SHORT colorD = (y == last_y ? FG_DARK_RED : (y == 0 ? FG_DARK_CYAN : FG_DARK_GREY));
             
-            m_framesBuffer.position(offset - 2, last_y - y).color(colorL).draw(charL);
+            m_framesBuffer.position(offset - 2, last_y - y).color(colorU).draw(charL);
             m_framesBuffer.position(offset - 2, half_h + y).color(colorD).draw(charL);
 
-            m_framesBuffer.position(offset + dump_w + 1, last_y - y).color(colorL).draw(charR);
+            m_framesBuffer.position(offset + dump_w + 1, last_y - y).color(colorU).draw(charR);
             m_framesBuffer.position(offset + dump_w + 1, half_h + y).color(colorD).draw(charR);
         }
 
