@@ -147,12 +147,14 @@ bool Frame::IsAudible() const
 		for (int chan = 0; chan < 3; ++chan)
 		{
 			uint8_t mixer = m_regs[chip].GetData(Mixer);
-			uint8_t vol_e = m_regs[chip].GetData(A_Volume + chan);
+			uint8_t vol_e = m_regs[chip].GetData(c_volume[chan]);
 
-			bool enableNT = ~(mixer & (m_regs[chip].nmask(chan) | m_regs[chip].tmask(chan)));
-			bool enableEV =  (vol_e & (m_regs[chip].emask() | m_regs[chip].vmask()));
+			bool enableT = ~(mixer & m_regs[chip].tmask(chan));
+			bool enableN = ~(mixer & m_regs[chip].nmask(chan));
+			bool enableE =  (vol_e & m_regs[chip].emask());
+			bool enableV =  (vol_e & m_regs[chip].vmask());
 
-			if (enableNT && enableEV) return true;
+			if (((enableT || enableN) && enableV) || enableE) return true;
 		}
 	}
 	return false;

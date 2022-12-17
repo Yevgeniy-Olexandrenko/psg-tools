@@ -259,7 +259,7 @@ float Output::ComputeChannelLevel(int chip, int chan) const
     else
     {
         // envelope is disabled in the given channel
-        uint8_t tn_mask = (m_frame[chip].tmask(chan) | m_frame[chip].nmask(chip));
+        uint8_t tn_mask = (m_frame[chip].tmask(chan) | m_frame[chip].nmask(chan));
         if ((mixer & tn_mask) != tn_mask)
         {
             // tone or noise is enabled
