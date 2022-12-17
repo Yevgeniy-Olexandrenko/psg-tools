@@ -150,57 +150,50 @@ Output::Enables& Output::GetEnables()
     return processing.GetEnables();
 }
 
-void Output::GetLevels(float& L, float& R) const
+void Output::GetLevels(float& L, float& C, float& R) const
 {
-    float A = ComputeChannelLevel(0, Frame::Channel::A);
-    float B = ComputeChannelLevel(0, Frame::Channel::B);
-    float C = ComputeChannelLevel(0, Frame::Channel::C);
+    float a = ComputeChannelLevel(0, Frame::Channel::A);
+    float b = ComputeChannelLevel(0, Frame::Channel::B);
+    float c = ComputeChannelLevel(0, Frame::Channel::C);
 
     if (m_dchip.count() == 2)
     {
-        A = (0.5f * (A + ComputeChannelLevel(1, Frame::Channel::A)));
-        B = (0.5f * (B + ComputeChannelLevel(1, Frame::Channel::B)));
-        C = (0.5f * (C + ComputeChannelLevel(1, Frame::Channel::C)));
+        a = (0.5f * (a + ComputeChannelLevel(1, Frame::Channel::A)));
+        b = (0.5f * (b + ComputeChannelLevel(1, Frame::Channel::B)));
+        c = (0.5f * (c + ComputeChannelLevel(1, Frame::Channel::C)));
     }
 
     if (m_dchip.output() == Chip::Output::Stereo)
     {
         switch (m_dchip.stereo())
         {
-        case Chip::Stereo::ABC:
-            L = ((A + 0.5f * B) / 1.5f);
-            R = ((C + 0.5f * B) / 1.5f);
-            break;
-
-        case Chip::Stereo::ACB:
-            L = ((A + 0.5f * C) / 1.5f);
-            R = ((B + 0.5f * C) / 1.5f);
-            break;
-
-        case Chip::Stereo::BAC:
-            L = ((B + 0.5f * A) / 1.5f);
-            R = ((C + 0.5f * A) / 1.5f);
-            break;
-
-        case Chip::Stereo::BCA:
-            L = ((B + 0.5f * C) / 1.5f);
-            R = ((A + 0.5f * C) / 1.5f);
-            break;
-
-        case Chip::Stereo::CAB:
-            L = ((C + 0.5f * A) / 1.5f);
-            R = ((B + 0.5f * A) / 1.5f);
-            break;
-
-        case Chip::Stereo::CBA:
-            L = ((C + 0.5f * B) / 1.5f);
-            R = ((A + 0.5f * B) / 1.5f);
-            break;
+        case Chip::Stereo::ABC: L = a; C = b; R = c; break;
+        case Chip::Stereo::ACB: L = a; C = c; R = b; break;
+        case Chip::Stereo::BAC: L = b; C = a; R = c; break;
+        case Chip::Stereo::BCA: L = b; C = c; R = a; break;
+        case Chip::Stereo::CAB: L = c; C = a; R = b; break;
+        case Chip::Stereo::CBA: L = c; C = b; R = a; break;
         }
     }
     else
     {
-        L = R = ((A + B + C) / 3.f);
+        L = C = R = ((a + b + c) / 3.f);
+    }
+}
+
+void Output::GetLevels(float& L, float& R) const
+{
+    float l, c, r;
+    GetLevels(l, c, r);
+
+    if (m_dchip.output() == Chip::Output::Stereo)
+    {
+        L = ((l + 0.5f * c) / 1.5f);
+        R = ((r + 0.5f * c) / 1.5f);
+    }
+    else
+    {
+        L = R = ((l + c + r) / 3.f);
     }
 }
 

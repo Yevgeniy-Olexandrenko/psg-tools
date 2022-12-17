@@ -26,6 +26,7 @@ public:
 	const Enables& GetEnables() const;
 	Enables& GetEnables();
 
+	void GetLevels(float& L, float& C, float& R) const;
 	void GetLevels(float& L, float& R) const;
 	std::string toString() const;
 
