@@ -104,23 +104,23 @@ bool Output::Write(const Frame& frame)
             if (m_dchip.hasExpMode(chip) && pframe[chip].IsExpMode())
             {
                 bool switchBanks = false;
-                for (Register reg = BankB_Fst; reg < BankB_Lst; ++reg)
+                for (Register reg = Register::BankB_Fst; reg < Register::BankB_Lst; ++reg)
                 {
                     if (pframe[chip].IsChanged(reg))
                     {
                         if (!switchBanks)
                         {
-                            data.emplace_back(Mode_Bank, pframe[chip].GetData(Mode_Bank) | 0x10);
+                            data.emplace_back(Register::Mode_Bank, pframe[chip].GetData(Register::Mode_Bank) | 0x10);
                             switchBanks = true;
                         }
                         data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
                     }
                 }
                 if (switchBanks)
-                    data.emplace_back(Mode_Bank, pframe[chip].GetData(Mode_Bank));
+                    data.emplace_back(Register::Mode_Bank, pframe[chip].GetData(Register::Mode_Bank));
             }
 
-            for (Register reg = BankA_Fst; reg <= BankA_Lst; ++reg)
+            for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
             {
                 if (pframe[chip].IsChanged(reg))
                     data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
@@ -230,35 +230,25 @@ const Frame& Output::operator()(const Frame& frame)
 
 float Output::ComputeChannelLevel(int chip, int chan) const
 {
-    static const Register c_vregs[]{ A_Volume, B_Volume, C_Volume };
-    static const Register c_sregs[]{ EA_Shape, EB_Shape, EC_Shape };
-
-    uint8_t mixer = m_frame[chip].GetData(Mixer);
-    uint8_t vol_e = m_frame[chip].GetData(c_vregs[chan]);
-    uint8_t max_v = m_frame[chip].vmask();
-
     uint8_t volume = 0;
-    if (vol_e & m_frame[chip].emask())
+    uint8_t maxVolume = m_frame[chip].vmask();
+    if (m_frame[chip].IsEnvelopeEnabled(chan))
     {
         // envelope is enabled in the given channel
-        uint8_t s_reg = (m_frame[chip].IsExpMode() ? c_sregs[chan] : E_Shape);
-        uint8_t shape = (m_frame[chip].GetData(s_reg) & 0x0F);
-        if (shape == 0x08 || shape == 0x0A || shape == 0x0C || shape == 0x0E)
+        if (m_frame[chip].IsPeriodicEnvelope(chan))
         {
             // if periodic envelope set max volume
-            volume = max_v;
+            volume = maxVolume;
         }
     }
     else
     {
         // envelope is disabled in the given channel
-        uint8_t tn_mask = (m_frame[chip].tmask(chan) | m_frame[chip].nmask(chan));
-        if ((mixer & tn_mask) != tn_mask)
+        if (m_frame[chip].IsToneEnabled(chan) || m_frame[chip].IsNoiseEnabled(chan))
         {
             // tone or noise is enabled
-            volume = (vol_e & m_frame[chip].vmask());
+            volume = m_frame[chip].GetVolume(chan);
         }
     }
-
-    return (float(volume) / float(max_v));
+    return (float(volume) / float(maxVolume));
 }

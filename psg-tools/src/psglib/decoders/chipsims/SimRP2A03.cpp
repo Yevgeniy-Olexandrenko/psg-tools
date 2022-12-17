@@ -108,8 +108,8 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
         uint8_t  volume = ConvertVolume(state.pulse1_volume);
 
         EnableTone(mixer, Frame::Channel::A);
-        frame[0].UpdatePeriod(A_Period, period);
-        frame[0].Update(A_Volume, volume);
+        frame[0].Update(PRegister::A_Period, period);
+        frame[0].Update(Register::A_Volume, volume);
     }
 
     // Pulse 2 -> Square C
@@ -119,13 +119,13 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
         uint8_t  volume = ConvertVolume(state.pulse2_volume);
 
         EnableTone(mixer, Frame::Channel::C);
-        frame[0].UpdatePeriod(C_Period, period);
-        frame[0].Update(C_Volume, volume);
+        frame[0].Update(PRegister::C_Period, period);
+        frame[0].Update(Register::C_Volume, volume);
     }
 
     // Triangle -> Envelope B
     if (state.triangle_enable)
-        EnableTriangleEnvelopeOnChannelB<E_Shape, E_Period>(state, frame);
+        EnableTriangleEnvelopeOnChannelB<Register::E_Shape, PRegister::E_Period>(state, frame);
     else
         DisableTriangleEnvelopeOnChannelB(frame);
     
@@ -135,13 +135,13 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
         uint16_t period = ConvertPeriod(state.noise_period >> 5);
         if (period > 0x1F) period = 0x1F;
 
-        frame[0].UpdatePeriod(N_Period, period);
+        frame[0].Update(PRegister::N_Period, period);
         DistributeNoiseBetweenChannels(state, frame, mixer);
     }
         
     // Mixer
     {
-        frame[0].Update(Mixer, mixer);
+        frame[0].Update(Register::Mixer, mixer);
     }
 }
 
@@ -165,13 +165,13 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
             volume = LevelToVolume(0.5f * VolumeToLevel(volume));
 
             EnableTone(mixer1, Frame::Channel::A);
-            frame[1].UpdatePeriod(A_Period, period1);
-            frame[1].Update(A_Volume, volume);
+            frame[1].Update(PRegister::A_Period, period1);
+            frame[1].Update(Register::A_Volume, volume);
         }
 
         EnableTone(mixer0, Frame::Channel::A);
-        frame[0].UpdatePeriod(A_Period, period0);
-        frame[0].Update(A_Volume, volume);
+        frame[0].Update(PRegister::A_Period, period0);
+        frame[0].Update(Register::A_Volume, volume);
     }
 
     // Pulse 2 -> Chip 0 Square C + Chip 1 Square C
@@ -189,18 +189,18 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
             volume = LevelToVolume(0.5f * VolumeToLevel(volume));
 
             EnableTone(mixer1, Frame::Channel::C);
-            frame[1].UpdatePeriod(C_Period, period1);
-            frame[1].Update(C_Volume, volume);
+            frame[1].Update(PRegister::C_Period, period1);
+            frame[1].Update(Register::C_Volume, volume);
         }
 
         EnableTone(mixer0, Frame::Channel::C);
-        frame[0].UpdatePeriod(C_Period, period0);
-        frame[0].Update(C_Volume, volume);
+        frame[0].Update(PRegister::C_Period, period0);
+        frame[0].Update(Register::C_Volume, volume);
     }
 
     // Triangle -> Chip 0 Envelope in Channel B
     if (state.triangle_enable)
-        EnableTriangleEnvelopeOnChannelB<E_Shape, E_Period>(state, frame);
+        EnableTriangleEnvelopeOnChannelB<Register::E_Shape, PRegister::E_Period>(state, frame);
     else
         DisableTriangleEnvelopeOnChannelB(frame);
     
@@ -212,14 +212,14 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
         if (period > 0x1F) period = 0x1F;
 
         EnableNoise(mixer1, Frame::Channel::B);
-        frame[1].UpdatePeriod(N_Period, period);
-        frame[1].Update(B_Volume, volume);
+        frame[1].Update(PRegister::N_Period, period);
+        frame[1].Update(Register::B_Volume, volume);
     }
     
     // Mixers
     {
-        frame[0].Update(Mixer, mixer0);
-        frame[1].Update(Mixer, mixer1);
+        frame[0].Update(Register::Mixer, mixer0);
+        frame[1].Update(Register::Mixer, mixer1);
     }
 }
 
@@ -238,9 +238,9 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
         uint8_t  duty = 0x02 + state.pulse1_duty;
 
         EnableTone(mixer, Frame::Channel::A);
-        frame[0].UpdatePeriod(A_Period, period);
-        frame[0].Update(A_Volume, volume);
-        frame[0].Update(A_Duty, duty);
+        frame[0].Update(PRegister::A_Period, period);
+        frame[0].Update(Register::A_Volume, volume);
+        frame[0].Update(Register::A_Duty, duty);
     }
 
     // Pulse 2 -> Square C
@@ -251,9 +251,9 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
         uint8_t  duty = 0x02 + state.pulse2_duty;
 
         EnableTone(mixer, Frame::Channel::C);
-        frame[0].UpdatePeriod(C_Period, period);
-        frame[0].Update(C_Volume, volume);
-        frame[0].Update(C_Duty, duty);
+        frame[0].Update(PRegister::C_Period, period);
+        frame[0].Update(Register::C_Volume, volume);
+        frame[0].Update(Register::C_Duty, duty);
     }
 
     // Triangle -> Envelope B
@@ -261,11 +261,11 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
     {
         // workaround for mixer
         EnableTone(mixer, Frame::Channel::B);
-        frame[0].UpdatePeriod(B_Period, 0x0);
-        frame[0].Update(B_Duty, 0x08);
+        frame[0].Update(PRegister::B_Period, uint16_t(0));
+        frame[0].Update(Register::B_Duty, 0x08);
 
         // enable triangle envelope
-        EnableTriangleEnvelopeOnChannelB<EB_Shape, EB_Period>(state, frame);
+        EnableTriangleEnvelopeOnChannelB<Register::EB_Shape, PRegister::EB_Period>(state, frame);
     }
     else
         DisableTriangleEnvelopeOnChannelB(frame);
@@ -273,37 +273,37 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
     {
-        frame[0].Update(N_AndMask, 0x0F);
-        frame[0].Update(N_OrMask,  0x00);
+        frame[0].Update(Register::N_AndMask, 0x0F);
+        frame[0].Update(Register::N_OrMask,  0x00);
 
         uint16_t period = ConvertPeriod(state.noise_period >> 4);
-        frame[0].UpdatePeriod(N_Period, period);
+        frame[0].Update(PRegister::N_Period, period);
         DistributeNoiseBetweenChannels(state, frame, mixer);
     }
 
     // Mixers
     {
-        frame[0].Update(Mixer, mixer);
+        frame[0].Update(Register::Mixer, mixer);
     }
 }
 
-template<Register shape_reg, PeriodRegister peiod_reg>
+template<Register::Index shape_reg, PRegister::Index peiod_reg>
 void SimRP2A03::EnableTriangleEnvelopeOnChannelB(const State& state, Frame& frame)
 {
     uint16_t period = ConvertPeriod(state.triangle_period >> 3);
-    uint8_t  volume = (frame[0].Read(B_Volume) | frame[0].emask());
+    uint8_t  volume = (frame[0].Read(Register::B_Volume) | frame[0].emask());
 
     if (frame[0].GetData(shape_reg) != 0x0A)
         frame[0].Update (shape_reg, 0x0A);
 
-    frame[0].UpdatePeriod(peiod_reg, period);
-    frame[0].Update(B_Volume, volume);
+    frame[0].Update(peiod_reg, period);
+    frame[0].Update(Register::B_Volume, volume);
 }
 
 void SimRP2A03::DisableTriangleEnvelopeOnChannelB(Frame& frame)
 {
-    uint8_t volume = (frame[0].Read(B_Volume) & frame[0].vmask());
-    frame[0].Update(B_Volume, volume);
+    uint8_t volume = (frame[0].Read(Register::B_Volume) & frame[0].vmask());
+    frame[0].Update(Register::B_Volume, volume);
 }
 
 void SimRP2A03::DistributeNoiseBetweenChannels(const State& state, Frame& frame, uint8_t& mixer)
@@ -312,16 +312,16 @@ void SimRP2A03::DistributeNoiseBetweenChannels(const State& state, Frame& frame,
     if (!state.triangle_enable)
     {
         EnableNoise(mixer, Frame::Channel::B);
-        frame[0].Update(B_Volume, volumeN);
+        frame[0].Update(Register::B_Volume, volumeN);
     }
     else
     {
-        if (!state.pulse1_enable) frame[0].Update(A_Volume, volumeN);
-        if (!state.pulse2_enable) frame[0].Update(C_Volume, volumeN);
+        if (!state.pulse1_enable) frame[0].Update(Register::A_Volume, volumeN);
+        if (!state.pulse2_enable) frame[0].Update(Register::C_Volume, volumeN);
 
         auto levelN = VolumeToLevel(volumeN);
-        auto levelA = VolumeToLevel(frame[0].Read(A_Volume));
-        auto levelC = VolumeToLevel(frame[0].Read(C_Volume));
+        auto levelA = VolumeToLevel(frame[0].Read(Register::A_Volume));
+        auto levelC = VolumeToLevel(frame[0].Read(Register::C_Volume));
 
         const auto Delta = [](float v, float a, float b)
         {   return std::sqrtf(std::abs(v * v - (a * a + b * b))); };

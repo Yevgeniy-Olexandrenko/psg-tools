@@ -69,7 +69,7 @@ bool EncodeTST::Open(const Stream& stream)
 
 void EncodeTST::Encode(const Frame& frame)
 {
-    for (Register reg = BankA_Fst; reg <= BankA_Lst; ++reg)
+    for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
     {
         if (frame[0].IsChanged(reg))
         {

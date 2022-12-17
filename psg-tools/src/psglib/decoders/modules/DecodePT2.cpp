@@ -100,16 +100,16 @@ bool DecodePT2::Play()
                     }
                     InitPattern();
                 }
-                ProcessPattern(c, regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
+                ProcessPattern(c, regs[Register::E_Fine], regs[Register::E_Coarse], regs[Register::E_Shape]);
             }
         }
         m_delayCounter = m_delay;
     }
 
-    regs[Mixer] = 0;
-    ProcessInstrument(0, (uint16_t&)regs[A_Fine], regs[N_Period], regs[Mixer], regs[A_Volume]);
-    ProcessInstrument(1, (uint16_t&)regs[B_Fine], regs[N_Period], regs[Mixer], regs[B_Volume]);
-    ProcessInstrument(2, (uint16_t&)regs[C_Fine], regs[N_Period], regs[Mixer], regs[C_Volume]);
+    regs[Register::Mixer] = 0;
+    ProcessInstrument(0, (uint16_t&)regs[Register::A_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::A_Volume]);
+    ProcessInstrument(1, (uint16_t&)regs[Register::B_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::B_Volume]);
+    ProcessInstrument(2, (uint16_t&)regs[Register::C_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::C_Volume]);
     return loop;
 }
 

@@ -43,16 +43,16 @@ void EncodePSG::Encode(const Frame& frame)
         {
             if (frame[chip].IsExpMode())
             {
-                OutputRegister(chip, Mode_Bank);
-                for (Register reg = BankA_Fst; reg <= BankB_Lst; ++reg)
+                OutputRegister(chip, Register::Mode_Bank);
+                for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
                 {
-                    if ((reg & 0x0F) == Mode_Bank) continue;
+                    if ((reg & 0x0F) == Register::Mode_Bank) continue;
                     OutputRegister(chip, reg);
                 }
             }
             else
             {
-                for (Register reg = BankA_Fst; reg <= BankA_Lst; ++reg)
+                for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
                 {
                     OutputRegister(chip, reg);
                 }

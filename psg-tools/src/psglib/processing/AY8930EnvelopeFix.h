@@ -19,22 +19,21 @@ public:
         {
             if (m_chip.model(chip) == Chip::Model::AY8930)
             {
-                uint8_t mixer = m_frame[chip].Read(Mixer);
+                uint8_t mixer = m_frame[chip].Read(Register::Mixer);
                 for (int chan = 0; chan < 3; ++chan)
                 {
-                    uint8_t vol_e = m_frame[chip].Read(A_Volume + chan);
-                    bool enableT = !(mixer & m_frame[chip].tmask(chan));
-                    bool enableN = !(mixer & m_frame[chip].nmask(chan));
-                    bool enableE = (vol_e & m_frame[chip].emask());
+                    bool enableT = m_frame[chip].IsToneEnabled(chan);
+                    bool enableN = m_frame[chip].IsNoiseEnabled(chan);
+                    bool enableE = m_frame[chip].IsEnvelopeEnabled(chan);
 
                     if (enableE && !(enableT || enableN))
                     {
-                        m_frame[chip].UpdatePeriod(A_Period + (2 * chan), 0);
-                        m_frame[chip].Update(A_Duty + chan, 0x08);
+                        m_frame[chip].Update(PRegister::t_period[chan], uint16_t(0));
+                        m_frame[chip].Update(Register::t_duty[chan], 8);
                         mixer &= ~(m_frame[chip].tmask(chan));
                     }
                 }
-                m_frame[chip].Update(Mixer, mixer);
+                m_frame[chip].Update(Register::Mixer, mixer);
             }
         }
         return m_frame;

@@ -156,41 +156,42 @@ void EncodeAYM::WriteChipData(const Frame& frame, int chip, bool isLast, BitStre
         WriteDelta({ m_frame[chip].Read(r), frame[chip].Read(r) }, stream);
     };
 
-    const auto WritePDelta = [&](PeriodRegister p)
+    const auto WritePDelta = [&](PRegister p)
     {
-        WriteDelta({ m_frame[chip].ReadPeriod(p), frame[chip].ReadPeriod(p) }, stream);
+        WriteDelta({ m_frame[chip].Read(p), frame[chip].Read(p) }, stream);
     };
 
     uint8_t loMask = 0;
     uint8_t hiMask = 0;
 
-    if (frame[chip].IsChanged(Mixer))          loMask |= (1 << 0);
-    if (frame[chip].IsChangedPeriod(A_Period)) loMask |= (1 << 1);
-    if (frame[chip].IsChanged(A_Volume))       loMask |= (1 << 2);
-    if (frame[chip].IsChangedPeriod(B_Period)) loMask |= (1 << 3);
-    if (frame[chip].IsChanged(B_Volume))       loMask |= (1 << 4);
-    if (frame[chip].IsChangedPeriod(C_Period)) loMask |= (1 << 5);
-    if (frame[chip].IsChanged(C_Volume))       loMask |= (1 << 6);
-    if (frame[chip].IsChangedPeriod(N_Period)) hiMask |= (1 << 0);
-    if (frame[chip].IsChangedPeriod(E_Period)) hiMask |= (1 << 1);
-    if (frame[chip].IsChanged(E_Shape))        hiMask |= (1 << 2);
-
+#if 0 // TODO: Fix this!
+    if (frame[chip].IsChanged(Register::Mixer))          loMask |= (1 << 0);
+    if (frame[chip].IsChanged(PRegister::A_Period)) loMask |= (1 << 1);
+    if (frame[chip].IsChanged(Register::A_Volume))       loMask |= (1 << 2);
+    if (frame[chip].IsChanged(PRegister::B_Period)) loMask |= (1 << 3);
+    if (frame[chip].IsChanged(Register::B_Volume))       loMask |= (1 << 4);
+    if (frame[chip].IsChanged(PRegister::C_Period)) loMask |= (1 << 5);
+    if (frame[chip].IsChanged(Register::C_Volume))       loMask |= (1 << 6);
+    if (frame[chip].IsChanged(PRegister::N_Period)) hiMask |= (1 << 0);
+    if (frame[chip].IsChanged(PRegister::E_Period)) hiMask |= (1 << 1);
+    if (frame[chip].IsChanged(Register::E_Shape))        hiMask |= (1 << 2);
+#endif
     if (!isLast) hiMask |= (1 << 3);
     if (hiMask ) loMask |= (1 << 7);
 
     stream.Write<8>(loMask);
     if (loMask & (1 << 7)) stream.Write<4>(hiMask);
 
-    if (loMask & (1 << 0)) WriteRDelta(Mixer);
-    if (loMask & (1 << 1)) WritePDelta(A_Period);
-    if (loMask & (1 << 2)) WriteRDelta(A_Volume);
-    if (loMask & (1 << 3)) WritePDelta(B_Period);
-    if (loMask & (1 << 4)) WriteRDelta(B_Volume);
-    if (loMask & (1 << 5)) WritePDelta(C_Period);
-    if (loMask & (1 << 6)) WriteRDelta(C_Volume);
-    if (hiMask & (1 << 0)) WritePDelta(N_Period);
-    if (hiMask & (1 << 1)) WritePDelta(E_Period);
-    if (hiMask & (1 << 2)) WriteRDelta(E_Shape);
+    if (loMask & (1 << 0)) WriteRDelta(Register::Mixer);
+    if (loMask & (1 << 1)) WritePDelta(PRegister::A_Period);
+    if (loMask & (1 << 2)) WriteRDelta(Register::A_Volume);
+    if (loMask & (1 << 3)) WritePDelta(PRegister::B_Period);
+    if (loMask & (1 << 4)) WriteRDelta(Register::B_Volume);
+    if (loMask & (1 << 5)) WritePDelta(PRegister::C_Period);
+    if (loMask & (1 << 6)) WriteRDelta(Register::C_Volume);
+    if (hiMask & (1 << 0)) WritePDelta(PRegister::N_Period);
+    if (hiMask & (1 << 1)) WritePDelta(PRegister::E_Period);
+    if (hiMask & (1 << 2)) WriteRDelta(Register::E_Shape);
 }
 
 void EncodeAYM::WriteStepChunk()

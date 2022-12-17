@@ -111,7 +111,7 @@ bool DecodeYM::Decode(Frame& frame)
     uint8_t* dataPtr = (m_data + m_offset) + (m_frame * frameSize);
     m_frame++;
 
-    for (uint8_t reg = 0; reg < 14; reg++)
+    for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
     {
         frame[0].Update(reg, *dataPtr);
         dataPtr += valueSize;

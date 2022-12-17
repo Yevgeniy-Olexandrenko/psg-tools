@@ -29,8 +29,8 @@ public:
             {
                 const auto ApplyEnable = [&](int chip, int chan, bool enableT, bool enableE, bool enableN)
                 {
-                    uint8_t mixer = m_frame[chip].Read(Mixer);
-                    uint8_t vol_e = m_frame[chip].Read(A_Volume + chan);
+                    uint8_t mixer = m_frame[chip].Read(Register::Mixer);
+                    uint8_t vol_e = m_frame[chip].Read(Register::volume[chan]);
 
                     // disable tone and noise
                     if (!enableT) mixer |= m_frame[chip].tmask(chan);
@@ -40,8 +40,8 @@ public:
                     if (!enableT && !enableN) vol_e &= m_frame[chip].emask();
                     if (!enableE) vol_e &= m_frame[chip].vmask();
 
-                    m_frame[chip].Update(Mixer, mixer);
-                    m_frame[chip].Update(A_Volume + chan, vol_e);
+                    m_frame[chip].Update(Register::Mixer, mixer);
+                    m_frame[chip].Update(Register::volume[chan], vol_e);
                 };
 
                 Update(frame);

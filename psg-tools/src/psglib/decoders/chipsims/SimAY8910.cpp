@@ -25,35 +25,37 @@ void SimAY8910::Simulate(int samples)
 	// do nothing
 }
 
+// TODO: needs testing!
+// TODO: rewrite using processing unit!
 void SimAY8910::Convert(Frame& frame)
 {
     m_pframe += m_frame;
     m_frame.ResetChanges();
-
-    static const PeriodRegister c_com[]
-    {
-        A_Period, B_Period, C_Period,
-        E_Period, N_Period
-    };
-
-    static const PeriodRegister c_exp[]
-    {
-        A_Period,  B_Period,  C_Period,
-        EA_Period, EB_Period, EC_Period,
-        N_Period
-    };
 
     if (m_clockRatio != 1.f)
     {
         for (int chip = 0; chip < 2; ++chip)
         {
             bool isExpMode = m_pframe[chip].IsExpMode();
-            for (size_t i = 0; i < (isExpMode ? sizeof(c_exp) : sizeof(c_com)); ++i)
+            uint16_t tBound = (isExpMode ? 0xFFFF : 0x0FFF);
+            uint16_t nBound = (isExpMode ? 0x00FF : 0x001F);
+
+            // safe period conversion based on clock ratio
+            const auto ConvertPeriod = [&](PRegister preg, uint16_t bound)
             {
-                PeriodRegister preg = (isExpMode ? c_exp[i] : c_com[i]);
-                uint16_t period = ConvertPeriod(m_pframe[chip].ReadPeriod(preg));
-                m_pframe[chip].UpdatePeriod(preg, period);
+                auto period = uint32_t(m_pframe[chip].Read(preg) * m_clockRatio + 0.5f);
+                m_pframe[chip].Update(preg, uint16_t(period > bound ? bound : period));
+            };
+
+            // convert tone and envelope periods
+            for (int chan = 0; chan < 3; ++chan)
+            {
+                ConvertPeriod(PRegister::t_period[chan], tBound);
+                ConvertPeriod(PRegister::e_period[chan], 0xFFFF);
             }
+
+            // convert noise period
+            ConvertPeriod(PRegister::N_Period, nBound);
         }
     }
 

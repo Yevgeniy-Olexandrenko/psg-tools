@@ -111,9 +111,9 @@ bool DecodePSC::Play()
             m_channels[2].noteSkipCounter = 1;
         }
 
-        if (!--m_channels[0].noteSkipCounter) ProcessPattern(0, (uint16_t&)regs[A_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
-        if (!--m_channels[1].noteSkipCounter) ProcessPattern(1, (uint16_t&)regs[B_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
-        if (!--m_channels[2].noteSkipCounter) ProcessPattern(2, (uint16_t&)regs[C_Fine], regs[E_Fine], regs[E_Coarse], regs[E_Shape]);
+        if (!--m_channels[0].noteSkipCounter) ProcessPattern(0, (uint16_t&)regs[Register::A_Fine], regs[Register::E_Fine], regs[Register::E_Coarse], regs[Register::E_Shape]);
+        if (!--m_channels[1].noteSkipCounter) ProcessPattern(1, (uint16_t&)regs[Register::B_Fine], regs[Register::E_Fine], regs[Register::E_Coarse], regs[Register::E_Shape]);
+        if (!--m_channels[2].noteSkipCounter) ProcessPattern(2, (uint16_t&)regs[Register::C_Fine], regs[Register::E_Fine], regs[Register::E_Coarse], regs[Register::E_Shape]);
 
         m_channels[0].Noise_Accumulator += m_noiseBase;
         m_channels[1].Noise_Accumulator += m_noiseBase;
@@ -122,10 +122,10 @@ bool DecodePSC::Play()
         m_delayCounter = m_delay;
     }
 
-    regs[Mixer] = 0;
-    ProcessInstrument(0, (uint16_t&)regs[A_Fine], regs[N_Period], regs[Mixer], regs[A_Volume], (uint16_t&)regs[E_Fine]);
-    ProcessInstrument(1, (uint16_t&)regs[B_Fine], regs[N_Period], regs[Mixer], regs[B_Volume], (uint16_t&)regs[E_Fine]);
-    ProcessInstrument(2, (uint16_t&)regs[C_Fine], regs[N_Period], regs[Mixer], regs[C_Volume], (uint16_t&)regs[E_Fine]);
+    regs[Register::Mixer] = 0;
+    ProcessInstrument(0, (uint16_t&)regs[Register::A_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::A_Volume], (uint16_t&)regs[Register::E_Fine]);
+    ProcessInstrument(1, (uint16_t&)regs[Register::B_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::B_Volume], (uint16_t&)regs[Register::E_Fine]);
+    ProcessInstrument(2, (uint16_t&)regs[Register::C_Fine], regs[Register::N_Period], regs[Register::Mixer], regs[Register::C_Volume], (uint16_t&)regs[Register::E_Fine]);
     return loop;
 }
 

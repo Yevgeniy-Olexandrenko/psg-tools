@@ -147,16 +147,16 @@ bool DecodeSQT::Play()
     if (!m_chC.mixNoise) mixer |= 0x20;
     if (!m_chC.mixTon)   mixer |= 0x04;
 
-    m_regs[0][Mixer] = mixer;
-    m_regs[0][A_Fine] = m_chA.ton & 0xff;
-    m_regs[0][A_Coarse] = (m_chA.ton >> 8) & 0xf;
-    m_regs[0][B_Fine] = m_chB.ton & 0xff;
-    m_regs[0][B_Coarse] = (m_chB.ton >> 8) & 0xf;
-    m_regs[0][C_Fine] = m_chC.ton & 0xff;
-    m_regs[0][C_Coarse] = (m_chC.ton >> 8) & 0xf;
-    m_regs[0][A_Volume] = m_chA.amplitude;
-    m_regs[0][B_Volume] = m_chB.amplitude;
-    m_regs[0][C_Volume] = m_chC.amplitude;
+    m_regs[0][Register::Mixer] = mixer;
+    m_regs[0][Register::A_Fine] = m_chA.ton & 0xff;
+    m_regs[0][Register::A_Coarse] = (m_chA.ton >> 8) & 0xf;
+    m_regs[0][Register::B_Fine] = m_chB.ton & 0xff;
+    m_regs[0][Register::B_Coarse] = (m_chB.ton >> 8) & 0xf;
+    m_regs[0][Register::C_Fine] = m_chC.ton & 0xff;
+    m_regs[0][Register::C_Coarse] = (m_chC.ton >> 8) & 0xf;
+    m_regs[0][Register::A_Volume] = m_chA.amplitude;
+    m_regs[0][Register::B_Volume] = m_chB.amplitude;
+    m_regs[0][Register::C_Volume] = m_chC.amplitude;
     return isNewLoop;
 }
 
@@ -330,7 +330,7 @@ void DecodeSQT::GetRegisters(Channel& chan, uint8_t& mixer)
             mixer |= 8;
             uint8_t noise = (b0 & 0xf0) >> 3;
             if ((int8_t)(b1) < 0) noise++;
-            m_regs[0][N_Period] = noise;
+            m_regs[0][Register::N_Period] = noise;
         }
         if ((b1 & 64) != 0)
         {
@@ -497,8 +497,8 @@ void DecodeSQT::Call_LC1D1(Channel& chan, uint16_t& ptr, uint8_t a)
         break;
     default:
         chan.envelopeEnabled = true;
-        m_regs[0][E_Shape] = (a - 1) & 15;
-        m_regs[0][E_Fine] = m_data[ptr];
+        m_regs[0][Register::E_Shape] = (a - 1) & 15;
+        m_regs[0][Register::E_Fine] = m_data[ptr];
         break;
     }
 }

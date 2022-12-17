@@ -346,21 +346,21 @@ bool DecodeVT2::PlayModule(int m)
 				mod.m_patternPos = 0;
 				mod.m_global.noiseBase = 0;
 			}
-			ProcessPattern(m, c, regs[E_Shape]);
+			ProcessPattern(m, c, regs[Register::E_Shape]);
 		}
 		mod.m_patternPos++;
 		mod.m_delayCounter = mod.m_delay;
 	}
 
-	regs[Mixer] = 0;
+	regs[Register::Mixer] = 0;
 	int8_t envAdd = 0;
-	ProcessInstrument(m, 0, (uint16_t&)regs[A_Fine], regs[Mixer], regs[A_Volume], envAdd);
-	ProcessInstrument(m, 1, (uint16_t&)regs[B_Fine], regs[Mixer], regs[B_Volume], envAdd);
-	ProcessInstrument(m, 2, (uint16_t&)regs[C_Fine], regs[Mixer], regs[C_Volume], envAdd);
+	ProcessInstrument(m, 0, (uint16_t&)regs[Register::A_Fine], regs[Register::Mixer], regs[Register::A_Volume], envAdd);
+	ProcessInstrument(m, 1, (uint16_t&)regs[Register::B_Fine], regs[Register::Mixer], regs[Register::B_Volume], envAdd);
+	ProcessInstrument(m, 2, (uint16_t&)regs[Register::C_Fine], regs[Register::Mixer], regs[Register::C_Volume], envAdd);
 
 	uint16_t envBase = (mod.m_global.envBaseLo | mod.m_global.envBaseHi << 8);
-	(uint16_t&)regs[E_Fine] = (envBase + envAdd + mod.m_global.curEnvSlide);
-	regs[N_Period] = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
+	(uint16_t&)regs[Register::E_Fine] = (envBase + envAdd + mod.m_global.curEnvSlide);
+	regs[Register::N_Period] = (mod.m_global.noiseBase + mod.m_global.noiseAdd) & 0x1F;
 
 	if (mod.m_global.curEnvDelay > 0)
 	{

@@ -133,8 +133,8 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[1]);
 
             EnableTone(mixer, Frame::Channel::A);
-            frame[chip].UpdatePeriod(A_Period, period);
-            frame[chip].Update(A_Volume, volume);
+            frame[chip].Update(PRegister::A_Period, period);
+            frame[chip].Update(Register::A_Volume, volume);
         }
 
         //
@@ -144,8 +144,8 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[3]);
 
             EnableTone(mixer, Frame::Channel::B);
-            frame[chip].UpdatePeriod(B_Period, period);
-            frame[chip].Update(B_Volume, volume);
+            frame[chip].Update(PRegister::B_Period, period);
+            frame[chip].Update(Register::B_Volume, volume);
         }
 
         //
@@ -155,8 +155,8 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[5]);
 
             EnableTone(mixer, Frame::Channel::C);
-            frame[chip].UpdatePeriod(C_Period, period);
-            frame[chip].Update(C_Volume, volume);
+            frame[chip].Update(PRegister::C_Period, period);
+            frame[chip].Update(Register::C_Volume, volume);
         }
 
         //
@@ -170,20 +170,20 @@ void SimSN76489::Convert(Frame& frame)
             if (period > 0x1F) period = 0x1F;
 
             int volumeN = ConvertVolume(SN76489[chip].Registers[7]);
-            int volumeA = frame[chip].Read(A_Volume);
-            int volumeC = frame[chip].Read(C_Volume);
+            int volumeA = frame[chip].Read(Register::A_Volume);
+            int volumeC = frame[chip].Read(Register::C_Volume);
 
-            frame[chip].UpdatePeriod(N_Period, period);
+            frame[chip].Update(PRegister::N_Period, period);
 
             if (!enable0)
             {
                 volumeA = int(0.5f * (volumeN * k_noiseVolumePower));
-                frame[chip].Update(A_Volume, uint8_t(volumeA));
+                frame[chip].Update(Register::A_Volume, uint8_t(volumeA));
             }
             if (!enable1)
             {
                 volumeC = int(0.5f * (volumeN * k_noiseVolumePower));
-                frame[chip].Update(C_Volume, uint8_t(volumeC));
+                frame[chip].Update(Register::C_Volume, uint8_t(volumeC));
             }
 
             if (volumeA + volumeC <= volumeN * k_noiseVolumePower)
@@ -199,7 +199,7 @@ void SimSN76489::Convert(Frame& frame)
 
         // Mixer
         {
-            frame[chip].Update(Mixer, mixer);
+            frame[chip].Update(Register::Mixer, mixer);
         }
     }
 }

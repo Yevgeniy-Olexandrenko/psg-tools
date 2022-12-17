@@ -45,7 +45,7 @@ void EncodeRSF::Encode(const Frame& frame)
 
         // write mask of changed registers
         uint16_t mask = 0;
-        for (int reg = BankA_Lst; reg >= BankA_Fst; --reg)
+        for (int reg = Register::BankA_Lst; reg >= Register::BankA_Fst; --reg)
         {
             mask <<= 1;
             mask |= uint16_t(frame[0].IsChanged(reg));

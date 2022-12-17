@@ -103,7 +103,7 @@ bool DecodeVTX::Decode(Frame& frame)
 	uint8_t* dataPtr = (m_data + m_frame);
 	m_frame++;
 
-	for (Register reg = BankA_Fst; reg <= BankA_Lst; reg++)
+	for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
 	{
 		frame[0].Update(reg, *dataPtr);
 		dataPtr += m_frames;

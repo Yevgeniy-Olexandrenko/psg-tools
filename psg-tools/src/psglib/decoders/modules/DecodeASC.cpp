@@ -126,16 +126,16 @@ bool DecodeASC::Play()
     GetRegisters(m_chB, mixer);
     GetRegisters(m_chC, mixer);
 
-    m_regs[0][Mixer] = mixer;
-    m_regs[0][A_Fine] = m_chA.ton & 0xff;
-    m_regs[0][A_Coarse] = (m_chA.ton >> 8) & 0xf;
-    m_regs[0][B_Fine] = m_chB.ton & 0xff;
-    m_regs[0][B_Coarse] = (m_chB.ton >> 8) & 0xf;
-    m_regs[0][C_Fine] = m_chC.ton & 0xff;
-    m_regs[0][C_Coarse] = (m_chC.ton >> 8) & 0xf;
-    m_regs[0][A_Volume] = m_chA.amplitude;
-    m_regs[0][B_Volume] = m_chB.amplitude;
-    m_regs[0][C_Volume] = m_chC.amplitude;
+    m_regs[0][Register::Mixer] = mixer;
+    m_regs[0][Register::A_Fine] = m_chA.ton & 0xff;
+    m_regs[0][Register::A_Coarse] = (m_chA.ton >> 8) & 0xf;
+    m_regs[0][Register::B_Fine] = m_chB.ton & 0xff;
+    m_regs[0][Register::B_Coarse] = (m_chB.ton >> 8) & 0xf;
+    m_regs[0][Register::C_Fine] = m_chC.ton & 0xff;
+    m_regs[0][Register::C_Coarse] = (m_chC.ton >> 8) & 0xf;
+    m_regs[0][Register::A_Volume] = m_chA.amplitude;
+    m_regs[0][Register::B_Volume] = m_chB.amplitude;
+    m_regs[0][Register::C_Volume] = m_chC.amplitude;
     return isNewLoop;
 }
 
@@ -179,7 +179,7 @@ void DecodeASC::PatternInterpreter(Channel& chan)
             }
             if (chan.envelopeEnabled)
             {
-                m_regs[0][E_Fine] = m_data[chan.addressInPattern++];
+                m_regs[0][Register::E_Fine] = m_data[chan.addressInPattern++];
             }
             break;
         }
@@ -268,7 +268,7 @@ void DecodeASC::PatternInterpreter(Channel& chan)
         }
         else if (val == 0xf8)
         {
-            m_regs[0][E_Shape] = 0x08;
+            m_regs[0][Register::E_Shape] = 0x08;
         }
         else if (val == 0xf9)
         {
@@ -287,7 +287,7 @@ void DecodeASC::PatternInterpreter(Channel& chan)
         }
         else if (val == 0xfa)
         {
-            m_regs[0][E_Shape] = 0x0A;
+            m_regs[0][Register::E_Shape] = 0x0A;
         }
         else if (val == 0xfb)
         {
@@ -305,11 +305,11 @@ void DecodeASC::PatternInterpreter(Channel& chan)
         }
         else if (val == 0xfc)
         {
-            m_regs[0][E_Shape] = 0x0C;
+            m_regs[0][Register::E_Shape] = 0x0C;
         }
         else if (val == 0xfe)
         {
-            m_regs[0][E_Shape] = 0x0E;
+            m_regs[0][Register::E_Shape] = 0x0E;
         }
         chan.addressInPattern++;
     }
@@ -382,9 +382,9 @@ void DecodeASC::GetRegisters(Channel& chan, uint8_t& mixer)
 
         if (sampleSaysOKforEnvelope && ((mixer & 64) != 0))
         {
-            uint8_t data = m_regs[0][E_Fine];
+            uint8_t data = m_regs[0][Register::E_Fine];
             data += ((int8_t)(m_data[chan.pointInSample] << 3) / 8);
-            m_regs[0][E_Fine] = data;
+            m_regs[0][Register::E_Fine] = data;
         }
         else
             chan.currentNoise += (int8_t)(m_data[chan.pointInSample] << 3) / 8;
@@ -411,7 +411,7 @@ void DecodeASC::GetRegisters(Channel& chan, uint8_t& mixer)
         if ((mixer & 64) == 0)
         {
             uint8_t data = ((uint8_t)(chan.currentTonSliding >> 8) + chan.currentNoise) & 0x1f;
-            m_regs[0][N_Period] = data;
+            m_regs[0][Register::N_Period] = data;
         }
 
         int8_t note = chan.note + chan.additionToNote;

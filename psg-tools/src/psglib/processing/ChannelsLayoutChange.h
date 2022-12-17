@@ -22,11 +22,11 @@ public:
         {
             const auto SwapChannels = [&](int chip, int L, int R)
             {
-                Frame::Channel chL = m_frame[chip].ReadChannel(L);
-                Frame::Channel chR = m_frame[chip].ReadChannel(R);
-
-                m_frame[chip].UpdateChannel(L, chR);
-                m_frame[chip].UpdateChannel(R, chL);
+                Frame::Channel chL, chR;
+                m_frame[chip].Read(L, chL);
+                m_frame[chip].Read(R, chR);
+                m_frame[chip].Update(L, chR);
+                m_frame[chip].Update(R, chL);
             };
 
             Update(frame);
