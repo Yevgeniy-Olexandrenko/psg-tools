@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "NesCpu.h"
 
-class NesApuNew
+class NesApu
 {
 	struct Envelope
     {
@@ -125,7 +125,7 @@ public:
     };
 
 public:
-    NesApuNew();
+    NesApu();
 
     void Init(int sampleRate, int cpuClock);
     void Reset();

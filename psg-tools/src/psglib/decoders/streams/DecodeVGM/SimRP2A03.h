@@ -1,14 +1,7 @@
 #pragma once
 
-#define NEW_NES_APU 1
-
 #include "ChipSim.h"
-#if NEW_NES_APU
-#include "nes/NesApuNew.h"
-using NesApu = NesApuNew;
-#else
-#include "nes/NesApu.h"
-#endif
+#include "NesApu.h"
 
 class SimRP2A03 : public ChipSim, public NesApu
 {

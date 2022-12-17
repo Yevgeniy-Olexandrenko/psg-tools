@@ -28,9 +28,6 @@
     <Filter Include="Sources\psglib\decoders\streams">
       <UniqueIdentifier>{0de74ef2-256a-462a-bde7-81721d30886f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\psglib\decoders\chipsims">
-      <UniqueIdentifier>{ed31a234-3e5e-42f1-99ae-f352728ef3d4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\psglib\encoders\specific">
       <UniqueIdentifier>{85f8c0a4-3e67-485c-8693-3386421d59bb}</UniqueIdentifier>
     </Filter>
@@ -55,9 +52,6 @@
     <Filter Include="Sources\psgtools\interface">
       <UniqueIdentifier>{664194dd-3929-4428-96ff-ebebfa778f72}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\psglib\decoders\chipsims\nes">
-      <UniqueIdentifier>{3c0d5e3c-2c3f-40b2-8d6e-f3402804320e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\psglib\compression">
       <UniqueIdentifier>{ab81ffcf-da7b-4daa-a3a4-21f7200d2679}</UniqueIdentifier>
     </Filter>
@@ -75,6 +69,9 @@
     </Filter>
     <Filter Include="Sources\psgtools\components\magic_enum">
       <UniqueIdentifier>{615cf42f-1226-4e1c-ab15-0826bdc4b93c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\psglib\decoders\streams\DecodeVGM">
+      <UniqueIdentifier>{2b5ac259-8a68-4a41-be28-1734b69dd204}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -144,12 +141,6 @@
     <ClCompile Include="..\src\psglib\decoders\streams\DecodeYM.cpp">
       <Filter>Sources\psglib\decoders\streams</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\SimAY8910.cpp">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\SimSN76489.cpp">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\psglib\decoders\modules\DecodeASC.cpp">
       <Filter>Sources\psglib\decoders\modules</Filter>
     </ClCompile>
@@ -192,18 +183,6 @@
     <ClCompile Include="..\src\psgtools\interface\PrintBuffer.cpp">
       <Filter>Sources\psgtools\interface</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\SimRP2A03.cpp">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\nes\NesApu.cpp">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\nes\NesCartridge.cpp">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\nes\NesCpu.cpp">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\psglib\compression\lha\lh5_decode.cpp">
       <Filter>Sources\psglib\compression\lha</Filter>
     </ClCompile>
@@ -243,9 +222,6 @@
     <ClCompile Include="..\src\psglib\compression\zlib\zutil.c">
       <Filter>Sources\psglib\compression\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\psglib\decoders\chipsims\nes\NesApuNew.cpp">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\psglib\encoders\streams\EncodeTST.cpp">
       <Filter>Sources\psglib\encoders\streams</Filter>
     </ClCompile>
@@ -278,6 +254,24 @@
     </ClCompile>
     <ClCompile Include="..\src\psglib\decoders\modules\SharedTables.cpp">
       <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\NesApu.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\NesCartridge.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\NesCpu.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\SimAY8910.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\SimRP2A03.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\SimSN76489.cpp">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -353,15 +347,6 @@
     <ClInclude Include="..\src\psglib\decoders\streams\DecodeYM.h">
       <Filter>Sources\psglib\decoders\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\ChipSim.h">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\SimAY8910.h">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\SimSN76489.h">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\psglib\decoders\modules\DecodeASC.h">
       <Filter>Sources\psglib\decoders\modules</Filter>
     </ClInclude>
@@ -410,18 +395,6 @@
     <ClInclude Include="..\src\psgtools\interface\PrintBuffer.h">
       <Filter>Sources\psgtools\interface</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\SimRP2A03.h">
-      <Filter>Sources\psglib\decoders\chipsims</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\nes\NesApu.h">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\nes\NesCartridge.h">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\nes\NesCpu.h">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\psglib\compression\lha\lh5_decode.h">
       <Filter>Sources\psglib\compression\lha</Filter>
     </ClInclude>
@@ -457,9 +430,6 @@
     </ClInclude>
     <ClInclude Include="..\src\psglib\compression\zlib\zutil.h">
       <Filter>Sources\psglib\compression\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\psglib\decoders\chipsims\nes\NesApuNew.h">
-      <Filter>Sources\psglib\decoders\chipsims\nes</Filter>
     </ClInclude>
     <ClInclude Include="..\src\psglib\encoders\streams\EncodeTST.h">
       <Filter>Sources\psglib\encoders\streams</Filter>
@@ -520,6 +490,27 @@
     </ClInclude>
     <ClInclude Include="..\src\psglib\decoders\modules\SharedTables.h">
       <Filter>Sources\psglib\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\ChipSim.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\NesApu.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\NesCartridge.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\NesCpu.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\SimAY8910.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\SimRP2A03.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\SimSN76489.h">
+      <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
