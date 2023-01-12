@@ -101,9 +101,10 @@ bool Output::Write(const Frame& frame)
         for (int chip = 0; chip < m_dchip.count(); ++chip)
         {
             data.clear();
+            bool switchBanks = false;
+
             if (m_dchip.hasExpMode(chip) && pframe[chip].IsExpMode())
             {
-                bool switchBanks = false;
                 for (Register reg = Register::BankB_Fst; reg < Register::BankB_Lst; ++reg)
                 {
                     if (pframe[chip].IsChanged(reg))
@@ -117,13 +118,18 @@ bool Output::Write(const Frame& frame)
                     }
                 }
                 if (switchBanks)
+                {
                     data.emplace_back(Register::Mode_Bank, pframe[chip].GetData(Register::Mode_Bank));
+                }
             }
 
             for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
             {
                 if (pframe[chip].IsChanged(reg))
+                {
+                    if (switchBanks && reg == Register::Mode_Bank) continue;
                     data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
+                }
             }
 
             if (!(m_isOpened &= DeviceWrite(chip, data))) break;
