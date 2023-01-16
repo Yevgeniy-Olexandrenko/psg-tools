@@ -461,7 +461,7 @@ void PSG::write_output_state()
     if (GetType() == Type::AY8930 && state.status.exp_mode)
     {
         // check for changes in registers of bank B
-        for (uint8_t reg = BankB_Fst; reg < BankB_Lst; ++reg)
+        for (uint8_t reg = BankB_Fst; reg <= BankB_Lst; ++reg)
         {
             if (isb_set(state.status.changed, reg))
             {

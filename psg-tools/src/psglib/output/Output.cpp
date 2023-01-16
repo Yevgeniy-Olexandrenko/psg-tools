@@ -147,10 +147,10 @@ bool Output::Write(const Frame& frame)
                     debug_psg_write(val);
                 }
                 debug_psg_write(0xFF);
-                if (m_output != data)
-                {
-                    std::cout << std::endl;
-                }
+                //if (m_output != data)
+                //{
+                //    std::cout << std::endl;
+                //}
                 if (!(m_isOpened &= DeviceWrite(chip, m_output))) break;
             }
 #else
