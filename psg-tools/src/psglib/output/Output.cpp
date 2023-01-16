@@ -84,6 +84,10 @@ bool Output::Init(const Stream& stream)
             m_procChain.emplace_back(new AY8930EnvelopeFix(m_dchip));
             Reset();
             dbg_open();
+
+#if defined(DEBUG_TEST)
+            m_psg.Init();
+#endif
         }
     }
     return m_isOpened;
@@ -132,11 +136,53 @@ bool Output::Write(const Frame& frame)
                 }
             }
 
+#if defined(DEBUG_TEST)
+            if (chip == 0)
+            {
+                for (const auto& pair : data)
+                {
+                    const uint8_t& reg = pair.first;
+                    const uint8_t& val = pair.second;
+                    debug_psg_write(reg);
+                    debug_psg_write(val);
+                }
+                debug_psg_write(0xFF);
+                if (m_output != data)
+                {
+                    std::cout << std::endl;
+                }
+                if (!(m_isOpened &= DeviceWrite(chip, m_output))) break;
+            }
+#else
             if (!(m_isOpened &= DeviceWrite(chip, data))) break;
+#endif
         }
     }
     return m_isOpened;
 }
+
+#if defined(DEBUG_TEST)
+void Output::debug_psg_write(uint8_t data)
+{
+    if (m_reg < 0x10)
+    {
+        // received data for register
+        m_psg.SetRegister(m_reg, data);
+        m_reg = 0xFF;
+    }
+    else if (data < 0x10)
+    {
+        // received register number
+        m_reg = data;
+    }
+    else if (data == 0xFF)
+    {
+        // expected register number, but
+        // received end-of-frame marker
+        m_psg.Update(m_output);
+    }
+}
+#endif
 
 void Output::Close()
 {

@@ -6,6 +6,11 @@
 
 #define DBG_PROCESSING 0
 
+#define DEBUG_TEST
+#if defined(DEBUG_TEST)
+#include "../../debug/psg-access.h"
+#endif
+
 class Stream;
 class Frame;
 
@@ -48,4 +53,11 @@ private:
 	Chip m_dchip;
 	bool m_isOpened;
 	ProcChain m_procChain;
+
+#if defined(DEBUG_TEST)
+	PSG m_psg;
+	Data m_output;
+	uint8_t m_reg = 0xFF;
+	void debug_psg_write(uint8_t data);
+#endif
 };

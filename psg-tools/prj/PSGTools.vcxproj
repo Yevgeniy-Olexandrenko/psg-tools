@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\debug\psg-access.cpp" />
     <ClCompile Include="..\src\psglib\compression\lha\lh5_decode.cpp" />
     <ClCompile Include="..\src\psglib\compression\zlib\adler32.c" />
     <ClCompile Include="..\src\psglib\compression\zlib\compress.c" />
@@ -87,6 +88,8 @@
     <ClCompile Include="..\src\psgtools\PSGTools.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\debug\psg-access.h" />
+    <ClInclude Include="..\src\debug\psg-config.h" />
     <ClInclude Include="..\src\psglib\compression\lha\lh5_decode.h" />
     <ClInclude Include="..\src\psglib\compression\zlib\crc32.h" />
     <ClInclude Include="..\src\psglib\compression\zlib\deflate.h" />
