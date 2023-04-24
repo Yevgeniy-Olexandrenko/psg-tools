@@ -282,7 +282,7 @@ void DecodeVT2::Init()
 	m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 	m_isTS = (m_vt2.modules.size() > 1);
 
-	for (int m = 0; m < m_vt2.modules.size(); ++m)
+	for (size_t m = 0; m < m_vt2.modules.size(); ++m)
 	{
 		auto& vtm = m_vt2.modules[m];
 		auto& mod = m_module[m];

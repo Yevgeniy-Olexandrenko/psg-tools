@@ -106,6 +106,7 @@ namespace gui
 
     void trim(std::string& str)
     {
+        std::for_each(str.begin(), str.end(), [](char& c) { if (c < 0) c = '?'; });
         str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](int c) { return !std::isspace(c); }));
         str.erase(std::find_if(str.rbegin(), str.rend(), [](int c) { return !std::isspace(c); }).base(), str.end());
     };
