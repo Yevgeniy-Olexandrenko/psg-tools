@@ -133,13 +133,7 @@ SoundChip::SoundChip(ChipType chipType, PSGType psgType, int clockRate, int samp
 	: m_chipType(chipType)
 	, m_dacTable((!(m_chipType == ChipType::AY8930)) && (psgType == PSGType::AY) ? AY_DAC_TABLE : YM_DAC_TABLE)
 	, m_counter(0)
-	, m_interpolatorL{}
-	, m_interpolatorR{}
-	, m_firL{}
-	, m_firR{}
 	, m_firIndex(0)
-	, m_dcFilterL{}
-	, m_dcFilterR{}
 	, m_dcFilterIndex(0)
 	, m_step(double(clockRate) / (sampleRate * 8 * DECIMATE_FACTOR))
 {
@@ -288,7 +282,7 @@ void SoundChip::WriteDirect(uint8_t reg, uint8_t data)
 	}
 }
 
-void SoundChip::Process(double& outL, double& outR)
+void SoundChip::Process(double& outA, double& outB, double& outC)
 {
 	// The 8910 has three outputs, each output is the mix of one of the three
 	// tone generators and of the (single) noise generator. The two are mixed
@@ -345,8 +339,9 @@ void SoundChip::Process(double& outL, double& outR)
 			}
 		}
 
-		outL += m_dacTable[output] * m_panL[chan];
-		outR += m_dacTable[output] * m_panR[chan];
+		if (chan == 0) outA = m_dacTable[output];
+		if (chan == 1) outB = m_dacTable[output];
+		if (chan == 2) outC = m_dacTable[output];
 	}
 }
 
@@ -554,29 +549,20 @@ int SoundChip::EnvelopeUnit::GetVolume() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundChip::SetPan(int chan, double pan, int is_eqp)
-{
-	if (is_eqp)
-	{
-		m_panL[chan] = sqrt(1 - pan);
-		m_panR[chan] = sqrt(pan);
-	}
-	else
-	{
-		m_panL[chan] = 1 - pan;
-		m_panR[chan] = pan;
-	}
-}
 
 void SoundChip::Process()
 {
-	double* c_L = m_interpolatorL.c;
-	double* y_L = m_interpolatorL.y;
-	double* c_R = m_interpolatorR.c;
-	double* y_R = m_interpolatorR.y;
+	double* c_A = m_interpolator[0].c;
+	double* c_B = m_interpolator[1].c;
+	double* c_C = m_interpolator[2].c;
 
-	double* firL = &m_firL[FIR_SIZE - m_firIndex * DECIMATE_FACTOR];
-	double* firR = &m_firR[FIR_SIZE - m_firIndex * DECIMATE_FACTOR];
+	double* y_A = m_interpolator[0].y;
+	double* y_B = m_interpolator[1].y;
+	double* y_C = m_interpolator[2].y;
+
+	double* firA = &m_fir[0][FIR_SIZE - m_firIndex * DECIMATE_FACTOR];
+	double* firB = &m_fir[1][FIR_SIZE - m_firIndex * DECIMATE_FACTOR];
+	double* firC = &m_fir[2][FIR_SIZE - m_firIndex * DECIMATE_FACTOR];
 	m_firIndex = (m_firIndex + 1) % (FIR_SIZE / DECIMATE_FACTOR - 1);
 
 	double y;
@@ -587,53 +573,74 @@ void SoundChip::Process()
 		{
 			m_counter -= 1;
 
-			y_L[0] = y_L[1];
-			y_L[1] = y_L[2];
-			y_L[2] = y_L[3];
+			y_A[0] = y_A[1];
+			y_A[1] = y_A[2];
+			y_A[2] = y_A[3];
 
-			y_R[0] = y_R[1];
-			y_R[1] = y_R[2];
-			y_R[2] = y_R[3];
+			y_B[0] = y_B[1];
+			y_B[1] = y_B[2];
+			y_B[2] = y_B[3];
 
-			m_outL = m_outR = 0;
-			Process(m_outL, m_outR);
-			y_L[3] = m_outL;
-			y_R[3] = m_outR;
+			y_C[0] = y_C[1];
+			y_C[1] = y_C[2];
+			y_C[2] = y_C[3];
 
-			y = y_L[2] - y_L[0];
-			c_L[0] = 0.50 * y_L[1] + 0.25 * (y_L[0] + y_L[2]);
-			c_L[1] = 0.50 * y;
-			c_L[2] = 0.25 * (y_L[3] - y_L[1] - y);
+			m_out[0] = 0;
+			m_out[1] = 0;
+			m_out[2] = 0;
+			Process(m_out[0], m_out[1], m_out[2]);
 
-			y = y_R[2] - y_R[0];
-			c_R[0] = 0.50 * y_R[1] + 0.25 * (y_R[0] + y_R[2]);
-			c_R[1] = 0.50 * y;
-			c_R[2] = 0.25 * (y_R[3] - y_R[1] - y);
+			y_A[3] = m_out[0];
+			y_B[3] = m_out[1];
+			y_C[3] = m_out[2];
+
+			y = y_A[2] - y_A[0];
+			c_A[0] = 0.50 * y_A[1] + 0.25 * (y_A[0] + y_A[2]);
+			c_A[1] = 0.50 * y;
+			c_A[2] = 0.25 * (y_A[3] - y_A[1] - y);
+
+			y = y_B[2] - y_B[0];
+			c_B[0] = 0.50 * y_B[1] + 0.25 * (y_B[0] + y_B[2]);
+			c_B[1] = 0.50 * y;
+			c_B[2] = 0.25 * (y_B[3] - y_B[1] - y);
+
+			y = y_C[2] - y_C[0];
+			c_C[0] = 0.50 * y_C[1] + 0.25 * (y_C[0] + y_C[2]);
+			c_C[1] = 0.50 * y;
+			c_C[2] = 0.25 * (y_C[3] - y_C[1] - y);
 		}
 
-		firL[i] = (c_L[2] * m_counter + c_L[1]) * m_counter + c_L[0];
-		firR[i] = (c_R[2] * m_counter + c_R[1]) * m_counter + c_R[0];
+		firA[i] = (c_A[2] * m_counter + c_A[1]) * m_counter + c_A[0];
+		firB[i] = (c_B[2] * m_counter + c_B[1]) * m_counter + c_B[0];
+		firC[i] = (c_C[2] * m_counter + c_C[1]) * m_counter + c_C[0];
 	}
 
-	m_outL = Decimate(firL);
-	m_outR = Decimate(firR);
+	m_out[0] = Decimate(firA);
+	m_out[1] = Decimate(firB);
+	m_out[2] = Decimate(firC);
 }
 
 void SoundChip::RemoveDC()
 {
-	m_outL = FilterDC(m_dcFilterL, m_dcFilterIndex, m_outL);
-	m_outR = FilterDC(m_dcFilterR, m_dcFilterIndex, m_outR);
+	m_out[0] = FilterDC(m_dcFilter[0], m_dcFilterIndex, m_out[0]);
+	m_out[1] = FilterDC(m_dcFilter[1], m_dcFilterIndex, m_out[1]);
+	m_out[2] = FilterDC(m_dcFilter[2], m_dcFilterIndex, m_out[2]);
 	m_dcFilterIndex = (m_dcFilterIndex + 1) & (DC_FILTER_SIZE - 1);
 }
 
-double SoundChip::GetOutL() const
+double SoundChip::GetOutA() const
 {
-	return m_outL;
+	return m_out[0];
 }
 
-double SoundChip::GetOutR() const
+double SoundChip::GetOutB() const
 {
-	return m_outR;
+	return m_out[1];
+}
+
+double SoundChip::GetOutC() const
+{
+	return m_out[2];
 }
 
 double SoundChip::Decimate(double* x) const

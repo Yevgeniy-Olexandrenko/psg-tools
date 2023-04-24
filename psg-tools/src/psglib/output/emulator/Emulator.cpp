@@ -41,21 +41,20 @@ bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
         case Chip::Model::AY8930: m_psg[chip].reset(new ChipAY8930(dchip.clockValue(), k_emulatorSampleRate)); break;
         }
         if (!m_psg[chip]) return false;
-        
-        // initialize sound chip emulator
-        m_psg[chip]->Reset();
-        if (dchip.output() == Chip::Output::Mono)
-        {
-            m_psg[chip]->SetPan(0, 0.5, false);
-            m_psg[chip]->SetPan(1, 0.5, false);
-            m_psg[chip]->SetPan(2, 0.5, false);
-        }
-        else
-        {
-            m_psg[chip]->SetPan(0, 0.1, false);
-            m_psg[chip]->SetPan(1, 0.5, false);
-            m_psg[chip]->SetPan(2, 0.9, false);
-        }        
+        m_psg[chip]->Reset();   
+    }
+
+    if (dchip.output() == Chip::Output::Mono)
+    {
+        SetPan(0, 0.5, false);
+        SetPan(1, 0.5, false);
+        SetPan(2, 0.5, false);
+    }
+    else
+    {
+        SetPan(0, 0.1, false);
+        SetPan(1, 0.5, false);
+        SetPan(2, 0.9, false);
     }
     return true;
 }
@@ -88,8 +87,12 @@ void Emulator::FillBuffer(unsigned char* buffer, unsigned long size)
                 m_psg[0]->RemoveDC();
                 m_psg[1]->RemoveDC();
 
-                double L = 0.5 * (m_psg[0]->GetOutL() + m_psg[1]->GetOutL());
-                double R = 0.5 * (m_psg[0]->GetOutR() + m_psg[1]->GetOutR());
+                double A = 0.5 * (m_psg[0]->GetOutA() + m_psg[1]->GetOutA());
+                double B = 0.5 * (m_psg[0]->GetOutB() + m_psg[1]->GetOutB());
+                double C = 0.5 * (m_psg[0]->GetOutC() + m_psg[1]->GetOutC());
+
+                double L = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
+                double R = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
 
                 L = L > +1.0 ? +1.0 : (L < -1.0 ? -1.0 : L);
                 R = R > +1.0 ? +1.0 : (R < -1.0 ? -1.0 : R);
@@ -105,8 +108,12 @@ void Emulator::FillBuffer(unsigned char* buffer, unsigned long size)
                 m_psg[0]->Process();
                 m_psg[0]->RemoveDC();
 
-                double L = 0.5 * m_psg[0]->GetOutL();
-                double R = 0.5 * m_psg[0]->GetOutR();
+                double A = 0.5 * m_psg[0]->GetOutA();
+                double B = 0.5 * m_psg[0]->GetOutB();
+                double C = 0.5 * m_psg[0]->GetOutC();
+
+                double L = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
+                double R = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
 
                 L = L > +1.0 ? +1.0 : (L < -1.0 ? -1.0 : L);
                 R = R > +1.0 ? +1.0 : (R < -1.0 ? -1.0 : R);
@@ -123,4 +130,18 @@ void Emulator::DeviceClose()
     WaveAudio::Close();
     m_psg[0].reset();
     m_psg[1].reset();
+}
+
+void Emulator::SetPan(int chan, double pan, int is_eqp)
+{
+	if (is_eqp)
+	{
+		m_panL[chan] = sqrt(1 - pan);
+		m_panR[chan] = sqrt(pan);
+	}
+	else
+	{
+		m_panL[chan] = 1 - pan;
+		m_panR[chan] = pan;
+	}
 }

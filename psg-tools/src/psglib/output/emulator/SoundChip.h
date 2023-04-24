@@ -84,12 +84,12 @@ public:
 	void Reset();
 	void Write(uint8_t reg, uint8_t data);
 
-	void SetPan(int chan, double pan, int is_eqp);
 	void Process();
 	void RemoveDC();
 
-	double GetOutL() const;
-	double GetOutR() const;
+	double GetOutA() const;
+	double GetOutB() const;
+	double GetOutC() const;
 
 protected:
 	enum class ChipType { AY8910, AY8914, AY8930, YM2149 };
@@ -99,7 +99,7 @@ protected:
 
 private:
 	void WriteDirect(uint8_t reg, uint8_t data);
-	void Process(double& outL, double& outR);
+	void Process(double& outA, double& outB, double& outC);
 
 	double Decimate(double* x) const;
 	double FilterDC(DCFilter& filter, int index, double x) const;
@@ -112,33 +112,26 @@ private: // emulation
 	ChipType m_chipType;
 	const double* m_dacTable;
 
-	uint8_t m_regs[16 * 2];
+	uint8_t m_regs[32];
 	uint8_t m_mode;
 
 	ToneUnit m_tone[NUM_CHANNELS];
 	NoiseUnit m_noise;
 	EnvelopeUnit m_envelope[NUM_CHANNELS];
 
-	double m_panL[NUM_CHANNELS];
-	double m_panR[NUM_CHANNELS];
-
 private: // resampling
 	double m_step;
 	double m_counter;
 
-	Interpolator m_interpolatorL;
-	Interpolator m_interpolatorR;
+	Interpolator m_interpolator[NUM_CHANNELS];
 
-	double m_firL[FIR_SIZE * 2];
-	double m_firR[FIR_SIZE * 2];
+	double m_fir[NUM_CHANNELS][FIR_SIZE * 2];
 	int m_firIndex;
 
-	DCFilter m_dcFilterL;
-	DCFilter m_dcFilterR;
+	DCFilter m_dcFilter[NUM_CHANNELS];
 	int m_dcFilterIndex;
 
-	double m_outL;
-	double m_outR;
+	double m_out[NUM_CHANNELS];
 };
 
 class ChipAY8910 : public SoundChip

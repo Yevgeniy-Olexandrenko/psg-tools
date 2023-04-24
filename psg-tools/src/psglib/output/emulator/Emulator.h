@@ -22,5 +22,10 @@ protected:
 	void DeviceClose() override;
 
 private:
+	void SetPan(int chan, double pan, int is_eqp);
+
+private:
 	std::unique_ptr<SoundChip> m_psg[2];
+	double m_panL[3];
+	double m_panR[3];
 };
