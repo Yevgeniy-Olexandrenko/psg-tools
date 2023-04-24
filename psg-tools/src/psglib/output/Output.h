@@ -6,7 +6,7 @@
 
 #define DBG_PROCESSING 0
 
-#define DEBUG_TEST
+//#define DEBUG_TEST
 #if defined(DEBUG_TEST)
 #include "../../debug/psg-access.h"
 #endif

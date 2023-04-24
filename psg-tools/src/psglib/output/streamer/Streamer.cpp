@@ -63,19 +63,19 @@ bool Streamer::DeviceInit(const Stream& stream, Chip& dchip)
 bool Streamer::DeviceWrite(int chip, const Data& data)
 {
 	// prepare packet
-	std::vector<uint8_t> binary;
+	std::vector<uint8_t> packet;
+	packet.push_back(chip ? 0xFE : 0xFF);
 	for (const auto& pair : data)
 	{
 		const uint8_t& reg = pair.first;
 		const uint8_t& val = pair.second;
-		binary.push_back(reg);
-		binary.push_back(val);
+		packet.push_back(reg);
+		packet.push_back(val);
 	}
-	binary.push_back(0xFF);
 	
 	// send packet
-	auto dataSize = int(binary.size());
-	auto dataBuff = reinterpret_cast<const char*>(binary.data());
+	auto dataSize = int(packet.size());
+	auto dataBuff = reinterpret_cast<const char*>(packet.data());
 	auto sentSize = m_port.SendBinary(dataBuff, dataSize);
 	return (sentSize == dataSize);
 }
