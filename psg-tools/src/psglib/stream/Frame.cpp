@@ -91,7 +91,7 @@ FrameId Frame::GetId() const
 
 Frame& Frame::operator!()
 {
-	ResetChanges(true);
+	SetChanges();
 	return *this;
 }
 
@@ -106,7 +106,7 @@ Frame& Frame::operator+=(const Frame& other)
 			{
 				m_regs[chip].GetData(reg) = other.m_regs[chip].GetData(reg);
 			}
-			m_regs[chip].ResetChanges(true);
+			m_regs[chip].SetChanges();
 		}
 
 		// case when the chip data is simply updating
@@ -120,42 +120,41 @@ Frame& Frame::operator+=(const Frame& other)
 
 void Frame::ResetData()
 {
-	for (int chip = 0; chip < 2; ++chip)
-	{
-		m_regs[chip].ResetData();
-	}
+	for (Registers& regs : m_regs) regs.ResetData();
 }
 
-void Frame::ResetChanges(bool val)
+void Frame::ResetChanges()
 {
-	for (int chip = 0; chip < 2; ++chip)
-	{
-		m_regs[chip].ResetChanges(val);
-	}
+	for (Registers& regs : m_regs) regs.ResetChanges();
+}
+
+void Frame::SetChanges()
+{
+	for (Registers& regs : m_regs) regs.SetChanges();
 }
 
 bool Frame::HasChanges() const
 {
-	for (int chip = 0; chip < 2; ++chip)
+	for (const Registers& regs : m_regs)
 	{
-		if (m_regs[chip].HasChanges()) return true;
+		if (regs.HasChanges()) return true;
 	}
 	return false;
 }
 
 bool Frame::IsAudible() const
 {
-	for (int chip = 0; chip < 2; ++chip)
+	for (const Registers& regs : m_regs)
 	{
 		for (int chan = 0; chan < 3; ++chan)
 		{
-			uint8_t mixer = m_regs[chip].GetData(Register::Mixer);
-			uint8_t vol_e = m_regs[chip].GetData(Register::volume[chan]);
+			uint8_t mixer = regs.GetData(Register::Mixer);
+			uint8_t volEn = regs.GetData(Register::volume[chan]);
 
-			bool enableT = ~(mixer & m_regs[chip].tmask(chan));
-			bool enableN = ~(mixer & m_regs[chip].nmask(chan));
-			bool enableE =  (vol_e & m_regs[chip].emask());
-			bool enableV =  (vol_e & m_regs[chip].vmask());
+			bool enableT = ~(mixer & regs.tmask(chan));
+			bool enableN = ~(mixer & regs.nmask(chan));
+			bool enableE =  (volEn & regs.emask());
+			bool enableV =  (volEn & regs.vmask());
 
 			if (((enableT || enableN) && enableV) || enableE) return true;
 		}
@@ -196,9 +195,14 @@ void Frame::Registers::ResetData()
 	memset(m_data, 0x00, sizeof(m_data));
 }
 
-void Frame::Registers::ResetChanges(bool val)
+void Frame::Registers::ResetChanges()
 {
-	memset(m_diff, (val ? 0xFF : 0x00), sizeof(m_diff));
+	memset(m_diff, 0x00, sizeof(m_diff));
+}
+
+void Frame::Registers::SetChanges()
+{
+	memset(m_diff, 0xFF, sizeof(m_diff));
 }
 
 bool Frame::Registers::HasChanges() const
@@ -210,15 +214,21 @@ bool Frame::Registers::HasChanges() const
 	return false;
 }
 
+void Frame::Registers::ResetExpMode()
+{
+	uint8_t data = (m_data[c_modeBankRegIdx] & 0x0F);
+	Update(Register::Mode_Bank, data);
+}
+
+void Frame::Registers::SetExpMode()
+{
+	uint8_t data = ((m_data[c_modeBankRegIdx] & 0x0F) | 0xA0);
+	Update(Register::Mode_Bank, data);
+}
+
 bool Frame::Registers::IsExpMode() const
 {
 	return ((m_data[c_modeBankRegIdx] & 0xE0) == 0xA0);
-}
-
-void Frame::Registers::SetExpMode(bool yes)
-{
-	uint8_t data = (m_data[c_modeBankRegIdx] & 0x0F) | (yes ? 0xA0 : 0x00);
-	Update(Register::Mode_Bank, data);
 }
 
 const uint8_t Frame::Registers::tmask(int chan) const
@@ -270,9 +280,10 @@ uint16_t Frame::Registers::Read(PRegister preg) const
 	uint16_t data = 0;
 	switch (preg)
 	{
-	case PRegister::A_Period: case PRegister::B_Period: case PRegister::C_Period:
+	case PRegister::A_Period:  case PRegister::B_Period:  case PRegister::C_Period:
 	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
 		data |= Read(preg + 1) << 8;
+		[[fallthrough]];
 	case PRegister::N_Period:
 		data |= Read(preg + 0);
 	}
@@ -321,6 +332,7 @@ bool Frame::Registers::IsChanged(PRegister preg) const
 	case PRegister::A_Period : case PRegister::B_Period : case PRegister::C_Period :
 	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
 		changed |= IsChanged(preg + 1);
+		[[fallthrough]];
 	case PRegister::N_Period:
 		changed |= IsChanged(preg + 0);
 	}
@@ -346,7 +358,7 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 					if ((m_data[info.index] ^ data) & 0xE0)
 					{
 						ResetData();
-						ResetChanges(true);
+						SetChanges();
 					}
 				}
 
@@ -373,6 +385,7 @@ void Frame::Registers::Update(PRegister preg, uint16_t data)
 	case PRegister::A_Period : case PRegister::B_Period : case PRegister::C_Period :
 	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
 		Update(preg + 1, data >> 8);
+		[[fallthrough]];
 	case PRegister::N_Period:
 		Update(preg + 0, uint8_t(data));
 	}

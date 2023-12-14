@@ -572,8 +572,8 @@ namespace gui
         static Frame fakeFrame;
         if (fakeFrame[0].IsExpMode() != isExpMode || fakeFrame[1].IsExpMode() != isExpMode)
         {
-            fakeFrame[0].SetExpMode(isExpMode);
-            fakeFrame[1].SetExpMode(isExpMode);
+            isExpMode ? fakeFrame[0].SetExpMode() : fakeFrame[0].ResetExpMode();
+            isExpMode ? fakeFrame[1].SetExpMode() : fakeFrame[1].ResetExpMode();
             fakeFrame.ResetChanges();
         }
 

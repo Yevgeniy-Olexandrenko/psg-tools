@@ -5,7 +5,7 @@
 
 class Register
 {
-	uint8_t index;
+	uint8_t m_index;
 
 public:
 	enum Index
@@ -59,10 +59,10 @@ public:
 		BankB_Lst = 0x1D,
 	};
 
-	Register(const uint8_t& index) : index(index) {}
-	Register(const Index&   index) : index(static_cast<uint8_t>(index)) {}
-	Register& operator= (const Index& x) { index = static_cast<uint8_t>(x); return *this; }
-	operator uint8_t&() { return index; }
+	Register(const uint8_t& index) : m_index(index) {}
+	Register(const Index&   index) : m_index(static_cast<uint8_t>(index)) {}
+	Register& operator= (const Index& index) { m_index = static_cast<uint8_t>(index); return *this; }
+	operator uint8_t&() { return m_index; }
 
 	static const Index t_fine   [];
 	static const Index t_coarse [];
@@ -75,7 +75,7 @@ public:
 
 class PRegister
 {
-	uint8_t index;
+	uint8_t m_index;
 
 public:
 	enum Index
@@ -90,10 +90,10 @@ public:
 		EC_Period = Register::EC_Fine
 	};
 
-	PRegister(const Index& x) : index(static_cast<uint8_t>(x)) {}
-	PRegister& operator= (const Index& x) { index = static_cast<uint8_t>(x); return *this; }
-	operator Register () { return Register(index); }
-	operator uint8_t& () { return index; }
+	PRegister(const Index& index) : m_index(static_cast<uint8_t>(index)) {}
+	PRegister& operator= (const Index& index) { m_index = static_cast<uint8_t>(index); return *this; }
+	operator Register () { return Register(m_index); }
+	operator uint8_t& () { return m_index; }
 
 	static const Index t_period[];
 	static const Index e_period[];
@@ -112,11 +112,12 @@ public:
 	void SetId(FrameId id);
 	FrameId GetId() const;
 	
-	Frame& operator!();
-	Frame& operator+=(const Frame& other);
+	Frame& operator!  ();
+	Frame& operator+= (const Frame& other);
 
 	void ResetData();
-	void ResetChanges(bool val = false);
+	void ResetChanges();
+	void SetChanges();
 	bool HasChanges() const;
 	bool IsAudible() const;
 
@@ -142,11 +143,12 @@ public:
 
 	public:
 		void ResetData();
-		void ResetChanges(bool val);
+		void ResetChanges();
+		void SetChanges();
 		bool HasChanges() const;
-		
+		void ResetExpMode();
+		void SetExpMode();
 		bool IsExpMode() const;
-		void SetExpMode(bool yes);
 
 	public:
 		const uint8_t tmask(int chan) const;

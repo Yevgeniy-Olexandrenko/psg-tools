@@ -228,7 +228,7 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
     uint8_t mixer = 0x3F;
 
     // go to expanded mode
-    if (!frame[0].IsExpMode()) frame[0].SetExpMode(true);
+    if (!frame[0].IsExpMode()) frame[0].SetExpMode();
 
     // Pulse 1 -> Square A
     if (state.pulse1_enable)

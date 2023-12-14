@@ -7,8 +7,15 @@ class ChipSim
 public:
 	enum class Type { AY8910, RP2A03, SN76489 };
 
-	ChipSim(Type type) : m_type(type) {}
-	Type type() const { return m_type; }
+	ChipSim(Type type) 
+		: m_type(type)
+		, m_clockRatio(1.f) 
+	{}
+
+	Type type() const 
+	{
+		return m_type; 
+	}
 
 	virtual void ConfigureClock(int srcClock, int dstClock)
 	{
@@ -24,7 +31,7 @@ public:
 protected:
 	uint16_t ConvertPeriod(uint16_t period) const
 	{
-		auto converted = period * m_clockRatio;
+		float converted = (period * m_clockRatio);
 		return uint16_t(converted + 0.5f);
 	}
 
