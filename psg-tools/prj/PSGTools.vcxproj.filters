@@ -73,9 +73,6 @@
     <Filter Include="Sources\psglib\decoders\streams\DecodeVGM">
       <UniqueIdentifier>{2b5ac259-8a68-4a41-be28-1734b69dd204}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\debug">
-      <UniqueIdentifier>{d18813d7-ab3f-4d7a-8552-7ea9ecf14bc6}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\psglib\stream\Chip.cpp">
@@ -275,9 +272,6 @@
     </ClCompile>
     <ClCompile Include="..\src\psglib\decoders\streams\DecodeVGM\SimSN76489.cpp">
       <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\debug\psg-access.cpp">
-      <Filter>Sources\debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -517,12 +511,6 @@
     </ClInclude>
     <ClInclude Include="..\src\psglib\decoders\streams\DecodeVGM\SimSN76489.h">
       <Filter>Sources\psglib\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\debug\psg-access.h">
-      <Filter>Sources\debug</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\debug\psg-config.h">
-      <Filter>Sources\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
