@@ -1,5 +1,5 @@
 #include "ConvertFiles.h"
-#include "interface/ConsoleGUI.h"
+#include "ConsoleGUI.h"
 
 ConvertFiles::ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination)
     : m_chip(chip)

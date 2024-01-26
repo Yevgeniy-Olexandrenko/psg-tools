@@ -1,5 +1,5 @@
 #include "DecodeVGM.h"
-#include "zlib.h"
+#include "zlib/zlib.h"
 #include "DecodeVGM/SimAY8910.h"
 #include "DecodeVGM/SimRP2A03.h"
 #include "DecodeVGM/SimSN76489.h"

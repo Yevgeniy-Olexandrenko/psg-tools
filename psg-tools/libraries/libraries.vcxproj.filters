@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{a308c4c8-6450-4f73-b5b7-175eb2b53015}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\argparse">
+      <UniqueIdentifier>{f49a4bb9-0c56-4626-a47f-119fda913901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\glob">
+      <UniqueIdentifier>{748afaff-6be3-4994-a985-511a5a06801a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\lha">
+      <UniqueIdentifier>{dc4f5101-a689-4a0d-9e22-c4f94176cc2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\magic_enum">
+      <UniqueIdentifier>{24dbe771-5d37-4233-ae39-89125c5b9dfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\terminal">
+      <UniqueIdentifier>{80086e4e-c102-4535-aee6-fea199761c3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\zlib">
+      <UniqueIdentifier>{31c7aeb2-6990-408f-b826-d74070107465}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\magic_enum\doc">
+      <UniqueIdentifier>{7f5d4a4f-c7a8-4c0c-ae5e-bdf8f7597b02}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sources\argparse\argparse.hpp">
+      <Filter>Sources\argparse</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\glob\glob.hpp">
+      <Filter>Sources\glob</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\lha\lh5_decode.h">
+      <Filter>Sources\lha</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\magic_enum\magic_enum.hpp">
+      <Filter>Sources\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\magic_enum\magic_enum_format.hpp">
+      <Filter>Sources\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\magic_enum\magic_enum_fuse.hpp">
+      <Filter>Sources\magic_enum</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\crc32.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\deflate.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\inffast.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\inffixed.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\inflate.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\inftrees.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\trees.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\zconf.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\zconf.in.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\zlib.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\zlib\zutil.h">
+      <Filter>Sources\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\terminal\terminal.hpp">
+      <Filter>Sources\terminal</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\terminal\terminal_color.hpp">
+      <Filter>Sources\terminal</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\terminal\terminal_cursor.hpp">
+      <Filter>Sources\terminal</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\terminal\terminal_size.hpp">
+      <Filter>Sources\terminal</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sources\argparse\LICENSE">
+      <Filter>Sources\argparse</Filter>
+    </None>
+    <None Include="sources\argparse\README.md">
+      <Filter>Sources\argparse</Filter>
+    </None>
+    <None Include="sources\glob\LICENSE">
+      <Filter>Sources\glob</Filter>
+    </None>
+    <None Include="sources\glob\README.md">
+      <Filter>Sources\glob</Filter>
+    </None>
+    <None Include="sources\magic_enum\LICENSE">
+      <Filter>Sources\magic_enum</Filter>
+    </None>
+    <None Include="sources\magic_enum\README.md">
+      <Filter>Sources\magic_enum</Filter>
+    </None>
+    <None Include="sources\magic_enum\doc\limitations.md">
+      <Filter>Sources\magic_enum\doc</Filter>
+    </None>
+    <None Include="sources\magic_enum\doc\reference.md">
+      <Filter>Sources\magic_enum\doc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sources\lha\lh5_decode.cpp">
+      <Filter>Sources\lha</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\adler32.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\compress.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\crc32.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\deflate.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\gzio.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\infback.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\inffast.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\inflate.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\inftrees.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\trees.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\uncompr.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\zlib\zutil.c">
+      <Filter>Sources\zlib</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

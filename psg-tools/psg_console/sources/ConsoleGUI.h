@@ -1,6 +1,6 @@
 #pragma once
 
-#include "terminal.hpp"
+#include "terminal/terminal.hpp"
 #include "KeyboardInput.h"
 #include "stream/Stream.h"
 #include "output/Output.h"

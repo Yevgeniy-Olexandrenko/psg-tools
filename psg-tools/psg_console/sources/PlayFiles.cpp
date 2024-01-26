@@ -1,5 +1,5 @@
 #include "PlayFiles.h"
-#include "interface/ConsoleGUI.h"
+#include "ConsoleGUI.h"
 #include <chrono>
 
 PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)

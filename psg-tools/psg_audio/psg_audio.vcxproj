@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sources\decoders\Decoder.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeASC.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeMID.h" />
+    <ClInclude Include="sources\decoders\modules\DecodePSC.h" />
+    <ClInclude Include="sources\decoders\modules\DecodePT2.h" />
+    <ClInclude Include="sources\decoders\modules\DecodePT3.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeSQT.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeSTC.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeSTP.h" />
+    <ClInclude Include="sources\decoders\modules\DecodeVT2.h" />
+    <ClInclude Include="sources\decoders\modules\SharedTables.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeAYM.h" />
+    <ClInclude Include="sources\decoders\streams\DecodePSG.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeRSF.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\ChipSim.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesApu.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCartridge.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCpu.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimAY8910.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimRP2A03.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimSN76489.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeVTX.h" />
+    <ClInclude Include="sources\decoders\streams\DecodeYM.h" />
+    <ClInclude Include="sources\encoders\BitStream.h" />
+    <ClInclude Include="sources\encoders\Encoder.h" />
+    <ClInclude Include="sources\encoders\specific\EncodeTXT.h" />
+    <ClInclude Include="sources\encoders\specific\EncodeWAV.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeAYM.h" />
+    <ClInclude Include="sources\encoders\streams\EncodePSG.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeRSF.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeTST.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeVGM.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeVTX.h" />
+    <ClInclude Include="sources\encoders\streams\EncodeYM.h" />
+    <ClInclude Include="sources\output\emulator\Emulator.h" />
+    <ClInclude Include="sources\output\emulator\SoundChip.h" />
+    <ClInclude Include="sources\output\emulator\WaveAudio.h" />
+    <ClInclude Include="sources\output\Output.h" />
+    <ClInclude Include="sources\output\streamer\SerialPort.h" />
+    <ClInclude Include="sources\output\streamer\Streamer.h" />
+    <ClInclude Include="sources\processing\AY8930EnvelopeFix.h" />
+    <ClInclude Include="sources\processing\ChannelsLayoutChange.h" />
+    <ClInclude Include="sources\processing\ChannelsOutputEnable.h" />
+    <ClInclude Include="sources\processing\ChipClockRateConvert.h" />
+    <ClInclude Include="sources\processing\Processing.h" />
+    <ClInclude Include="sources\Property.h" />
+    <ClInclude Include="sources\PSGLib.h" />
+    <ClInclude Include="sources\stream\Chip.h" />
+    <ClInclude Include="sources\stream\Frame.h" />
+    <ClInclude Include="sources\stream\Player.h" />
+    <ClInclude Include="sources\stream\Stream.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sources\decoders\Decoder.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeASC.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeMID.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodePSC.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodePT2.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodePT3.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeSQT.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeSTC.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeSTP.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodeVT2.cpp" />
+    <ClCompile Include="sources\decoders\modules\SharedTables.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeAYM.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodePSG.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeRSF.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesApu.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCartridge.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCpu.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimAY8910.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimRP2A03.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimSN76489.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeVTX.cpp" />
+    <ClCompile Include="sources\decoders\streams\DecodeYM.cpp" />
+    <ClCompile Include="sources\encoders\BitStream.cpp" />
+    <ClCompile Include="sources\encoders\Encoder.cpp" />
+    <ClCompile Include="sources\encoders\specific\EncodeTXT.cpp" />
+    <ClCompile Include="sources\encoders\specific\EncodeWAV.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeAYM.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodePSG.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeRSF.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeTST.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp" />
+    <ClCompile Include="sources\encoders\streams\EncodeYM.cpp" />
+    <ClCompile Include="sources\output\emulator\Emulator.cpp" />
+    <ClCompile Include="sources\output\emulator\SoundChip.cpp" />
+    <ClCompile Include="sources\output\emulator\WaveAudio.cpp" />
+    <ClCompile Include="sources\output\Output.cpp" />
+    <ClCompile Include="sources\output\streamer\SerialPort.cpp" />
+    <ClCompile Include="sources\output\streamer\Streamer.cpp" />
+    <ClCompile Include="sources\processing\Processing.cpp" />
+    <ClCompile Include="sources\PSGLib.cpp" />
+    <ClCompile Include="sources\stream\Chip.cpp" />
+    <ClCompile Include="sources\stream\Frame.cpp" />
+    <ClCompile Include="sources\stream\Player.cpp" />
+    <ClCompile Include="sources\stream\Stream.cpp" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{47af41fa-6193-44ef-a12f-abaa9831a4bf}</ProjectGuid>
+    <RootNamespace>psgaudio</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <IntDir>$(OutDir)$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <IntDir>$(OutDir)$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <IntDir>$(OutDir)$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <IntDir>$(OutDir)$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\libraries\sources;$(ProjectDir)sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\libraries\sources;$(ProjectDir)sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)\libraries\sources;sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\libraries\sources;$(ProjectDir)sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

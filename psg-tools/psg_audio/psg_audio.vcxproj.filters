@@ -1,0 +1,342 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{abee5b4f-e7c3-4284-9e36-92ce9b9afc96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\decoders">
+      <UniqueIdentifier>{99041e5e-8458-4c9f-8d50-e1d81b52affe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\encoders">
+      <UniqueIdentifier>{4148179b-8560-44b6-a8d8-a09dc118a9df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\output">
+      <UniqueIdentifier>{1af6a904-b4e6-4713-a200-9999ec127ee1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\processing">
+      <UniqueIdentifier>{4e4b07c6-8723-4978-8be0-268071bde58e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\stream">
+      <UniqueIdentifier>{2f3ed254-d317-43dc-8663-1f11819ffd4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\decoders\modules">
+      <UniqueIdentifier>{aa8d96eb-989e-480e-b36b-52f5e0c8cf02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\decoders\streams">
+      <UniqueIdentifier>{a91bf3ad-1701-4d74-8cf9-7fe2426e64f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\encoders\specific">
+      <UniqueIdentifier>{2f0de7df-e016-4a21-aefa-1ef5c53e36cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\encoders\streams">
+      <UniqueIdentifier>{a587b731-4146-4d34-8396-9c85ed3a372c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\decoders\streams\DecodeVGM">
+      <UniqueIdentifier>{3f2b2c05-e597-44ab-ac97-6e14b08fabe6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\output\emulator">
+      <UniqueIdentifier>{62ff076e-e73c-40af-a957-86eb8922dffa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\output\streamer">
+      <UniqueIdentifier>{a188949e-06be-4ac8-a3bf-cfde5aded500}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sources\Property.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\PSGLib.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeASC.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeMID.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodePSC.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodePT2.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodePT3.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeSQT.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeSTC.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeSTP.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodeVT2.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\SharedTables.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeAYM.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodePSG.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeRSF.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVTX.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeYM.h">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\ChipSim.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesApu.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCartridge.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCpu.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimAY8910.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimRP2A03.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimSN76489.h">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\Decoder.h">
+      <Filter>Sources\decoders</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\BitStream.h">
+      <Filter>Sources\encoders</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\Encoder.h">
+      <Filter>Sources\encoders</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeAYM.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodePSG.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeRSF.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeTST.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeVGM.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeVTX.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\streams\EncodeYM.h">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\specific\EncodeTXT.h">
+      <Filter>Sources\encoders\specific</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\encoders\specific\EncodeWAV.h">
+      <Filter>Sources\encoders\specific</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\stream\Chip.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\stream\Frame.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\stream\Player.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\stream\Stream.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\emulator\Emulator.h">
+      <Filter>Sources\output\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\emulator\SoundChip.h">
+      <Filter>Sources\output\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\emulator\WaveAudio.h">
+      <Filter>Sources\output\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\streamer\SerialPort.h">
+      <Filter>Sources\output\streamer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\streamer\Streamer.h">
+      <Filter>Sources\output\streamer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\output\Output.h">
+      <Filter>Sources\output</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\processing\AY8930EnvelopeFix.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\processing\ChannelsLayoutChange.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\processing\ChannelsOutputEnable.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\processing\ChipClockRateConvert.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\processing\Processing.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sources\PSGLib.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeASC.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeMID.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodePSC.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodePT2.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodePT3.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeSQT.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeSTC.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeSTP.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodeVT2.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\SharedTables.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeAYM.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodePSG.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeRSF.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVTX.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeYM.cpp">
+      <Filter>Sources\decoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesApu.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCartridge.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCpu.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimAY8910.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimRP2A03.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimSN76489.cpp">
+      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\Decoder.cpp">
+      <Filter>Sources\decoders</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\BitStream.cpp">
+      <Filter>Sources\encoders</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\Encoder.cpp">
+      <Filter>Sources\encoders</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeAYM.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodePSG.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeRSF.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeTST.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\streams\EncodeYM.cpp">
+      <Filter>Sources\encoders\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\specific\EncodeTXT.cpp">
+      <Filter>Sources\encoders\specific</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\encoders\specific\EncodeWAV.cpp">
+      <Filter>Sources\encoders\specific</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\stream\Chip.cpp">
+      <Filter>Sources\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\stream\Frame.cpp">
+      <Filter>Sources\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\stream\Player.cpp">
+      <Filter>Sources\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\stream\Stream.cpp">
+      <Filter>Sources\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\emulator\Emulator.cpp">
+      <Filter>Sources\output\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\emulator\SoundChip.cpp">
+      <Filter>Sources\output\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\emulator\WaveAudio.cpp">
+      <Filter>Sources\output\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\streamer\SerialPort.cpp">
+      <Filter>Sources\output\streamer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\streamer\Streamer.cpp">
+      <Filter>Sources\output\streamer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\output\Output.cpp">
+      <Filter>Sources\output</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\processing\Processing.cpp">
+      <Filter>Sources\processing</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

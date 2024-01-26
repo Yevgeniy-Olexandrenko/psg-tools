@@ -1,5 +1,5 @@
 #include "DecodeVTX.h"
-#include "lh5_decode.h"
+#include "lha/lh5_decode.h"
 
 namespace
 {

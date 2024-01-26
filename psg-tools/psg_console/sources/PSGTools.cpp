@@ -1,9 +1,9 @@
-﻿#include <argparse.hpp>
-#include <magic_enum.hpp>
+﻿#include "argparse/argparse.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 #include "PlayFiles.h"
 #include "ConvertFiles.h"
-#include "interface/ConsoleGUI.h"
+#include "ConsoleGUI.h"
 
 static Termination m_termination = false;
 
