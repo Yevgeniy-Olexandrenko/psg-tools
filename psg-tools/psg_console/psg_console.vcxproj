@@ -89,22 +89,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>psg-tools-x86d</TargetName>
-    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir).vsbuild\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>$(OutDir)$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>psg-tools-x86</TargetName>
-    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir).vsbuild\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>$(OutDir)$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>psg-tools-x64d</TargetName>
-    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir).vsbuild\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>$(OutDir)$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>psg-tools-x64</TargetName>
-    <OutDir>$(SolutionDir).vs_build\$(Configuration)_$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir).vsbuild\$(Configuration)_$(Platform)\</OutDir>
     <IntDir>$(OutDir)$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
