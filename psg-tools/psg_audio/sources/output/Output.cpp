@@ -94,7 +94,7 @@ bool Output::Write(const Frame& frame)
     if (m_isOpened)
     {
         // processing before output
-        const Frame& pframe = static_cast<Processing&>(*this)(frame);
+        const Frame& pframe = static_cast<FrameProcessor&>(*this).Execute(frame);
 
         // output to chip(s)
         Data data(32);
@@ -214,21 +214,21 @@ void Output::Reset()
     {
         procStep->Reset();
     }
-    Processing::Reset();
+    FrameProcessor::Reset();
 }
 
-const Frame& Output::operator()(const Frame& frame)
+const Frame& Output::Execute(const Frame& frame)
 {
     const Frame* pframe = &frame;
     dbg_print_payload('S', *pframe);
 
     for (const auto& procStep : m_procChain)
     {
-        pframe = &(*procStep)(*pframe);
+        pframe = &(*procStep).Execute(*pframe);
         dbg_print_payload('P', *pframe);
     }
 
-    Processing::Update(*pframe);
+    FrameProcessor::Update(*pframe);
     dbg_print_payload('D', m_frame);
     dbg_print_endl();
     return m_frame;

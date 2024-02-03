@@ -92,11 +92,11 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Encoder>(new EncodeTXT()),
 	};
 
-	std::shared_ptr<Processing> processors[]
+	std::shared_ptr<FrameProcessor> processors[]
 	{
-		std::shared_ptr<Processing>(new ChipClockRateConvert(stream.schip, stream.dchip)),
-		std::shared_ptr<Processing>(new ChannelsLayoutChange(stream.dchip)),
-		std::shared_ptr<Processing>(new AY8930EnvelopeFix(stream.dchip)),
+		std::shared_ptr<FrameProcessor>(new ChipClockRateConvert(stream.schip, stream.dchip)),
+		std::shared_ptr<FrameProcessor>(new ChannelsLayoutChange(stream.dchip)),
+		std::shared_ptr<FrameProcessor>(new AY8930EnvelopeFix(stream.dchip)),
 	};
 
 	stream.file = path;
@@ -114,7 +114,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 				const Frame* pframe = &sframe;
 				for (auto processor : processors)
 				{
-					pframe = &(*processor)(*pframe);
+					pframe = &(*processor).Execute(*pframe);
 				}
 				dframe.ResetChanges();
 				dframe += *pframe;

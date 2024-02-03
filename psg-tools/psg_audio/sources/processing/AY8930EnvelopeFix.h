@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Processing.h"
+#include "FrameProcessor.h"
 
-class AY8930EnvelopeFix : public Processing
+class AY8930EnvelopeFix : public FrameProcessor
 {
     Chip m_chip;
 
@@ -12,7 +12,7 @@ public:
     {}
 
 #ifdef Enable_AY8930EnvelopeFix
-	const Frame& operator()(const Frame& frame) override
+	const Frame& Execute(const Frame& frame) override
     {
         Update(frame);
         for (int chip = 0; chip <  m_chip.count(); ++chip)

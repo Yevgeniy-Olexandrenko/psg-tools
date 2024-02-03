@@ -2,7 +2,7 @@
 
 #include <array>
 #include <vector>
-#include "processing/Processing.h"
+#include "processing/FrameProcessor.h"
 
 #define DBG_PROCESSING 0
 
@@ -11,9 +11,9 @@
 class Stream;
 class Frame;
 
-class Output : private Processing
+class Output : private FrameProcessor
 {
-	using ProcChain = std::vector<std::unique_ptr<Processing>>;
+	using ProcChain = std::vector<std::unique_ptr<FrameProcessor>>;
 
 public:
 	Output();
@@ -43,7 +43,7 @@ protected:
 
 private:
 	void  Reset() override;
-	const Frame& operator()(const Frame& frame) override;
+	const Frame& Execute(const Frame& frame) override;
 	float ComputeChannelLevel(int chip, int chan) const;
 
 private:

@@ -195,7 +195,7 @@
     <ClInclude Include="sources\processing\ChipClockRateConvert.h">
       <Filter>Sources\processing</Filter>
     </ClInclude>
-    <ClInclude Include="sources\processing\Processing.h">
+    <ClInclude Include="sources\processing\FrameProcessor.h">
       <Filter>Sources\processing</Filter>
     </ClInclude>
   </ItemGroup>
@@ -335,7 +335,7 @@
     <ClCompile Include="sources\output\Output.cpp">
       <Filter>Sources\output</Filter>
     </ClCompile>
-    <ClCompile Include="sources\processing\Processing.cpp">
+    <ClCompile Include="sources\processing\FrameProcessor.cpp">
       <Filter>Sources\processing</Filter>
     </ClCompile>
   </ItemGroup>

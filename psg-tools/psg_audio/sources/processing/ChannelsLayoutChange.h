@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cassert>
-#include "Processing.h"
+#include "FrameProcessor.h"
 
-class ChannelsLayoutChange : public Processing
+class ChannelsLayoutChange : public FrameProcessor
 {
     Chip m_chip;
 
@@ -13,7 +13,7 @@ public:
     {}
 
 #ifdef Enable_ChannelsLayoutChange
-	const Frame& operator()(const Frame& frame) override
+	const Frame& Execute(const Frame& frame) override
     {
         assert(m_chip.outputKnown());
         assert(m_chip.stereoKnown());

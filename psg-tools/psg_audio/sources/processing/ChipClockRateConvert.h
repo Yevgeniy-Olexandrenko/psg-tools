@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Processing.h"
+#include "FrameProcessor.h"
 
-class ChipClockRateConvert : public Processing
+class ChipClockRateConvert : public FrameProcessor
 {
     float m_ratio;
     int   m_count;
@@ -20,7 +20,7 @@ public:
 
 #ifdef Enable_ChipClockRateConvert
     // TODO: needs testing!
-    const Frame& operator()(const Frame& frame) override
+    const Frame& Execute(const Frame& frame) override
     {
         if (m_ratio != 1.f)
         {

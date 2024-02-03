@@ -1,9 +1,9 @@
 #pragma once
 
 #include <array>
-#include "Processing.h"
+#include "FrameProcessor.h"
 
-class ChannelsOutputEnable : public Processing
+class ChannelsOutputEnable : public FrameProcessor
 {
     int m_count;
     std::array<bool, 5> m_enables;
@@ -21,7 +21,7 @@ public:
     }
 
 #ifdef Enable_ChannelsOutputEnable
-	const Frame& operator()(const Frame& frame) override
+	const Frame& Execute(const Frame& frame) override
     {
         for (const auto& enable : m_enables)
         {
