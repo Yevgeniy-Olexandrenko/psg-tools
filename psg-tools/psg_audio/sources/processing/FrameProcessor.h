@@ -10,9 +10,11 @@
 
 class FrameProcessor
 {
+protected:
+	virtual void Reset();
+	virtual void Update(const Frame& frame);
+
 public:
-	virtual void  Reset();
-	virtual void  Update(const Frame& frame);
 	virtual const Frame& Execute(const Frame& frame);
 
 protected:

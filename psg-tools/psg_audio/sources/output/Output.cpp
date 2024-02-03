@@ -7,94 +7,62 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
-////////////////////////////////////////////////////////////////////////////////
-
-#if DBG_PROCESSING && defined(_DEBUG)
-#include <fstream>
-static std::ofstream dbg;
-static void dbg_close() { if (dbg.is_open()) dbg.close(); }
-static void dbg_open () { dbg_close(); dbg.open("dbg_processing.txt"); }
-static void dbg_print_endl() { if (dbg.is_open()) dbg << std::endl; }
-static void dbg_print_payload(char tag, const Frame& frame) 
-{
-    if (dbg.is_open())
-    {
-        dbg << tag << ": ";
-        for (int chip = 0; chip < 2; ++chip)
-        {
-            bool isExpMode = frame[chip].IsExpMode();
-            for (Register reg = 0; reg < (isExpMode ? 32 : 16); ++reg)
-            {
-                int d = frame[chip].GetData(reg);
-                if (frame[chip].IsChanged(reg))
-                    dbg << '[' << std::hex << std::setw(2) << std::setfill('0') << d << ']';
-                else
-                    dbg << ' ' << std::hex << std::setw(2) << std::setfill('0') << d << ' ';
-            }
-            dbg << ':';
-        }
-        dbg_print_endl();
-    }
-}
-#else
-static void dbg_open() {}
-static void dbg_close() {}
-static void dbg_print_endl() {}
-static void dbg_print_payload(char tag, const Frame& frame) {}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-
 Output::Output()
-    : m_isOpened(false)
+    : m_alive(false)
+    , m_processing("output")
 {
 }
 
 Output::~Output()
 {
-    dbg_close();
 }
 
 bool Output::Open()
 {
-    m_isOpened = DeviceOpen();
-    return m_isOpened;
+    m_alive = DeviceOpen();
+    return m_alive;
 }
 
 bool Output::Init(const Stream& stream)
 {
-    if (m_isOpened)
+    if (m_alive)
     {
+        // device may override the destination chip setup
         m_dchip = stream.dchip;
-        if (m_isOpened &= DeviceInit(stream, m_dchip))
-        {
-            // check if the output chip setup is correct
-            assert(m_dchip.clockKnown());
-            assert(m_dchip.outputKnown());
-            if (m_dchip.output() == Chip::Output::Stereo)
-            {
-                assert(m_dchip.stereoKnown());
-            }
+        m_alive &= DeviceInit(stream, m_dchip);
+        m_processing.Clear();
 
-            // init post-processing
-            m_procChain.clear();
-            m_procChain.emplace_back(new ChannelsOutputEnable(m_dchip));
-            m_procChain.emplace_back(new ChipClockRateConvert(stream.schip, m_dchip));
-            m_procChain.emplace_back(new ChannelsLayoutChange(m_dchip));
-            m_procChain.emplace_back(new AY8930EnvelopeFix(m_dchip));
-            Reset();
-            dbg_open();
+        if (m_alive)
+        {
+            // check if the destination chip setup is correct
+            m_alive &= m_dchip.clockKnown();
+            m_alive &= m_dchip.outputKnown();
+            if (m_dchip.count() == 2) 
+                m_alive &= m_dchip.second.modelKnown();
+            if (m_dchip.output() == Chip::Output::Stereo)
+                m_alive &= m_dchip.stereoKnown();
+            assert(m_alive);
+
+            if (m_alive)
+            {
+                // configure frame processing chain
+                m_processing
+                    .Append<ChannelsOutputEnable>(m_dchip)
+                    .Append<ChipClockRateConvert>(stream.schip, m_dchip)
+                    .Append<ChannelsLayoutChange>(m_dchip)
+                    .Append<AY8930EnvelopeFix>(m_dchip);
+            }
         }
     }
-    return m_isOpened;
+    return m_alive;
 }
 
 bool Output::Write(const Frame& frame)
 {
-    if (m_isOpened)
+    if (m_alive)
     {
         // processing before output
-        const Frame& pframe = static_cast<FrameProcessor&>(*this).Execute(frame);
+        const Frame& pframe = m_processing.Execute(frame);
 
         // output to chip(s)
         Data data(32);
@@ -132,28 +100,26 @@ bool Output::Write(const Frame& frame)
                 }
             }
 
-            if (!(m_isOpened &= DeviceWrite(chip, data))) break;
+            if (!(m_alive &= DeviceWrite(chip, data))) break;
         }
     }
-    return m_isOpened;
+    return m_alive;
 }
 
 void Output::Close()
 {
     DeviceClose();
-    m_isOpened = false;
+    m_alive = false;
 }
 
 const Output::Enables& Output::GetEnables() const
 {
-    auto& processing = static_cast<ChannelsOutputEnable&>(*m_procChain.front());
-    return processing.GetEnables();
+    return static_cast<ChannelsOutputEnable*>(m_processing.GetProcessor(0))->GetEnables();
 }
 
 Output::Enables& Output::GetEnables()
 {
-    auto& processing = static_cast<ChannelsOutputEnable&>(*m_procChain.front());
-    return processing.GetEnables();
+    return static_cast<ChannelsOutputEnable*>(m_processing.GetProcessor(0))->GetEnables();
 }
 
 void Output::GetLevels(float& L, float& C, float& R) const
@@ -208,53 +174,28 @@ std::string Output::toString() const
     return (GetDeviceName() + " -> " + m_dchip.toString());
 }
 
-void Output::Reset()
-{
-    for (const auto& procStep : m_procChain)
-    {
-        procStep->Reset();
-    }
-    FrameProcessor::Reset();
-}
-
-const Frame& Output::Execute(const Frame& frame)
-{
-    const Frame* pframe = &frame;
-    dbg_print_payload('S', *pframe);
-
-    for (const auto& procStep : m_procChain)
-    {
-        pframe = &(*procStep).Execute(*pframe);
-        dbg_print_payload('P', *pframe);
-    }
-
-    FrameProcessor::Update(*pframe);
-    dbg_print_payload('D', m_frame);
-    dbg_print_endl();
-    return m_frame;
-}
-
 float Output::ComputeChannelLevel(int chip, int chan) const
 {
     uint8_t volume = 0;
-    uint8_t maxVolume = m_frame[chip].vmask();
-    if (m_frame[chip].IsEnvelopeEnabled(chan))
+    auto& regs = m_processing.GetFrame()[chip];
+
+    if (regs.IsEnvelopeEnabled(chan))
     {
         // envelope is enabled in the given channel
-        if (m_frame[chip].IsPeriodicEnvelope(chan))
+        if (regs.IsPeriodicEnvelope(chan))
         {
             // if periodic envelope set max volume
-            volume = maxVolume;
+            volume = regs.vmask();
         }
     }
     else
     {
         // envelope is disabled in the given channel
-        if (m_frame[chip].IsToneEnabled(chan) || m_frame[chip].IsNoiseEnabled(chan))
+        if (regs.IsToneEnabled(chan) || regs.IsNoiseEnabled(chan))
         {
             // tone or noise is enabled
-            volume = m_frame[chip].GetVolume(chan);
+            volume = regs.GetVolume(chan);
         }
     }
-    return (float(volume) / float(maxVolume));
+    return (float(volume) / float(regs.vmask()));
 }

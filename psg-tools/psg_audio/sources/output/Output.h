@@ -2,19 +2,13 @@
 
 #include <array>
 #include <vector>
-#include "processing/FrameProcessor.h"
-
-#define DBG_PROCESSING 0
-
-#define DEBUG_TEST
+#include "processing/ProcessingChain.h"
 
 class Stream;
 class Frame;
 
-class Output : private FrameProcessor
+class Output
 {
-	using ProcChain = std::vector<std::unique_ptr<FrameProcessor>>;
-
 public:
 	Output();
 	virtual ~Output();
@@ -42,12 +36,10 @@ protected:
 	virtual void DeviceClose() = 0;
 
 private:
-	void  Reset() override;
-	const Frame& Execute(const Frame& frame) override;
 	float ComputeChannelLevel(int chip, int chan) const;
 
 private:
 	Chip m_dchip;
-	bool m_isOpened;
-	ProcChain m_procChain;
+	bool m_alive;
+	ProcessingChain m_processing;
 };

@@ -2,8 +2,8 @@
 
 void FrameProcessor::Reset()
 {
-    m_frame.ResetData();
     m_frame.ResetChanges();
+    m_frame.ResetData();
 }
 
 void FrameProcessor::Update(const Frame& frame)

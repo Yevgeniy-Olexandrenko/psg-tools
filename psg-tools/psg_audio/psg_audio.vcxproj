@@ -65,6 +65,7 @@
     <ClInclude Include="sources\processing\ChannelsOutputEnable.h" />
     <ClInclude Include="sources\processing\ChipClockRateConvert.h" />
     <ClInclude Include="sources\processing\FrameProcessor.h" />
+    <ClInclude Include="sources\processing\ProcessingChain.h" />
     <ClInclude Include="sources\Property.h" />
     <ClInclude Include="sources\PSGLib.h" />
     <ClInclude Include="sources\stream\Chip.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="sources\output\streamer\SerialPort.cpp" />
     <ClCompile Include="sources\output\streamer\Streamer.cpp" />
     <ClCompile Include="sources\processing\FrameProcessor.cpp" />
+    <ClCompile Include="sources\processing\ProcessingChain.cpp" />
     <ClCompile Include="sources\PSGLib.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />
     <ClCompile Include="sources\stream\Frame.cpp" />

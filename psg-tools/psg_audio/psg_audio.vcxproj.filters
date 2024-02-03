@@ -198,6 +198,9 @@
     <ClInclude Include="sources\processing\FrameProcessor.h">
       <Filter>Sources\processing</Filter>
     </ClInclude>
+    <ClInclude Include="sources\processing\ProcessingChain.h">
+      <Filter>Sources\processing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGLib.cpp">
@@ -336,6 +339,9 @@
       <Filter>Sources\output</Filter>
     </ClCompile>
     <ClCompile Include="sources\processing\FrameProcessor.cpp">
+      <Filter>Sources\processing</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\processing\ProcessingChain.cpp">
       <Filter>Sources\processing</Filter>
     </ClCompile>
   </ItemGroup>
