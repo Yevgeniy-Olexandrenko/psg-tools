@@ -27,39 +27,46 @@ void FilelistPlayer::Play()
     m_gotoBackward = false;
     auto result{ Action::GoToNextFile };
 
-    while (true)
+    BackgroundDecoder bgDecoder(m_chip);
+
+    while (result == Action::GoToNextFile)
     {
-        std::filesystem::path path;
-        bool newFileAvailable = false;
+        Filelist::FSPath path;
+        std::shared_ptr<Stream> stream;
 
-        if (result == Action::GoToNextFile)
-        {
-            if (m_gotoBackward)
-                newFileAvailable = m_filelist.GetPrevFile(path);
-            else
-                newFileAvailable = m_filelist.GetNextFile(path);
-        }
-        if (!newFileAvailable) break;
-
-        Stream stream;
-        stream.dchip = m_chip;
+        if (!(m_gotoBackward ? m_filelist.GetPrevFile(path) : m_filelist.GetNextFile(path))) break;
 
         m_sHeight = 0;
         m_dHeight = 0;
         m_sPrint = true;
-
-        auto t1 = std::chrono::high_resolution_clock::now();
-        if (Decode(path, stream))
+#if 1
+        if (bgDecoder.IsReady(path))
         {
-            auto t2 = std::chrono::high_resolution_clock::now();
-            m_dbgDecodeTime = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-
-            m_gotoBackward = false;
-            result = PlayStream(stream);
+            stream = bgDecoder.GetStream();
+            Sleep(1000);
         }
         else
+#endif
         {
-            std::cout << "Could not decode file: " << path << std::endl;
+            stream.reset(new Stream());
+            stream->dchip = m_chip;
+
+            if (!FileDecoder::Decode(path, *stream))
+            {
+                stream.reset();
+                std::cout << "Could not decode file: " << path << std::endl;
+            }
+        }
+
+        if (stream)
+        {
+            if (m_gotoBackward ? m_filelist.PeekPrevFile(path) : m_filelist.PeekNextFile(path))
+            {
+                bgDecoder.Decode(path);
+            }
+
+            m_gotoBackward = false;
+            result = PlayStream(*stream);
         }
     }
 }
@@ -281,4 +288,57 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
         std::cout << "Could not init player with module" << std::endl;
     }
     return result;
+}
+
+BackgroundDecoder::BackgroundDecoder(Chip& chip)
+    : m_chip(chip)
+    , m_abort(false)
+{
+}
+
+BackgroundDecoder::~BackgroundDecoder()
+{
+    if (m_thread.joinable())
+    {
+        m_abort = true;
+        m_thread.join();
+    }
+}
+
+void BackgroundDecoder::Decode(const Filelist::FSPath& path)
+{
+    if (m_thread.joinable())
+    {
+        m_abort = true;
+        m_thread.join();
+    }
+
+    m_abort = false;
+    m_stream.reset();
+
+    m_thread = std::thread([&]
+    {
+        auto stream = new Stream();
+        stream->dchip = m_chip;
+
+        if (FileDecoder::Decode(path, *stream))
+            m_stream.reset(stream);
+        else
+            delete stream;
+    });
+}
+
+bool BackgroundDecoder::IsReady(const Filelist::FSPath& path) const
+{
+    return (m_stream && m_stream->file == path);
+}
+
+std::shared_ptr<Stream> BackgroundDecoder::GetStream() const
+{
+    return m_stream;
+}
+
+bool BackgroundDecoder::IsAbortRequested() const
+{
+    return m_abort;
 }

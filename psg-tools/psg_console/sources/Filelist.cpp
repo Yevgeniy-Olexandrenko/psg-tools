@@ -135,6 +135,32 @@ bool Filelist::GetNextFile(FSPath& path) const
     return false;
 }
 
+bool Filelist::PeekPrevFile(FSPath& path) const
+{
+    if (!IsEmpty())
+    {
+        if (m_index > 0)
+        {
+            path = m_files[m_index - 1];
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Filelist::PeekNextFile(FSPath& path) const
+{
+    if (!IsEmpty())
+    {
+        if (m_index < int(m_files.size() - 1))
+        {
+            path = m_files[m_index + 1];
+            return true;
+        }
+    }
+    return false;
+}
+
 void Filelist::RandomShuffle()
 {
     std::random_device randomDevice;

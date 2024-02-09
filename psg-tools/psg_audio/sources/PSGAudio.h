@@ -14,6 +14,7 @@ public:
 
 protected:
 	virtual void OnFrameDecoded(const Stream& stream, FrameId frameId) {}
+	virtual bool IsAbortRequested() const { return false; }
 };
 
 class FileEncoder

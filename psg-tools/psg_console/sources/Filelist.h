@@ -25,6 +25,8 @@ public:
 
 	bool GetPrevFile(FSPath& path) const;
 	bool GetNextFile(FSPath& path) const;
+	bool PeekPrevFile(FSPath& path) const;
+	bool PeekNextFile(FSPath& path) const;
 	void RandomShuffle();
 
 	bool EraseFile(const FSPath& path);

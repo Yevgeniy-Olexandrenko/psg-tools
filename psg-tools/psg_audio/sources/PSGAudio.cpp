@@ -73,6 +73,12 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 
 				FrameId frameId(stream.lastFrameId());
 				OnFrameDecoded(stream, frameId);
+
+				if (IsAbortRequested())
+				{
+					decoder->Close(stream);
+					return false;
+				}
 			}
 			decoder->Close(stream);
 			return true;
