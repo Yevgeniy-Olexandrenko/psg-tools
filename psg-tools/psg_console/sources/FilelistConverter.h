@@ -5,10 +5,10 @@
 
 using Termination = std::atomic<bool>;
 
-class ConvertFiles : public FileDecoder, public FileEncoder
+class FilelistConverter : public FileDecoder, public FileEncoder
 {
 public:
-    ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination);
+    FilelistConverter(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination);
 
     void Convert();
 

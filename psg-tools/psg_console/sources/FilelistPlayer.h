@@ -5,13 +5,13 @@
 
 using Termination = std::atomic<bool>;
 
-class PlayFiles : public FileDecoder
+class FilelistPlayer : public FileDecoder
 {
     enum class Action { Nothing, GoToNextFile, Termination };
 
 public:
-    PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
-    ~PlayFiles();
+    FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
+    ~FilelistPlayer();
 
     void Play();
 

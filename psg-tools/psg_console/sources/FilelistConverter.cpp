@@ -1,7 +1,7 @@
-#include "ConvertFiles.h"
+#include "FilelistConverter.h"
 #include "ConsoleGUI.h"
 
-ConvertFiles::ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination)
+FilelistConverter::FilelistConverter(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination)
     : m_chip(chip)
     , m_filelist(filelist)
     , m_output(output)
@@ -9,7 +9,7 @@ ConvertFiles::ConvertFiles(Chip& chip, Filelist& filelist, Filelist::FSPath& out
 {
 }
 
-void ConvertFiles::Convert()
+void FilelistConverter::Convert()
 {
     m_outputPath = std::filesystem::absolute(m_output);
     m_outputPath.remove_filename();
@@ -60,7 +60,7 @@ void ConvertFiles::Convert()
     }
 }
 
-void ConvertFiles::ExportPlaylist()
+void FilelistConverter::ExportPlaylist()
 {
     std::cout << "output: " << m_outputPath.string() << std::endl;
     std::cout << std::endl;
@@ -68,7 +68,7 @@ void ConvertFiles::ExportPlaylist()
     m_filelist.ExportPlaylist(m_outputPath);
 }
 
-void ConvertFiles::ConvertFile()
+void FilelistConverter::ConvertFile()
 {
     Stream stream;
     stream.dchip = m_chip;
@@ -98,7 +98,7 @@ void ConvertFiles::ConvertFile()
     }
 }
 
-void ConvertFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
+void FilelistConverter::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -118,7 +118,7 @@ void ConvertFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
-void ConvertFiles::OnFrameEncoded(const Stream& stream, FrameId frameId)
+void FilelistConverter::OnFrameEncoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;

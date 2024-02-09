@@ -1,8 +1,8 @@
 ﻿#include "argparse/argparse.hpp"
 #include "magic_enum/magic_enum.hpp"
 
-#include "PlayFiles.h"
-#include "ConvertFiles.h"
+#include "FilelistPlayer.h"
+#include "FilelistConverter.h"
 #include "ConsoleGUI.h"
 
 static Termination m_termination = false;
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
     {
         if (!output.empty())
         {
-            ConvertFiles converter(chip, filelist, output, m_termination);
+            FilelistConverter converter(chip, filelist, output, m_termination);
             converter.Convert();
         }
         else
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 
             // setup and start playback
             if (isRandomShuffle) filelist.RandomShuffle();
-            PlayFiles player(chip, *output, filelist, favorites, m_termination);
+            FilelistPlayer player(chip, *output, filelist, favorites, m_termination);
 #if _DEBUG
             if (comPortIndex >= 0)
             {

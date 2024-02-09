@@ -1,8 +1,8 @@
-#include "PlayFiles.h"
+#include "FilelistPlayer.h"
 #include "ConsoleGUI.h"
 #include <chrono>
 
-PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
+FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
     : m_chip(chip)
     , m_output(output)
     , m_filelist(filelist)
@@ -17,12 +17,12 @@ PlayFiles::PlayFiles(Chip& chip, Output& output, Filelist& filelist, Filelist& f
     for (auto& enable : m_enables) enable = true;
 }
 
-PlayFiles::~PlayFiles()
+FilelistPlayer::~FilelistPlayer()
 {
     terminal::cursor::show(true);
 }
 
-void PlayFiles::Play()
+void FilelistPlayer::Play()
 {
     m_gotoBackward = false;
     auto result{ Action::GoToNextFile };
@@ -64,7 +64,7 @@ void PlayFiles::Play()
     }
 }
 
-void PlayFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
+void FilelistPlayer::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -86,7 +86,7 @@ void PlayFiles::OnFrameDecoded(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintDecodingProgress(stream);
 }
 
-void PlayFiles::OnFramePlaying(const Stream& stream, FrameId frameId)
+void FilelistPlayer::OnFramePlaying(const Stream& stream, FrameId frameId)
 {
     terminal::cursor::move_up(int(m_dHeight));
     m_dHeight = 0;
@@ -117,7 +117,7 @@ void PlayFiles::OnFramePlaying(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
 
-PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
+FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
 {
     // playback paused mode
     if (m_pause)
@@ -232,7 +232,7 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
     return Action::Nothing;
 }
 
-PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
+FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
 {
     auto result{ Action::Nothing };
 

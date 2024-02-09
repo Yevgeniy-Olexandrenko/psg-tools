@@ -9,7 +9,7 @@
     <ClCompile Include="sources\ConsoleGUI.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\ConvertFiles.cpp">
+    <ClCompile Include="sources\FilelistConverter.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\Filelist.cpp">
@@ -18,7 +18,7 @@
     <ClCompile Include="sources\KeyboardInput.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\PlayFiles.cpp">
+    <ClCompile Include="sources\FilelistPlayer.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\PrintBuffer.cpp">
@@ -32,7 +32,7 @@
     <ClInclude Include="sources\ConsoleGUI.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\ConvertFiles.h">
+    <ClInclude Include="sources\FilelistConverter.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\Filelist.h">
@@ -41,7 +41,7 @@
     <ClInclude Include="sources\KeyboardInput.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\PlayFiles.h">
+    <ClInclude Include="sources\FilelistPlayer.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\PrintBuffer.h">
