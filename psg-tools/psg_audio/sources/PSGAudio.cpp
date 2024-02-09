@@ -1,4 +1,4 @@
-#include "PSGLib.h"
+#include "PSGAudio.h"
 
 // module decoders
 #include "decoders/modules/DecodeASC.h"

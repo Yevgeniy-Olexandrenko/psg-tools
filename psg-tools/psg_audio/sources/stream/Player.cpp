@@ -42,9 +42,9 @@ void WaitFor(const double period)
 Player::Player(Output& output)
 	: m_output(output)
 	, m_stream(nullptr)
-	, m_isPlaying(false)
-	, m_isPaused(false)
-	, m_frameStep(1.0f)
+	, m_playing(false)
+	, m_paused(false)
+	, m_step(1.f)
 	, m_frameId(0)
 {
 	m_output.Open();
@@ -61,49 +61,49 @@ Player::~Player()
 bool Player::Init(const Stream& stream)
 {
 	Stop();
-	m_isPlaying = false;
+	Step(1.f);
 
+	m_playing = false;
 	if (stream.framesCount() > 0 && m_output.Init(stream))
 	{
-		m_stream = &stream;
-		m_isPlaying = true;
+		m_stream  = &stream;
+		m_playing = true;
 		m_frameId = 0;
 	}
-
-	return m_isPlaying;
+	return m_playing;
 }
 
 void Player::Step(float step)
 {
-	m_frameStep = step;
+	m_step = step;
 }
 
 void Player::Play()
 {
-	if (m_isPaused)
+	if (m_paused)
 	{
-		m_isPaused = false;
-		m_playback = std::thread([this] { PlaybackThread(); });
+		m_paused = false;
+		m_thread = std::thread([this] { Playback(); });
 	}
 }
 
 void Player::Stop()
 {
-	if (!m_isPaused)
+	if (!m_paused)
 	{
-		m_isPaused = true;
-		if (m_playback.joinable()) m_playback.join();
+		m_paused = true;
+		if (m_thread.joinable()) m_thread.join();
 	}
 }
 
 bool Player::IsPlaying() const
 {
-	return m_isPlaying;
+	return m_playing;
 }
 
 bool Player::IsPaused() const
 {
-	return m_isPaused;
+	return m_paused;
 }
 
 FrameId Player::GetFrameId() const
@@ -113,30 +113,30 @@ FrameId Player::GetFrameId() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Player::PlaybackThread()
+void Player::Playback()
 {
 	timeBeginPeriod(1U);
-	auto hndl = reinterpret_cast<HANDLE>(m_playback.native_handle());
+	auto hndl = reinterpret_cast<HANDLE>(m_thread.native_handle());
 	SetThreadPriority(hndl, THREAD_PRIORITY_TIME_CRITICAL);
 
+	auto firstFrame  = true;
 	auto frameNextTS = GetTime();
 	auto framePeriod = 1.0 / m_stream->play.frameRate();
-	bool isPlaying   = m_isPlaying;
-	bool firstFrame  = true;
 
-	while (isPlaying && !m_isPaused)
+	bool playing = m_playing;
+	while (playing && !m_paused)
 	{
 		// play current frame
 		if (firstFrame)
 		{
 			Frame frame(m_stream->play.GetFrame(GetFrameId()));
-			if (!m_output.Write(!frame)) isPlaying = false;
+			if (!m_output.Write(!frame)) playing = false;
 			firstFrame = false;
 		}
 		else
 		{
 			const Frame& frame = m_stream->play.GetFrame(GetFrameId());
-			if (!m_output.Write(frame)) isPlaying = false;
+			if (!m_output.Write(frame)) playing = false;
 		}
 
 		// next frame timestamp waiting
@@ -144,21 +144,21 @@ void Player::PlaybackThread()
 		WaitFor(frameNextTS - GetTime());
 
 		// go to next frame
-		m_frameId = (m_frameId + m_frameStep);
+		m_frameId = (m_frameId + m_step);
 		if (m_frameId > m_stream->play.lastFrameId())
 		{
 			m_frameId = float(m_stream->play.lastFrameId());
-			isPlaying = false;
+			playing = false;
 		}
 		else if (m_frameId < 0)
 		{
 			m_frameId = 0;
-			isPlaying = false;
+			playing = false;
 		}
 	}
 
 	// silence output when job is done
 	m_output.Write(!Frame());
-	m_isPlaying = isPlaying;
+	m_playing = playing;
 	timeEndPeriod(1U);
 }

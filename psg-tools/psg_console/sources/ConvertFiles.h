@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PSGLib.h"
+#include "PSGAudio.h"
 #include "Filelist.h"
 
 using Termination = std::atomic<bool>;

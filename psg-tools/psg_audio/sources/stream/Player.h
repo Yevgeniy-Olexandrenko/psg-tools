@@ -23,16 +23,16 @@ public:
 	FrameId GetFrameId() const;
 	
 private:
-	void PlaybackThread();
+	void Playback();
 
 private:
 	Output& m_output;
 	const Stream* m_stream;
-	std::thread m_playback;
+	std::thread m_thread;
 
-	std::atomic<bool> m_isPlaying;
-	std::atomic<bool> m_isPaused;
+	std::atomic<bool> m_playing;
+	std::atomic<bool> m_paused;
 
-	std::atomic<float> m_frameStep;
+	std::atomic<float> m_step;
 	std::atomic<float> m_frameId;
 };

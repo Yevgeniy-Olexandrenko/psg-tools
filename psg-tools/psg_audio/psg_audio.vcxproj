@@ -67,7 +67,7 @@
     <ClInclude Include="sources\processing\FrameProcessor.h" />
     <ClInclude Include="sources\processing\ProcessingChain.h" />
     <ClInclude Include="sources\Property.h" />
-    <ClInclude Include="sources\PSGLib.h" />
+    <ClInclude Include="sources\PSGAudio.h" />
     <ClInclude Include="sources\stream\Chip.h" />
     <ClInclude Include="sources\stream\Frame.h" />
     <ClInclude Include="sources\stream\Player.h" />
@@ -116,7 +116,7 @@
     <ClCompile Include="sources\output\streamer\Streamer.cpp" />
     <ClCompile Include="sources\processing\FrameProcessor.cpp" />
     <ClCompile Include="sources\processing\ProcessingChain.cpp" />
-    <ClCompile Include="sources\PSGLib.cpp" />
+    <ClCompile Include="sources\PSGAudio.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />
     <ClCompile Include="sources\stream\Frame.cpp" />
     <ClCompile Include="sources\stream\Player.cpp" />

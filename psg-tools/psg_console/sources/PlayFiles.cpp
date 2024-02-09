@@ -25,7 +25,7 @@ PlayFiles::~PlayFiles()
 void PlayFiles::Play()
 {
     m_gotoBackward = false;
-    Action result{ Action::GoToNextFile };
+    auto result{ Action::GoToNextFile };
 
     while (true)
     {
@@ -54,6 +54,7 @@ void PlayFiles::Play()
             auto t2 = std::chrono::high_resolution_clock::now();
             m_dbgDecodeTime = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
+            m_gotoBackward = false;
             result = PlayStream(stream);
         }
         else
@@ -118,6 +119,7 @@ void PlayFiles::OnFramePlaying(const Stream& stream, FrameId frameId)
 
 PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
 {
+    // playback paused mode
     if (m_pause)
     {
         if (gui::GetKeyState(VK_SPACE).pressed)
@@ -137,7 +139,7 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
                 m_player.Step(+m_step);
                 m_player.Play();
             }
-            else if (gui::GetKeyState(VK_LSHIFT).held)
+            else if (gui::GetKeyState(VK_RETURN).held)
             {
                 m_player.Step(0);
                 m_player.Play();
@@ -148,6 +150,8 @@ PlayFiles::Action PlayFiles::HandleUserInput(const Stream& stream)
             }
         }
     }
+
+    // playback active mode
     else
     {
         if (gui::GetKeyState(VK_SPACE).pressed)
@@ -255,12 +259,17 @@ PlayFiles::Action PlayFiles::PlayStream(const Stream& stream)
             }
 
             if (!m_player.IsPlaying())
+            {
                 result = Action::GoToNextFile;
+            }
             else if (m_termination)
+            {
                 result = Action::Termination;
+            }
             else
+            {
                 result = HandleUserInput(stream);
-
+            }
             Sleep(1);
         }
 

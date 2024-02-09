@@ -45,7 +45,7 @@
     <ClInclude Include="sources\Property.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="sources\PSGLib.h">
+    <ClInclude Include="sources\PSGAudio.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\decoders\modules\DecodeASC.h">
@@ -203,7 +203,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sources\PSGLib.cpp">
+    <ClCompile Include="sources\PSGAudio.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\decoders\modules\DecodeASC.cpp">
