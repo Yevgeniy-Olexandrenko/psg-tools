@@ -8,7 +8,6 @@ FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, F
     , m_filelist(filelist)
     , m_favorites(favorites)
     , m_termination(termination)
-    , m_gotoBackward(false)
     , m_player(output)
     , m_pause(false)
     , m_step(1.f)
@@ -24,17 +23,18 @@ FilelistPlayer::~FilelistPlayer()
 
 void FilelistPlayer::Play()
 {
-    m_gotoBackward = false;
-    auto result{ Action::GoToNextFile };
-
+    auto action{ Action::GoToNextFile };
     BackgroundDecoder bgDecoder(m_chip);
 
-    while (result == Action::GoToNextFile)
+    while (action != Action::Termination)
     {
         Filelist::FSPath path;
         std::shared_ptr<Stream> stream;
 
-        if (!(m_gotoBackward ? m_filelist.GetPrevFile(path) : m_filelist.GetNextFile(path))) break;
+        bool fileAvailable = false;
+        if (action == Action::GoToPrevFile) fileAvailable = m_filelist.GetPrevFile(path);
+        if (action == Action::GoToNextFile) fileAvailable = m_filelist.GetNextFile(path);
+        if (!fileAvailable) break;
 
         m_sHeight = 0;
         m_dHeight = 0;
@@ -60,13 +60,12 @@ void FilelistPlayer::Play()
 
         if (stream)
         {
-            if (m_gotoBackward ? m_filelist.PeekPrevFile(path) : m_filelist.PeekNextFile(path))
-            {
-                bgDecoder.Decode(path);
-            }
+            bool fileAvailable = false;
+            if (action == Action::GoToPrevFile) fileAvailable = m_filelist.PeekPrevFile(path);
+            if (action == Action::GoToNextFile) fileAvailable = m_filelist.PeekNextFile(path);
+            if (fileAvailable) bgDecoder.Decode(path);
 
-            m_gotoBackward = false;
-            result = PlayStream(*stream);
+            action = PlayStream(*stream);
         }
     }
 }
@@ -110,13 +109,6 @@ void FilelistPlayer::OnFramePlaying(const Stream& stream, FrameId frameId)
         m_sHeight += gui::PrintInputFile(stream.file, index, amount, favorite);
         m_sHeight += gui::PrintFullStreamInfo(stream, m_output.toString());
         m_sPrint = false;
-#if 0
-        if (m_dbgDecodeTime)
-        {
-            std::cout << " DECODE TIME: " << m_dbgDecodeTime << " ms\n";
-            m_sHeight++;
-        }
-#endif
     }
 
     if (!m_hideStream)
@@ -173,13 +165,17 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
 
             if (gui::GetKeyState(VK_LEFT).held)
             {
-                m_gotoBackward = true;
-                m_player.Step(-rewindStep);
+                if (m_player.IsPlaying()) 
+                    m_player.Step(-rewindStep);
+                else
+                    return Action::GoToPrevFile;
             }
             else if (gui::GetKeyState(VK_RIGHT).held)
             {
-                m_gotoBackward = false;
-                m_player.Step(+rewindStep);
+                if (m_player.IsPlaying())
+                    m_player.Step(+rewindStep);
+                else
+                    return Action::GoToNextFile;
             }
             else
             {
@@ -189,12 +185,10 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
 
         if (gui::GetKeyState(VK_UP).pressed)
         {
-            m_gotoBackward = true;
-            return Action::GoToNextFile;
+            return Action::GoToPrevFile;
         }
         else if (gui::GetKeyState(VK_DOWN).pressed)
         {
-            m_gotoBackward = false;
             return Action::GoToNextFile;
         }
     }
@@ -241,7 +235,7 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
 
 FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
 {
-    auto result{ Action::Nothing };
+    auto action{ Action::Nothing };
 
     m_sPrint = true;
     m_sHeight += m_dHeight;
@@ -254,7 +248,7 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
         m_player.Play();
 
         FrameId frameId = -1;
-        while (result == Action::Nothing)
+        while (action == Action::Nothing)
         {
             m_output.GetEnables() = m_enables;
             gui::Update();
@@ -265,19 +259,19 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
                 OnFramePlaying(stream, frameId);
             }
 
-            if (!m_player.IsPlaying())
+            if (m_termination)
             {
-                result = Action::GoToNextFile;
-            }
-            else if (m_termination)
-            {
-                result = Action::Termination;
+                action = Action::Termination;
             }
             else
             {
-                result = HandleUserInput(stream);
+                action = HandleUserInput(stream);
+                if (action == Action::Nothing && !m_player.IsPlaying())
+                {
+                    action = Action::GoToNextFile;
+                }
             }
-            Sleep(1);
+            Sleep(10); // up to 100 fps
         }
 
         m_player.Stop();
@@ -287,7 +281,7 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
     {
         std::cout << "Could not init player with module" << std::endl;
     }
-    return result;
+    return action;
 }
 
 BackgroundDecoder::BackgroundDecoder(Chip& chip)

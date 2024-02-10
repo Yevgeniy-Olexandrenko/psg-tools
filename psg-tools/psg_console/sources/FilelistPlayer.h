@@ -28,7 +28,7 @@ private:
 
 class FilelistPlayer : public FileDecoder
 {
-    enum class Action { Nothing, GoToNextFile, Termination };
+    enum class Action { Nothing, GoToNextFile, GoToPrevFile, Termination };
 
 public:
     FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
@@ -50,7 +50,6 @@ private:
     Filelist& m_filelist;
     Filelist& m_favorites;
     Termination& m_termination;
-    bool m_gotoBackward;
 
     Player m_player;
     Output::Enables m_enables;
@@ -61,6 +60,4 @@ private:
     size_t m_sHeight;
     size_t m_dHeight;
     bool m_hideStream;
-
-    int m_dbgDecodeTime;
 };
