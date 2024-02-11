@@ -5,27 +5,6 @@
 
 using Termination = std::atomic<bool>;
 
-class BackgroundDecoder : public FileDecoder
-{
-public:
-    BackgroundDecoder(Chip& chip);
-    ~BackgroundDecoder();
-
-    void Decode(const Filelist::FSPath& path);
-    bool IsReady(const Filelist::FSPath& path) const;
-
-    std::shared_ptr<Stream> GetStream() const;
-
-protected:
-    bool IsAbortRequested() const override;
-
-private:
-    Chip& m_chip;
-    std::thread m_thread;
-    std::atomic<bool> m_abort;
-    std::shared_ptr<Stream> m_stream;
-};
-
 class FilelistPlayer : public FileDecoder
 {
     enum class Action { Nothing, GoToNextFile, GoToPrevFile, Termination };
@@ -36,13 +15,14 @@ public:
 
     void Play();
 
+private:
+    Action PlayStream(const Stream& stream);
+    Action HandleUserInput(const Stream& stream);
+    
 protected:
     void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
     void OnFramePlaying(const Stream& stream, FrameId frameId);
 
-private:
-    Action HandleUserInput(const Stream& stream);
-    Action PlayStream(const Stream& stream);
 
 private:
     Chip& m_chip;
