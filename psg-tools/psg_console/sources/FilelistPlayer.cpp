@@ -171,8 +171,8 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
                 }
             }
 
-            // up to 100 fps
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            // TODO
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         m_player.Stop();

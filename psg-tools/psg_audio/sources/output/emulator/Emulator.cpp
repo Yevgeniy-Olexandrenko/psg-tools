@@ -20,13 +20,7 @@ const std::string Emulator::GetDeviceName() const
 
 bool Emulator::DeviceOpen()
 {
-    if (WaveAudio::Open(k_emulatorSampleRate, 2, 8, 512))
-    {
-        // make some delay for warm up the wave audio
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        return true;
-    }
-    return false;
+    return WaveAudio::Open(k_emulatorSampleRate, 2, 4, 366);
 }
 
 bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
