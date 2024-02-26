@@ -5,30 +5,22 @@
 #include <atomic>
 #include <vector>
 #include <condition_variable>
-
-#define _WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#undef min
-#undef max
 
 class WaveAudio
 {
-	const uint32_t nBlocks = 8;
-	const uint32_t nBlockSamples = 512;
-
-	int _GetBlocks() { return nBlocks; }
-	int _GetBlockSampleCount() { return nBlockSamples; }
+	using Sample = short;
 
 protected:
 	WaveAudio();
 	virtual ~WaveAudio();
 
-	bool Open(int sampleRate, int frameRate, int sampleChannels, int sampleBytes);
-	bool Start();
-	void Stop();
+	bool Open(int sampleRate, int channels, int blocks, int blockSamples);
+	void Pause();
+	void Resume();
 	void Close();
 
-	virtual void FillBuffer(unsigned char* buffer, unsigned long size) = 0;
+	virtual void FillBuffer(std::vector<float>& buffer) = 0;
 
 private:
 	void DriverLoop();
@@ -36,45 +28,19 @@ private:
 	static void CALLBACK waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD dwParam1, DWORD dwParam2);
 
 private:
-	HWAVEOUT m_hwDevice = nullptr;
-	std::thread m_thDriverLoop;
-	std::atomic<bool> m_bDriverLoopActive{ false };
-	std::unique_ptr<std::vector<short>[]> m_pvBlockMemory;
-	std::unique_ptr<WAVEHDR[]> m_pWaveHeaders;
-	std::atomic<unsigned int> m_nBlockFree = 0;
-	std::condition_variable m_cvBlockNotZero;
-	std::mutex m_muxBlockNotZero;
-	uint32_t m_nBlockCurrent = 0;
-};
+	HWAVEOUT m_waveOut{ nullptr };
+	
+	std::atomic<bool> m_driverLoopActive{ false };
+	std::thread m_driverLoopThread;
+	uint32_t m_floatBufferSize{ 0 };
 
-//#pragma once
-//
-//#include <mutex>
-//#include <windows.h>
-//
-//class WaveAudio
-//{
-//protected:
-//	WaveAudio();
-//	virtual ~WaveAudio();
-//
-//	bool Open(int sampleRate, int frameRate, int sampleChannels, int sampleBytes);
-//	void Close();
-//
-//	virtual void FillBuffer(unsigned char* buffer, unsigned long size) = 0;
-//
-//private:
-//	void OnBufferDone(WAVEHDR* hdr);
-//	static void CALLBACK WaveOutProc(
-//		HWAVEOUT hwo, UINT uMsg,
-//		DWORD_PTR dwInstance,
-//		DWORD_PTR dwParam1,
-//		DWORD_PTR dwParam2
-//	);
-//
-//protected:
-//	HWAVEOUT m_waveout;
-//	WAVEFORMATEX m_format;
-//	WAVEHDR m_buffers[4];
-//	std::mutex m_mutex;
-//};
+	std::unique_ptr<std::vector<Sample>[]> m_blockMemory;
+	std::unique_ptr<WAVEHDR[]> m_blockHeader;
+
+	uint32_t m_blocks{ 0 };
+	std::atomic<uint32_t> m_freeBlocks{ 0 };
+	uint32_t m_currentBlock{ 0 };
+
+	std::condition_variable m_blockAvailableConVar;
+	std::mutex m_blockAvailableMutex;
+};

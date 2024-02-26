@@ -3,6 +3,8 @@
 #include "stream/Stream.h"
 
 Emulator::Emulator()
+    : m_panL{}
+    , m_panR{}
 {
 }
 
@@ -18,7 +20,7 @@ const std::string Emulator::GetDeviceName() const
 
 bool Emulator::DeviceOpen()
 {
-    if (WaveAudio::Open(k_emulatorSampleRate, 100, 2, 2))
+    if (WaveAudio::Open(k_emulatorSampleRate, 2, 8, 512))
     {
         // make some delay for warm up the wave audio
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -29,8 +31,9 @@ bool Emulator::DeviceOpen()
 
 bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
 {
+    WaveAudio::Pause();
+
     // create sound chip emulator instances
-//    std::lock_guard<std::mutex> lock(m_mutex);
     for (int chip = 0; chip < dchip.count(); ++chip)
     {
         // create sound chip emulator by model
@@ -40,22 +43,23 @@ bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
         case Chip::Model::YM2149: m_psg[chip].reset(new ChipYM2149(dchip.clockValue(), k_emulatorSampleRate)); break;
         case Chip::Model::AY8930: m_psg[chip].reset(new ChipAY8930(dchip.clockValue(), k_emulatorSampleRate)); break;
         }
-        if (!m_psg[chip]) return false;
         m_psg[chip]->Reset();   
     }
 
     if (dchip.output() == Chip::Output::Mono)
     {
-        SetPan(0, 0.5, false);
-        SetPan(1, 0.5, false);
-        SetPan(2, 0.5, false);
+        SetPan(0, 0.5f, false);
+        SetPan(1, 0.5f, false);
+        SetPan(2, 0.5f, false);
     }
     else
     {
-        SetPan(0, 0.1, false);
-        SetPan(1, 0.5, false);
-        SetPan(2, 0.9, false);
+        SetPan(0, 0.1f, false);
+        SetPan(1, 0.5f, false);
+        SetPan(2, 0.9f, false);
     }
+
+    WaveAudio::Resume();
     return true;
 }
 
@@ -70,56 +74,40 @@ bool Emulator::DeviceWrite(int chip, const Data& data)
     return true;
 }
 
-void Emulator::FillBuffer(unsigned char* buffer, unsigned long size)
+void Emulator::FillBuffer(std::vector<float>& buffer)
 {
     if (m_psg[0])
     {
-        // buffer format must be 2 ch x 16 bit
-        auto sampbuf = (int16_t*)buffer;
-        auto samples = (int)(size / sizeof(int16_t));
-
         if (m_psg[1])
         {
-            for (int i = 0; i < samples;)
+            for (size_t i = 0; i < buffer.size();)
             {
                 m_psg[0]->Process();
                 m_psg[1]->Process();
                 m_psg[0]->RemoveDC();
                 m_psg[1]->RemoveDC();
 
-                double A = 0.5 * (m_psg[0]->GetOutA() + m_psg[1]->GetOutA());
-                double B = 0.5 * (m_psg[0]->GetOutB() + m_psg[1]->GetOutB());
-                double C = 0.5 * (m_psg[0]->GetOutC() + m_psg[1]->GetOutC());
+                auto A = float(0.5f * (m_psg[0]->GetOutA() + m_psg[1]->GetOutA()));
+                auto B = float(0.5f * (m_psg[0]->GetOutB() + m_psg[1]->GetOutB()));
+                auto C = float(0.5f * (m_psg[0]->GetOutC() + m_psg[1]->GetOutC()));
 
-                double L = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
-                double R = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
-
-                L = L > +1.0 ? +1.0 : (L < -1.0 ? -1.0 : L);
-                R = R > +1.0 ? +1.0 : (R < -1.0 ? -1.0 : R);
-
-                sampbuf[i++] = (int16_t)(INT16_MAX * L + 0.5);
-                sampbuf[i++] = (int16_t)(INT16_MAX * R + 0.5);
+                buffer[i++] = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
+                buffer[i++] = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
             }
         }
         else
         {
-            for (int i = 0; i < samples;)
+            for (size_t i = 0; i < buffer.size();)
             {
                 m_psg[0]->Process();
                 m_psg[0]->RemoveDC();
 
-                double A = 0.5 * m_psg[0]->GetOutA();
-                double B = 0.5 * m_psg[0]->GetOutB();
-                double C = 0.5 * m_psg[0]->GetOutC();
+                auto A = float(0.5f * m_psg[0]->GetOutA());
+                auto B = float(0.5f * m_psg[0]->GetOutB());
+                auto C = float(0.5f * m_psg[0]->GetOutC());
 
-                double L = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
-                double R = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
-
-                L = L > +1.0 ? +1.0 : (L < -1.0 ? -1.0 : L);
-                R = R > +1.0 ? +1.0 : (R < -1.0 ? -1.0 : R);
-
-                sampbuf[i++] = (int16_t)(INT16_MAX * L + 0.5);
-                sampbuf[i++] = (int16_t)(INT16_MAX * R + 0.5);
+                buffer[i++] = m_panL[0] * A + m_panL[1] * B + m_panL[2] * C;
+                buffer[i++] = m_panR[0] * A + m_panR[1] * B + m_panR[2] * C;
             }
         }
     }
@@ -132,9 +120,9 @@ void Emulator::DeviceClose()
     m_psg[1].reset();
 }
 
-void Emulator::SetPan(int chan, double pan, int is_eqp)
+void Emulator::SetPan(int chan, float pan, bool isEqp)
 {
-	if (is_eqp)
+	if (isEqp)
 	{
 		m_panL[chan] = sqrt(1 - pan);
 		m_panR[chan] = sqrt(pan);

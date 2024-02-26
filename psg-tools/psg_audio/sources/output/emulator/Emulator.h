@@ -18,14 +18,13 @@ protected:
 	bool DeviceOpen() override;
 	bool DeviceInit(const Stream& stream, Chip& dchip) override;
 	bool DeviceWrite(int chip, const Data& data) override;
-	void FillBuffer(unsigned char* buffer, unsigned long size) override;
+	void FillBuffer(std::vector<float>& buffer) override;
 	void DeviceClose() override;
 
 private:
-	void SetPan(int chan, double pan, int is_eqp);
+	void SetPan(int chan, float pan, bool isEqp);
 
 private:
 	std::unique_ptr<SoundChip> m_psg[2];
-	double m_panL[3];
-	double m_panR[3];
+	float m_panL[3], m_panR[3];
 };
