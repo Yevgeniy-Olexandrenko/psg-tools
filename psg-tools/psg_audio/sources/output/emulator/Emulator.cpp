@@ -30,7 +30,7 @@ bool Emulator::DeviceOpen()
 bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
 {
     // create sound chip emulator instances
-    std::lock_guard<std::mutex> lock(m_mutex);
+//    std::lock_guard<std::mutex> lock(m_mutex);
     for (int chip = 0; chip < dchip.count(); ++chip)
     {
         // create sound chip emulator by model
