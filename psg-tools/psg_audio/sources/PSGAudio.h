@@ -2,9 +2,9 @@
 
 #include <filesystem>
 #include "stream/Stream.h"
-#include "stream/Player.h"
-#include "output/Emulator/Emulator.h"
-#include "output/Streamer/Streamer.h"
+#include "player/Player.h"
+#include "player/Emulator/Emulator.h"
+#include "player/Streamer/Streamer.h"
 
 class FileDecoder
 {

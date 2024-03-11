@@ -54,23 +54,23 @@
     <ClInclude Include="sources\encoders\streams\EncodeVGM.h" />
     <ClInclude Include="sources\encoders\streams\EncodeVTX.h" />
     <ClInclude Include="sources\encoders\streams\EncodeYM.h" />
-    <ClInclude Include="sources\output\emulator\Emulator.h" />
-    <ClInclude Include="sources\output\emulator\SoundChip.h" />
-    <ClInclude Include="sources\output\emulator\WaveAudio.h" />
-    <ClInclude Include="sources\output\Output.h" />
-    <ClInclude Include="sources\output\streamer\SerialPort.h" />
-    <ClInclude Include="sources\output\streamer\Streamer.h" />
+    <ClInclude Include="sources\player\emulator\Emulator.h" />
+    <ClInclude Include="sources\player\emulator\SoundChip.h" />
+    <ClInclude Include="sources\player\emulator\WaveAudio.h" />
+    <ClInclude Include="sources\player\Output.h" />
+    <ClInclude Include="sources\player\Player.h" />
+    <ClInclude Include="sources\player\streamer\SerialPort.h" />
+    <ClInclude Include="sources\player\streamer\Streamer.h" />
     <ClInclude Include="sources\processing\AY8930EnvelopeFix.h" />
     <ClInclude Include="sources\processing\ChannelsLayoutChange.h" />
     <ClInclude Include="sources\processing\ChannelsOutputEnable.h" />
     <ClInclude Include="sources\processing\ChipClockRateConvert.h" />
     <ClInclude Include="sources\processing\FrameProcessor.h" />
     <ClInclude Include="sources\processing\ProcessingChain.h" />
-    <ClInclude Include="sources\Property.h" />
     <ClInclude Include="sources\PSGAudio.h" />
     <ClInclude Include="sources\stream\Chip.h" />
     <ClInclude Include="sources\stream\Frame.h" />
-    <ClInclude Include="sources\stream\Player.h" />
+    <ClInclude Include="sources\stream\Property.h" />
     <ClInclude Include="sources\stream\Stream.h" />
   </ItemGroup>
   <ItemGroup>
@@ -108,18 +108,18 @@
     <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeYM.cpp" />
-    <ClCompile Include="sources\output\emulator\Emulator.cpp" />
-    <ClCompile Include="sources\output\emulator\SoundChip.cpp" />
-    <ClCompile Include="sources\output\emulator\WaveAudio.cpp" />
-    <ClCompile Include="sources\output\Output.cpp" />
-    <ClCompile Include="sources\output\streamer\SerialPort.cpp" />
-    <ClCompile Include="sources\output\streamer\Streamer.cpp" />
+    <ClCompile Include="sources\player\emulator\Emulator.cpp" />
+    <ClCompile Include="sources\player\emulator\SoundChip.cpp" />
+    <ClCompile Include="sources\player\emulator\WaveAudio.cpp" />
+    <ClCompile Include="sources\player\Output.cpp" />
+    <ClCompile Include="sources\player\Player.cpp" />
+    <ClCompile Include="sources\player\streamer\SerialPort.cpp" />
+    <ClCompile Include="sources\player\streamer\Streamer.cpp" />
     <ClCompile Include="sources\processing\FrameProcessor.cpp" />
     <ClCompile Include="sources\processing\ProcessingChain.cpp" />
     <ClCompile Include="sources\PSGAudio.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />
     <ClCompile Include="sources\stream\Frame.cpp" />
-    <ClCompile Include="sources\stream\Player.cpp" />
     <ClCompile Include="sources\stream\Stream.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

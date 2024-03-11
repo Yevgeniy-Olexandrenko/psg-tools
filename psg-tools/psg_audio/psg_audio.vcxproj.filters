@@ -10,9 +10,6 @@
     <Filter Include="Sources\encoders">
       <UniqueIdentifier>{4148179b-8560-44b6-a8d8-a09dc118a9df}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\output">
-      <UniqueIdentifier>{1af6a904-b4e6-4713-a200-9999ec127ee1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\processing">
       <UniqueIdentifier>{4e4b07c6-8723-4978-8be0-268071bde58e}</UniqueIdentifier>
     </Filter>
@@ -34,17 +31,20 @@
     <Filter Include="Sources\decoders\streams\DecodeVGM">
       <UniqueIdentifier>{3f2b2c05-e597-44ab-ac97-6e14b08fabe6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\output\emulator">
-      <UniqueIdentifier>{62ff076e-e73c-40af-a957-86eb8922dffa}</UniqueIdentifier>
+    <Filter Include="Sources\filelist">
+      <UniqueIdentifier>{abda03d6-254d-47ac-9ef4-ca2d2be54ab3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\output\streamer">
-      <UniqueIdentifier>{a188949e-06be-4ac8-a3bf-cfde5aded500}</UniqueIdentifier>
+    <Filter Include="Sources\player">
+      <UniqueIdentifier>{cfe94d8a-0eba-4945-a6cb-de640e34699f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\player\emulator">
+      <UniqueIdentifier>{3807d4bc-259e-4945-a946-96aa850c4a8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\player\streamer">
+      <UniqueIdentifier>{a71ed112-9d8e-4696-ace9-e6077ca79fc0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sources\Property.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
     <ClInclude Include="sources\PSGAudio.h">
       <Filter>Sources</Filter>
     </ClInclude>
@@ -159,29 +159,8 @@
     <ClInclude Include="sources\stream\Frame.h">
       <Filter>Sources\stream</Filter>
     </ClInclude>
-    <ClInclude Include="sources\stream\Player.h">
-      <Filter>Sources\stream</Filter>
-    </ClInclude>
     <ClInclude Include="sources\stream\Stream.h">
       <Filter>Sources\stream</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\emulator\Emulator.h">
-      <Filter>Sources\output\emulator</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\emulator\SoundChip.h">
-      <Filter>Sources\output\emulator</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\emulator\WaveAudio.h">
-      <Filter>Sources\output\emulator</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\streamer\SerialPort.h">
-      <Filter>Sources\output\streamer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\streamer\Streamer.h">
-      <Filter>Sources\output\streamer</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\output\Output.h">
-      <Filter>Sources\output</Filter>
     </ClInclude>
     <ClInclude Include="sources\processing\AY8930EnvelopeFix.h">
       <Filter>Sources\processing</Filter>
@@ -200,6 +179,30 @@
     </ClInclude>
     <ClInclude Include="sources\processing\ProcessingChain.h">
       <Filter>Sources\processing</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\stream\Property.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\Output.h">
+      <Filter>Sources\player</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\Player.h">
+      <Filter>Sources\player</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\emulator\Emulator.h">
+      <Filter>Sources\player\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\emulator\SoundChip.h">
+      <Filter>Sources\player\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\emulator\WaveAudio.h">
+      <Filter>Sources\player\emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\streamer\SerialPort.h">
+      <Filter>Sources\player\streamer</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\streamer\Streamer.h">
+      <Filter>Sources\player\streamer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -314,35 +317,35 @@
     <ClCompile Include="sources\stream\Frame.cpp">
       <Filter>Sources\stream</Filter>
     </ClCompile>
-    <ClCompile Include="sources\stream\Player.cpp">
-      <Filter>Sources\stream</Filter>
-    </ClCompile>
     <ClCompile Include="sources\stream\Stream.cpp">
       <Filter>Sources\stream</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\emulator\Emulator.cpp">
-      <Filter>Sources\output\emulator</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\emulator\SoundChip.cpp">
-      <Filter>Sources\output\emulator</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\emulator\WaveAudio.cpp">
-      <Filter>Sources\output\emulator</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\streamer\SerialPort.cpp">
-      <Filter>Sources\output\streamer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\streamer\Streamer.cpp">
-      <Filter>Sources\output\streamer</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\output\Output.cpp">
-      <Filter>Sources\output</Filter>
     </ClCompile>
     <ClCompile Include="sources\processing\FrameProcessor.cpp">
       <Filter>Sources\processing</Filter>
     </ClCompile>
     <ClCompile Include="sources\processing\ProcessingChain.cpp">
       <Filter>Sources\processing</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\Output.cpp">
+      <Filter>Sources\player</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\Player.cpp">
+      <Filter>Sources\player</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\emulator\Emulator.cpp">
+      <Filter>Sources\player\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\emulator\SoundChip.cpp">
+      <Filter>Sources\player\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\emulator\WaveAudio.cpp">
+      <Filter>Sources\player\emulator</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\streamer\SerialPort.cpp">
+      <Filter>Sources\player\streamer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\streamer\Streamer.cpp">
+      <Filter>Sources\player\streamer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

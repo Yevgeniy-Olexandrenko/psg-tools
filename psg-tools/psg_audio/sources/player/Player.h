@@ -2,7 +2,7 @@
 
 #include <thread>
 #include <atomic>
-#include "Stream.h"
+#include "stream/Stream.h"
 
 class Output;
 

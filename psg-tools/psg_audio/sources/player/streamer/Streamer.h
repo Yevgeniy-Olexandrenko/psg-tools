@@ -1,6 +1,6 @@
 #pragma once
 
-#include "output/Output.h"
+#include "player/Output.h"
 #include "SerialPort.h"
 
 class Streamer : public Output

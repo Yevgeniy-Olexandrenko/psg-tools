@@ -3,7 +3,7 @@
 #include "terminal/terminal.hpp"
 #include "KeyboardInput.h"
 #include "stream/Stream.h"
-#include "output/Output.h"
+#include "player/Output.h"
 
 namespace gui
 {

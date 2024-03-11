@@ -1,7 +1,7 @@
 #pragma once
 
 #include <sstream>
-#include "Property.h"
+#include "stream/Property.h"
 #include "encoders/Encoder.h"
 #include "encoders/BitStream.h"
 
