@@ -12,7 +12,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Filelist::FSPath Filelist::ConvertToAbsolute(const FSPath& base, const FSPath& path)
+Filelist::Path Filelist::ConvertToAbsolute(const Path& base, const Path& path)
 {
     if (base.is_absolute() && path.is_relative())
     {
@@ -23,14 +23,14 @@ Filelist::FSPath Filelist::ConvertToAbsolute(const FSPath& base, const FSPath& p
     return path;
 }
 
-std::string Filelist::GetExtension(const FSPath& path)
+std::string Filelist::GetExtension(const Path& path)
 {
     auto extension = path.extension().string();
     std::for_each(extension.begin(), extension.end(), ::tolower);
     return extension;
 }
 
-bool Filelist::IsPlaylistPath(const FSPath& path)
+bool Filelist::IsPlaylistPath(const Path& path)
 {
     auto extension = GetExtension(path);
     return (extension == c_extPlaylistM3U || extension == c_extPlaylistAYL);
@@ -39,7 +39,7 @@ bool Filelist::IsPlaylistPath(const FSPath& path)
 ////////////////////////////////////////////////////////////////////////////////
 
 Filelist::Filelist(const std::string& exts)
-    : m_index(-1)
+//    : m_index(-1)
 {
     std::string ext;
     std::stringstream ss(exts);
@@ -50,7 +50,7 @@ Filelist::Filelist(const std::string& exts)
     }
 }
 
-Filelist::Filelist(const std::string& exts, const FSPath& path)
+Filelist::Filelist(const std::string& exts, const Path& path)
     : Filelist(exts)
 {
     Append(path);
@@ -62,7 +62,7 @@ Filelist::Filelist(const std::string& exts, const FSPath& path)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Filelist::Append(const FSPath& path)
+void Filelist::Append(const Path& path)
 {
     for (auto path : glob::glob(path.string()))
     {
@@ -99,66 +99,15 @@ bool Filelist::IsEmpty() const
     return m_files.empty();
 }
 
-int Filelist::GetNumberOfFiles() const
+size_t Filelist::GetNumberOfFiles() const
 {
-    return (int)m_files.size();
+    return m_files.size();
 }
 
-int Filelist::GetCurrFileIndex() const
+const Filelist::Path& Filelist::GetFileByIndex(size_t index) const
 {
-    return m_index;
-}
-
-bool Filelist::GetPrevFile(FSPath& path) const
-{
-    if (!IsEmpty())
-    {
-        if (m_index > 0)
-        {
-            path = m_files[--m_index];
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Filelist::GetNextFile(FSPath& path) const
-{
-    if (!IsEmpty())
-    {
-        if (m_index < int(m_files.size() - 1))
-        {
-            path = m_files[++m_index];
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Filelist::PeekPrevFile(FSPath& path) const
-{
-    if (!IsEmpty())
-    {
-        if (m_index > 0)
-        {
-            path = m_files[m_index - 1];
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Filelist::PeekNextFile(FSPath& path) const
-{
-    if (!IsEmpty())
-    {
-        if (m_index < int(m_files.size() - 1))
-        {
-            path = m_files[m_index + 1];
-            return true;
-        }
-    }
-    return false;
+    static Path empty;
+    return (index < m_files.size() ? m_files[index] : empty);
 }
 
 void Filelist::RandomShuffle()
@@ -166,10 +115,10 @@ void Filelist::RandomShuffle()
     std::random_device randomDevice;
     std::mt19937 randomGenerator(randomDevice());
     std::shuffle(m_files.begin(), m_files.end(), randomGenerator);
-    m_index = -1;
+//    m_index = -1;
 }
 
-bool Filelist::EraseFile(const FSPath& path)
+bool Filelist::EraseFile(const Path& path)
 {
     auto hashIt = m_hashes.find(std::filesystem::hash_value(path));
     auto fileIt = std::find(m_files.begin(), m_files.end(), path);
@@ -183,7 +132,7 @@ bool Filelist::EraseFile(const FSPath& path)
     return false;
 }
 
-bool Filelist::InsertFile(const FSPath& path)
+bool Filelist::InsertFile(const Path& path)
 {
     if (std::filesystem::is_regular_file(path))
     {
@@ -203,17 +152,17 @@ bool Filelist::InsertFile(const FSPath& path)
     return false;
 }
 
-bool Filelist::ContainsFile(const FSPath& path)
+bool Filelist::ContainsFile(const Path& path)
 {
     return (m_hashes.find(std::filesystem::hash_value(path)) != m_hashes.end());
 }
 
-Filelist::FSPath Filelist::GetPlaylistPath() const
+Filelist::Path Filelist::GetPlaylistPath() const
 {
     return m_playlistPath;
 }
 
-bool Filelist::ExportPlaylist(const FSPath& path)
+bool Filelist::ExportPlaylist(const Path& path)
 {
     if (IsPlaylistPath(path))
     {
@@ -239,7 +188,7 @@ bool Filelist::ExportPlaylist()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Filelist::ImportDirectory(const FSPath& path)
+void Filelist::ImportDirectory(const Path& path)
 {
     for (const auto& file : std::filesystem::directory_iterator(path))
     {
@@ -250,7 +199,7 @@ void Filelist::ImportDirectory(const FSPath& path)
     }
 }
 
-void Filelist::ImportPlaylistM3U(const FSPath& path)
+void Filelist::ImportPlaylistM3U(const Path& path)
 {
     std::ifstream fileStream;
     fileStream.open(path);
@@ -270,7 +219,7 @@ void Filelist::ImportPlaylistM3U(const FSPath& path)
     }
 }
 
-void Filelist::ImportPlaylistAYL(const FSPath& path)
+void Filelist::ImportPlaylistAYL(const Path& path)
 {
     std::ifstream fileStream;
     fileStream.open(path);
@@ -296,7 +245,7 @@ void Filelist::ImportPlaylistAYL(const FSPath& path)
     }
 }
 
-bool Filelist::ExportPlaylistM3U(const FSPath& path)
+bool Filelist::ExportPlaylistM3U(const Path& path)
 {
     std::ofstream stream;
     stream.open(path);
@@ -316,7 +265,7 @@ bool Filelist::ExportPlaylistM3U(const FSPath& path)
     return false;
 }
 
-bool Filelist::ExportPlaylistAYL(const FSPath& path)
+bool Filelist::ExportPlaylistAYL(const Path& path)
 {
     std::ofstream stream;
     stream.open(path);

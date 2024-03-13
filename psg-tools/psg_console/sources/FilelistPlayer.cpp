@@ -19,7 +19,7 @@ public:
         }
     }
 
-    void Decode(const Filelist::FSPath& path)
+    void Decode(const Filelist::Path& path)
     {
         if (m_thread.joinable())
         {
@@ -42,7 +42,7 @@ public:
             });
     }
 
-    bool IsReady(const Filelist::FSPath& path) const
+    bool IsReady(const Filelist::Path& path) const
     {
         return (m_stream && m_stream->file == path);
     }
@@ -59,7 +59,7 @@ private:
     std::shared_ptr<Stream> m_stream;
 };
 
-FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination)
+FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, FilelistTraversal& filelist, Filelist& favorites, Termination& termination)
     : m_chip(chip)
     , m_output(output)
     , m_filelist(filelist)
@@ -87,7 +87,7 @@ void FilelistPlayer::Play()
 
     while (action != Action::Termination)
     {
-        Filelist::FSPath path;
+        Filelist::Path path;
         std::shared_ptr<Stream> stream;
 
         bool available = false;

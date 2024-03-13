@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PSGAudio.h"
-#include "Filelist.h"
+#include "filelist/FilelistTraversal.h"
 
 using Termination = std::atomic<bool>;
 
@@ -10,7 +10,7 @@ class FilelistPlayer : public FileDecoder
     enum class Action { Nothing, GoToNextFile, GoToPrevFile, Termination };
 
 public:
-    FilelistPlayer(Chip& chip, Output& output, Filelist& filelist, Filelist& favorites, Termination& termination);
+    FilelistPlayer(Chip& chip, Output& output, FilelistTraversal& filelist, Filelist& favorites, Termination& termination);
     ~FilelistPlayer();
 
     void Play();
@@ -27,7 +27,7 @@ protected:
 private:
     Chip& m_chip;
     Output& m_output;
-    Filelist& m_filelist;
+    FilelistTraversal& m_filelist;
     Filelist& m_favorites;
     Termination& m_termination;
 

@@ -12,9 +12,6 @@
     <ClCompile Include="sources\FilelistConverter.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="sources\Filelist.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\KeyboardInput.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -33,9 +30,6 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\FilelistConverter.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\Filelist.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\KeyboardInput.h">

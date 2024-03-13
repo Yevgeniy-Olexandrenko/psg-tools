@@ -1,14 +1,14 @@
 #pragma once
 
 #include "PSGAudio.h"
-#include "Filelist.h"
+#include "filelist/FilelistTraversal.h"
 
 using Termination = std::atomic<bool>;
 
 class FilelistConverter : public FileDecoder, public FileEncoder
 {
 public:
-    FilelistConverter(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination);
+    FilelistConverter(Chip& chip, FilelistTraversal& filelist, Filelist::Path& output, Termination& termination);
 
     void Convert();
 
@@ -21,12 +21,12 @@ protected:
 
 private:
     Chip& m_chip;
-    Filelist& m_filelist;
-    Filelist::FSPath& m_output;
+    FilelistTraversal& m_filelist;
+    Filelist::Path& m_output;
     Termination& m_termination;
 
-    Filelist::FSPath m_inputPath;
-    Filelist::FSPath m_outputPath;
+    Filelist::Path m_inputPath;
+    Filelist::Path m_outputPath;
 
     bool m_sPrint;
     size_t m_sHeight;

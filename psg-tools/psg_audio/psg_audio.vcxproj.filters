@@ -204,6 +204,12 @@
     <ClInclude Include="sources\player\streamer\Streamer.h">
       <Filter>Sources\player\streamer</Filter>
     </ClInclude>
+    <ClInclude Include="sources\filelist\Filelist.h">
+      <Filter>Sources\filelist</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\filelist\FilelistTraversal.h">
+      <Filter>Sources\filelist</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGAudio.cpp">
@@ -346,6 +352,12 @@
     </ClCompile>
     <ClCompile Include="sources\player\streamer\Streamer.cpp">
       <Filter>Sources\player\streamer</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\filelist\Filelist.cpp">
+      <Filter>Sources\filelist</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\filelist\FilelistTraversal.cpp">
+      <Filter>Sources\filelist</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

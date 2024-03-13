@@ -54,6 +54,8 @@
     <ClInclude Include="sources\encoders\streams\EncodeVGM.h" />
     <ClInclude Include="sources\encoders\streams\EncodeVTX.h" />
     <ClInclude Include="sources\encoders\streams\EncodeYM.h" />
+    <ClInclude Include="sources\filelist\Filelist.h" />
+    <ClInclude Include="sources\filelist\FilelistTraversal.h" />
     <ClInclude Include="sources\player\emulator\Emulator.h" />
     <ClInclude Include="sources\player\emulator\SoundChip.h" />
     <ClInclude Include="sources\player\emulator\WaveAudio.h" />
@@ -108,6 +110,8 @@
     <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeYM.cpp" />
+    <ClCompile Include="sources\filelist\Filelist.cpp" />
+    <ClCompile Include="sources\filelist\FilelistTraversal.cpp" />
     <ClCompile Include="sources\player\emulator\Emulator.cpp" />
     <ClCompile Include="sources\player\emulator\SoundChip.cpp" />
     <ClCompile Include="sources\player\emulator\WaveAudio.cpp" />

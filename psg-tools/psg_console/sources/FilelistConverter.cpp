@@ -1,7 +1,7 @@
 #include "FilelistConverter.h"
 #include "ConsoleGUI.h"
 
-FilelistConverter::FilelistConverter(Chip& chip, Filelist& filelist, Filelist::FSPath& output, Termination& termination)
+FilelistConverter::FilelistConverter(Chip& chip, FilelistTraversal& filelist, Filelist::Path& output, Termination& termination)
     : m_chip(chip)
     , m_filelist(filelist)
     , m_output(output)

@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     }
 
     // parse list of input files
-    Filelist filelist(FileDecoder::FileTypes);
+    FilelistTraversal filelist(FileDecoder::FileTypes);
     auto inputs{ program.get<std::vector<std::string>>("input") };
     for (const auto& path : inputs) filelist.Append(path);
 
