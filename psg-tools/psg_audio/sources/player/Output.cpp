@@ -9,7 +9,7 @@
 
 Output::Output()
     : m_alive(false)
-    , m_processing("output")
+    , m_processing("output_processing")
 {
 }
 

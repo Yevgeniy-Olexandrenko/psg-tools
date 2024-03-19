@@ -5,10 +5,11 @@
 #include "Property.h"
 #include "Frame.h"
 #include "Chip.h"
+#include "debug/DebugPayload.h"
 
 using FrameRate = uint16_t;
 
-class Stream
+class Stream : public DebugPayload
 {
 	struct Delegate
 	{
@@ -63,7 +64,7 @@ public:
 public:
 	enum class Property
 	{
-		Title, Artist, Comment, Type, Chip, Frames, Duration
+		Tag, File, Title, Artist, Comment, Type, Chip, Frames, Duration
 	};
 
 	Stream();
@@ -88,6 +89,11 @@ public:
 
 	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const;
 	void ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const;
+
+	// debug payload
+	void print_header  (std::ostream& stream) const override;
+	void print_payload (std::ostream& stream) const override;
+	void print_footer  (std::ostream& stream) const override;
 
 private:
 	void ConfigureDestinationChip();

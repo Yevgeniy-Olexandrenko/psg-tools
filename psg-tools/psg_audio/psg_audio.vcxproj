@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="sources\debug\DebugConfig.h" />
+    <ClInclude Include="sources\debug\DebugOutput.h" />
+    <ClInclude Include="sources\debug\DebugPayload.h" />
     <ClInclude Include="sources\decoders\Decoder.h" />
     <ClInclude Include="sources\decoders\modules\DecodeASC.h" />
     <ClInclude Include="sources\decoders\modules\DecodeMID.h" />

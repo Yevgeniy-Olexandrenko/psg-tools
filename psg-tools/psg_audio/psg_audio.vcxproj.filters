@@ -43,6 +43,9 @@
     <Filter Include="Sources\player\streamer">
       <UniqueIdentifier>{a71ed112-9d8e-4696-ace9-e6077ca79fc0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\debug">
+      <UniqueIdentifier>{f3f16524-479f-4b74-83ae-b3753e69e187}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\PSGAudio.h">
@@ -209,6 +212,15 @@
     </ClInclude>
     <ClInclude Include="sources\filelist\FilelistTraversal.h">
       <Filter>Sources\filelist</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\debug\DebugOutput.h">
+      <Filter>Sources\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\debug\DebugPayload.h">
+      <Filter>Sources\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\debug\DebugConfig.h">
+      <Filter>Sources\debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

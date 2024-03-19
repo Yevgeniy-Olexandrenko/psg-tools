@@ -122,6 +122,27 @@ std::string Stream::ToString(Property property) const
 	std::stringstream stream;
 	switch (property)
 	{
+	case Property::Tag:
+	{	auto cleanup = [](const std::string& src) -> std::string
+		{
+			std::string dst{ src };
+			std::transform(src.begin(), src.end(), dst.begin(),
+				[](unsigned char c) 
+				{ 
+					if (c == ' ' || c == '.') c = '_';
+					if (c < 0x20 || c > 0xFF) c = '@';
+					return std::tolower(c);
+				}
+			);
+			return dst;
+		};
+		stream << cleanup(file.filename().string());
+	}	break;
+
+	case Property::File:
+		stream << file.string();
+		break;
+
 	case Property::Title:
 		stream << info.title();
 		break;
@@ -142,13 +163,13 @@ std::string Stream::ToString(Property property) const
 		return schip.toString();
 
 	case Property::Frames:
-		stream << framesCount();
+	{	stream << framesCount();
 		if (hasLoop()) stream << " -> " << m_loopFrameId;
 		stream << " @ " << play.frameRate() << " Hz";
-		break;
+	}	break;
 
 	case Property::Duration:
-		int hh0 = 0, mm0 = 0, ss0 = 0, ms0 = 0;
+	{	int hh0 = 0, mm0 = 0, ss0 = 0, ms0 = 0;
 		int hh1 = 0, mm1 = 0, ss1 = 0, ms1 = 0;
 		GetDuration(hh0, mm0, ss0);
 		play.GetDuration(hh1, mm1, ss1);
@@ -167,7 +188,7 @@ std::string Stream::ToString(Property property) const
 				std::setfill('0') << std::setw(2) << ss1;
 			stream << ')';
 		}
-		break;
+	}	break;
 	}
 	return stream.str();
 }
@@ -256,6 +277,52 @@ void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
 	ss = int(duration % 60); duration /= 60;
 	mm = int(duration % 60); duration /= 60;
 	hh = int(duration);
+}
+
+void Stream::print_header(std::ostream& stream) const
+{
+	if (stream)
+	{
+		stream << "tag      : " << ToString(Property::Tag) << std::endl;
+		stream << "file     : " << ToString(Property::File) << std::endl;
+		stream << "title    : " << ToString(Property::Title) << std::endl;
+		stream << "artist   : " << ToString(Property::Artist) << std::endl;
+		stream << "comment  : " << ToString(Property::Comment) << std::endl;
+		stream << "type     : " << ToString(Property::Type) << std::endl;
+		stream << "chip     : " << ToString(Property::Chip) << std::endl;
+		stream << "frames   : " << ToString(Property::Frames) << std::endl;
+		stream << "duration : " << ToString(Property::Duration) << std::endl;
+	}
+}
+
+void Stream::print_payload(std::ostream& stream) const
+{
+	if (stream)
+	{
+		int loop = (hasLoop() ? loopFrameId() : -1);
+		for (FrameId frameId = 0; frameId < framesCount(); ++frameId)
+		{
+			const Frame& frame = GetFrame(frameId);
+			if (int(frameId) == loop)
+				stream << ">LOOP : ";
+			else
+				stream << std::dec << std::setw(5) << std::setfill('0') << frameId << " : ";
+			frame.print_payload(stream);
+			frame.print_footer(stream);
+			stream << std::endl;
+
+			if ((frameId + 1) % play.frameRate() == 0) stream << std::endl;
+		}
+	}
+}
+
+void Stream::print_footer(std::ostream& stream) const
+{
+	if (stream)
+	{
+		stream << "is_second_chip_used   : " << (IsSecondChipUsed() ? "yes" : "no") << std::endl;
+		stream << "is_expanded_mode_used : " << (IsExpandedModeUsed() ? "yes" : "no");
+	}
 }
 
 void Stream::ConfigureDestinationChip()

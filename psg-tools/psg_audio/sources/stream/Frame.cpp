@@ -162,6 +162,32 @@ bool Frame::IsAudible() const
 	return false;
 }
 
+void Frame::print_payload(std::ostream& stream) const
+{
+	if (stream)
+	{
+		for (const Registers& regs : m_regs)
+		{
+			const bool isExpMode = regs.IsExpMode();
+			for (Register reg = 0; reg < (isExpMode ? 32 : 16); ++reg)
+			{
+				const int data = regs.GetData(reg);
+				if (regs.IsChanged(reg))
+					stream << '{' << std::hex << std::setw(2) << std::setfill('0') << data << '}';
+				else
+					stream << ' ' << std::hex << std::setw(2) << std::setfill('0') << data << ' ';
+			}
+			stream << ':';
+		}
+	}
+}
+
+void Frame::print_footer(std::ostream& stream) const
+{
+	if (!HasChanges()) stream << " no_changes";
+	if (!IsAudible()) stream << " not_audible";
+}
+
 struct Frame::Registers::Info
 {
 	uint8_t flags;

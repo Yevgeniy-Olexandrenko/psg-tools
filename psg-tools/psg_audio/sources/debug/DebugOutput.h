@@ -1,0 +1,114 @@
+#pragma once
+
+#if defined(_DEBUG)
+#include <cassert>
+#include <fstream>
+#endif
+
+#include "DebugConfig.h"
+#include "DebugPayload.h"
+
+template<bool ENABLE>
+class DebugOutput
+{
+public:
+	void open(const std::string& tag, const DebugPayload* payload = nullptr)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			close(payload);
+			assert(!tag.empty());
+			m_file.open("dbg_" + tag + ".txt");
+			if (m_file && payload)
+			{
+				payload->print_header(m_file);
+				print_endline();
+			}
+		}
+#endif
+	}
+
+	void print_payload(const DebugPayload* payload)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			print_payload("", payload);
+		}
+#endif
+	}
+
+	void print_payload(const char tag, const DebugPayload* payload)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			print_payload(std::string(1, tag), payload);
+		}
+#endif
+	}
+
+	void print_payload(const std::string& tag, const DebugPayload* payload)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			if (m_file)
+			{
+				assert(payload != nullptr);
+				if (!tag.empty()) m_file << tag << " : ";
+				payload->print_payload(m_file);
+				print_endline();
+			}
+		}
+#endif
+	}
+
+	void print_message(const std::string& msg)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			if (m_file)
+			{
+				assert(!msg.empty());
+				m_file << msg << std::endl;
+			}
+		}
+#endif
+	}
+
+	void print_endline()
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			if (m_file) m_file << std::endl;
+		}
+#endif
+	}
+
+	void close(const DebugPayload* payload = nullptr)
+	{
+#if defined(_DEBUG)
+		if (ENABLE)
+		{
+			if (m_file)
+			{
+				if (payload)
+				{
+					payload->print_footer(m_file);
+					print_endline();
+				}
+				m_file.close();
+			}
+		}
+#endif
+	}
+
+#if defined(_DEBUG)
+private:
+	std::ofstream m_file;
+#endif
+};

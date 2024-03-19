@@ -35,8 +35,13 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
+// debug
+#include "debug/DebugOutput.h"
+
 const std::string FileDecoder::FileTypes{ "asc|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg|rsf" };
+
+static DebugOutput<DBG_DECODING> dbg;
 
 bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 {
@@ -60,31 +65,43 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Decoder>(new DecodeYM()),
 	};
 
-	stream.file = path;
-	for (auto decoder : decoders)
+	auto FindDecoderAndDecode = [&]() -> bool
 	{
-		if (decoder->Open(stream))
+		for (auto decoder : decoders)
 		{
-			Frame frame;
-			while (decoder->Decode(frame))
+			if (decoder->Open(stream))
 			{
-				if (!stream.AddFrame(frame)) break;
-				frame.ResetChanges();
-
-				FrameId frameId(stream.lastFrameId());
-				OnFrameDecoded(stream, frameId);
-
-				if (IsAbortRequested())
+				Frame frame;
+				while (decoder->Decode(frame))
 				{
-					decoder->Close(stream);
-					return false;
+					if (!stream.AddFrame(frame)) break;
+					frame.ResetChanges();
+
+					FrameId frameId(stream.lastFrameId());
+					OnFrameDecoded(stream, frameId);
+
+					if (IsAbortRequested())
+					{
+						decoder->Close(stream);
+						return false;
+					}
 				}
+				decoder->Close(stream);
+				return true;
 			}
-			decoder->Close(stream);
-			return true;
 		}
-	}
-	return false;
+		return false;
+	};
+
+	stream.file = path;
+	bool result = FindDecoderAndDecode();
+
+	// debug output
+	dbg.open("decode_" + stream.ToString(Stream::Property::Tag), &stream);
+	dbg.print_payload(&stream);
+	dbg.close(&stream);
+	
+	return result;
 }
 
 bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)

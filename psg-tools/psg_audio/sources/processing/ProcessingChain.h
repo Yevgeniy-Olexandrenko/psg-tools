@@ -3,8 +3,6 @@
 #include <vector>
 #include "FrameProcessor.h"
 
-#define DBG_PROCESSING 0
-
 class ProcessingChain : public FrameProcessor
 {
 public:

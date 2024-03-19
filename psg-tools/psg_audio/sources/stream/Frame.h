@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <iostream>
+#include "debug/DebugPayload.h"
 
 class Register
 {
@@ -103,7 +103,7 @@ using FrameId = uint32_t;
 constexpr uint8_t c_modeBankRegIdx = 0x0D;
 constexpr uint8_t c_unchangedShape = 0xFF;
 
-class Frame
+class Frame : public DebugPayload
 {
 public:
 	Frame();
@@ -120,6 +120,10 @@ public:
 	void SetChanges();
 	bool HasChanges() const;
 	bool IsAudible() const;
+
+	// debug payload
+	void print_payload (std::ostream& stream) const override;
+	void print_footer  (std::ostream& stream) const override;
 
 public:
 	struct Channel
