@@ -39,4 +39,5 @@ private:
 
 private:
     OutputType m_outputType;
+    uint8_t m_noiseAndMask;
 };
