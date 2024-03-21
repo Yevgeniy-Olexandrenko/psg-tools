@@ -1,6 +1,7 @@
 ﻿#include "Frame.h"
 #include <cstring>
 #include <iomanip>
+#include <vector>
 
 const Register::Index Register::t_fine   [] { A_Fine,    B_Fine,    C_Fine    };
 const Register::Index Register::t_coarse [] { A_Coarse,  B_Coarse,  C_Coarse  };
@@ -61,10 +62,18 @@ namespace
 		{ 0xFF, 0x00, 0xFF, 0x00 },
 		{ 0xFF, 0x00, 0xFF, 0x00 }
 	};
+
+	uint32_t UpdateHash(const uint8_t* data, size_t size, uint32_t hash = 0x00001505)
+	{
+		for (size_t i = 0; data && i < size; ++i)
+		{
+			hash = ((hash << 5) + hash + data[i]);
+		}
+		return hash;
+	}
 }
 
 Frame::Frame()
-	: m_id(0)
 {
 	ResetData();
 	ResetChanges();
@@ -72,6 +81,8 @@ Frame::Frame()
 
 Frame::Frame(const Frame& other)
 	: m_id(other.m_id)
+	, m_dhash(other.m_dhash)
+	, m_chash(other.m_chash)
 {
 	for (int chip = 0; chip < 2; ++chip)
 	{
@@ -99,20 +110,20 @@ Frame& Frame::operator+=(const Frame& other)
 {
 	for (int chip = 0; chip < 2; ++chip)
 	{
+		auto& dst = m_regs[chip];
+		auto& src = other.m_regs[chip];
+
 		// case when the chip mode is switching
-		if (m_regs[chip].IsExpMode() != other.m_regs[chip].IsExpMode())
+		if (dst.IsExpMode() != src.IsExpMode())
 		{
-			for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
-			{
-				m_regs[chip].GetData(reg) = other.m_regs[chip].GetData(reg);
-			}
-			m_regs[chip].SetChanges();
+			memcpy(dst.m_data, src.m_data, 25);
+			dst.SetChanges();
 		}
 
 		// case when the chip data is simply updating
 		else for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
 		{
-			m_regs[chip].Update(reg, other.m_regs[chip].Read(reg));
+			dst.Update(reg, src.Read(reg));
 		}
 	}
 	return *this;
@@ -162,20 +173,39 @@ bool Frame::IsAudible() const
 	return false;
 }
 
+uint32_t Frame::GetDataHash() const
+{
+	UpdateHashes();
+	return m_dhash;
+}
+
+uint32_t Frame::GetChangesHash() const
+{
+	UpdateHashes();
+	return m_chash;
+}
+
 void Frame::print_payload(std::ostream& stream) const
 {
 	if (stream)
 	{
 		for (const Registers& regs : m_regs)
 		{
-			const bool isExpMode = regs.IsExpMode();
-			for (Register reg = 0; reg < (isExpMode ? 32 : 16); ++reg)
+			Registers::Info info;
+			auto count = (regs.IsExpMode() ? 32 : 16);
+			for (Register reg = 0; reg < count; ++reg)
 			{
-				const int data = regs.GetData(reg);
-				if (regs.IsChanged(reg))
-					stream << '{' << std::hex << std::setw(2) << std::setfill('0') << data << '}';
-				else
-					stream << ' ' << std::hex << std::setw(2) << std::setfill('0') << data << ' ';
+				if (regs.GetInfo(reg, info))
+				{
+					int data = regs.m_data[info.index];
+					int diff = regs.m_diff[info.index];
+
+					if (diff)
+						stream << '{' << std::hex << std::setw(2) << std::setfill('0') << data << '}';
+					else
+						stream << ' ' << std::hex << std::setw(2) << std::setfill('0') << data << ' ';
+				}
+				else stream << " -- ";
 			}
 			stream << ':';
 		}
@@ -184,16 +214,39 @@ void Frame::print_payload(std::ostream& stream) const
 
 void Frame::print_footer(std::ostream& stream) const
 {
+	stream << ' ' << std::hex << std::setw(8) << std::setfill('0') << GetDataHash();
+	stream << ' ' << std::hex << std::setw(8) << std::setfill('0') << GetChangesHash();
 	if (!HasChanges()) stream << " no_changes";
 	if (!IsAudible()) stream << " not_audible";
 }
 
-struct Frame::Registers::Info
+void Frame::UpdateHashes() const
 {
-	uint8_t flags;
-	uint8_t index;
-	uint8_t mask;
-};
+	if (!m_dhash || !m_chash || m_regs[0].m_update || m_regs[1].m_update)
+	{
+		m_dhash = UpdateHash(nullptr, 0);
+		m_chash = UpdateHash(nullptr, 0);
+
+		std::vector<uint8_t> changes;
+		changes.reserve(2 * 25 * 2);
+
+		for (int c = 0; c < 2; ++c)
+		{
+			for (int i = 0; i < 25; ++i)
+			{
+				if (m_regs[c].m_diff[i])
+				{
+					changes.push_back((c << 7) | i);
+					changes.push_back(m_regs[c].m_data[i]);
+				}
+			}
+
+			m_dhash = UpdateHash(m_regs[c].m_data, 25, m_dhash);
+			m_regs[c].m_update = false;
+		}
+		m_chash = UpdateHash(changes.data(), changes.size(), m_chash);
+	}
+}
 
 bool Frame::Registers::GetInfo(Register reg, Info& info) const
 {
@@ -219,16 +272,19 @@ bool Frame::Registers::GetInfo(Register reg, Info& info) const
 void Frame::Registers::ResetData()
 {
 	memset(m_data, 0x00, sizeof(m_data));
+	m_update = true;
 }
 
 void Frame::Registers::ResetChanges()
 {
 	memset(m_diff, 0x00, sizeof(m_diff));
+	m_update = true;
 }
 
 void Frame::Registers::SetChanges()
 {
 	memset(m_diff, 0xFF, sizeof(m_diff));
+	m_update = true;
 }
 
 bool Frame::Registers::HasChanges() const
@@ -391,6 +447,7 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 				// write new value in register
 				m_diff[info.index] = 0xFF;
 				m_data[info.index] = data;
+				m_update = true;
 			}
 		}
 		else
@@ -400,6 +457,7 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 			data &= info.mask;
 			m_diff[info.index] = (m_data[info.index] ^ data);
 			m_data[info.index] = data;
+			m_update = true;
 		}
 	}
 }
@@ -433,18 +491,6 @@ void Frame::Registers::Update(int chan, const Channel& data)
 		Update(Register::e_coarse[chan], data.eCoarse);
 		Update(Register::e_shape [chan], data.eShape);
 	}
-}
-
-uint8_t& Frame::Registers::GetData(Register reg)
-{
-	Info info; static uint8_t dummy = 0;
-	return (GetInfo(reg, info) ? m_data[info.index] : dummy);
-}
-
-uint8_t& Frame::Registers::GetDiff(Register reg)
-{
-	Info info; static uint8_t dummy = 0;
-	return (GetInfo(reg, info) ? m_diff[info.index] : dummy);
 }
 
 uint8_t Frame::Registers::GetData(Register reg) const

@@ -121,9 +121,15 @@ public:
 	bool HasChanges() const;
 	bool IsAudible() const;
 
+	uint32_t GetDataHash() const;
+	uint32_t GetChangesHash() const;
+
 	// debug payload
 	void print_payload (std::ostream& stream) const override;
 	void print_footer  (std::ostream& stream) const override;
+
+private:
+	void UpdateHashes() const;
 
 public:
 	struct Channel
@@ -142,7 +148,7 @@ public:
 
 	class Registers
 	{
-		struct Info;
+		struct Info { uint8_t flags, index, mask; };
 		bool GetInfo(Register reg, Info& info) const;
 
 	public:
@@ -176,11 +182,8 @@ public:
 		void Update(int chan, const Channel& data);
 
 	public:
-		uint8_t& GetData(Register reg);
-		uint8_t& GetDiff(Register reg);
-
-		uint8_t  GetData(Register reg) const;
-		uint8_t  GetDiff(Register reg) const;
+		uint8_t GetData(Register reg) const;
+		uint8_t GetDiff(Register reg) const;
 
 	public:
 		bool IsToneEnabled(int chan) const;
@@ -190,14 +193,18 @@ public:
 		uint8_t GetVolume(int chan) const;
 
 	private:
+		friend class Frame;
 		uint8_t m_data[25];
 		uint8_t m_diff[25];
+		mutable bool m_update{ false };
 	};
 
 	const Registers& operator[](int chip) const;
 	Registers& operator[](int chip);
 
 private:
-	FrameId   m_id;
+	FrameId m_id{ 0 };
 	Registers m_regs[2];
+	mutable uint32_t m_dhash{ 0 };
+	mutable uint32_t m_chash{ 0 };
 };
