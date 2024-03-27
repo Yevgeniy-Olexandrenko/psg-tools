@@ -22,6 +22,7 @@
     <ClInclude Include="sources\debug\DebugConfig.h" />
     <ClInclude Include="sources\debug\DebugOutput.h" />
     <ClInclude Include="sources\debug\DebugPayload.h" />
+    <ClInclude Include="sources\debug\DebugStatistics.h" />
     <ClInclude Include="sources\decoders\Decoder.h" />
     <ClInclude Include="sources\decoders\modules\DecodeASC.h" />
     <ClInclude Include="sources\decoders\modules\DecodeMID.h" />
@@ -79,6 +80,7 @@
     <ClInclude Include="sources\stream\Stream.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="sources\debug\DebugStatistics.cpp" />
     <ClCompile Include="sources\decoders\Decoder.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeASC.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeMID.cpp" />
