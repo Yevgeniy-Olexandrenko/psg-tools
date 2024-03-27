@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-class SoundChip
+class AY89XXPsg
 {
 	static constexpr int NUM_CHANNELS = 3;
 	static constexpr int DECIMATE_FACTOR = 8;
@@ -95,7 +95,7 @@ protected:
 	enum class ChipType { AY8910, AY8914, AY8930, YM2149 };
 	enum class PSGType  { AY, YM };
 
-	SoundChip(ChipType chipType, PSGType psgType, int clockRate, int sampleRate);
+	AY89XXPsg(ChipType chipType, PSGType psgType, int clockRate, int sampleRate);
 
 private:
 	void WriteDirect(uint8_t reg, uint8_t data);
@@ -134,34 +134,34 @@ private: // resampling
 	double m_out[NUM_CHANNELS];
 };
 
-class ChipAY8910 : public SoundChip
+class ChipAY8910 : public AY89XXPsg
 {
 public:
 	ChipAY8910(int clock, int sampleRate)
-		: SoundChip(ChipType::AY8910, PSGType::AY, clock, sampleRate)
+		: AY89XXPsg(ChipType::AY8910, PSGType::AY, clock, sampleRate)
 	{}
 };
 
-class ChipAY8914 : public SoundChip
+class ChipAY8914 : public AY89XXPsg
 {
 public:
 	ChipAY8914(int clock, int sampleRate)
-		: SoundChip(ChipType::AY8914, PSGType::AY, clock, sampleRate)
+		: AY89XXPsg(ChipType::AY8914, PSGType::AY, clock, sampleRate)
 	{}
 };
 
-class ChipAY8930 : public SoundChip
+class ChipAY8930 : public AY89XXPsg
 {
 public:
 	ChipAY8930(int clock, int sampleRate)
-		: SoundChip(ChipType::AY8930,  PSGType::YM, clock, sampleRate)
+		: AY89XXPsg(ChipType::AY8930,  PSGType::YM, clock, sampleRate)
 	{}
 };
 
-class ChipYM2149 : public SoundChip
+class ChipYM2149 : public AY89XXPsg
 {
 public:
 	ChipYM2149(int clock, int sampleRate)
-		: SoundChip(ChipType::YM2149, PSGType::YM, clock, sampleRate)
+		: AY89XXPsg(ChipType::YM2149, PSGType::YM, clock, sampleRate)
 	{}
 };

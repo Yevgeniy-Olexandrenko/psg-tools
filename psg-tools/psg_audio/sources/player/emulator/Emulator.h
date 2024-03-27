@@ -1,6 +1,6 @@
 #pragma once
 
-#include "emulation/SoundChip.h"
+#include "emulation/AY89XXPsg.h"
 #include "player/Output.h"
 #include "WaveAudio.h"
 
@@ -25,6 +25,6 @@ private:
 	void SetPan(int chan, float pan, bool isEqp);
 
 private:
-	std::unique_ptr<SoundChip> m_psg[2];
+	std::unique_ptr<AY89XXPsg> m_psg[2];
 	float m_panL[3], m_panR[3];
 };

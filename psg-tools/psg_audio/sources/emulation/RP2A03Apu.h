@@ -1,9 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "NesCpu.h"
 
-class NesApu
+class RP2A03Apu
 {
 	struct Envelope
     {
@@ -125,7 +124,7 @@ public:
     };
 
 public:
-    NesApu();
+    RP2A03Apu();
 
     void Init(int sampleRate, int cpuClock);
     void Reset();

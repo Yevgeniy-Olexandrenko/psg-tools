@@ -1,9 +1,9 @@
 #pragma once
 
 #include "ChipSim.h"
-#include "emulation/NesApu.h"
+#include "emulation/RP2A03Apu.h"
 
-class SimRP2A03 : public ChipSim, public NesApu
+class SimRP2A03 : public ChipSim, public RP2A03Apu
 {
 public:
     enum class OutputType

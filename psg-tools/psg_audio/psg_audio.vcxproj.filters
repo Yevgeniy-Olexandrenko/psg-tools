@@ -49,6 +49,9 @@
     <Filter Include="Sources\simulation">
       <UniqueIdentifier>{2fddc4cf-c329-4fe5-aa0a-abf58b1b1b20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\emulation\machines">
+      <UniqueIdentifier>{eb6ef295-7afc-478b-a73c-5075518d10de}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\PSGAudio.h">
@@ -204,16 +207,13 @@
     <ClInclude Include="sources\debug\DebugStatistics.h">
       <Filter>Sources\debug</Filter>
     </ClInclude>
-    <ClInclude Include="sources\emulation\NesApu.h">
+    <ClInclude Include="sources\emulation\RP2A03Apu.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
-    <ClInclude Include="sources\emulation\NesCartridge.h">
+    <ClInclude Include="sources\emulation\RP2A03Cpu.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
-    <ClInclude Include="sources\emulation\NesCpu.h">
-      <Filter>Sources\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\emulation\SoundChip.h">
+    <ClInclude Include="sources\emulation\AY89XXPsg.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
     <ClInclude Include="sources\simulation\ChipSim.h">
@@ -227,6 +227,18 @@
     </ClInclude>
     <ClInclude Include="sources\simulation\SimSN76489.h">
       <Filter>Sources\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\NESCartridge.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\Z80Cpu.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\machines\AY.h">
+      <Filter>Sources\emulation\machines</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\machines\NSF.h">
+      <Filter>Sources\emulation\machines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -359,16 +371,13 @@
     <ClCompile Include="sources\debug\DebugStatistics.cpp">
       <Filter>Sources\debug</Filter>
     </ClCompile>
-    <ClCompile Include="sources\emulation\NesApu.cpp">
+    <ClCompile Include="sources\emulation\RP2A03Apu.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
-    <ClCompile Include="sources\emulation\NesCartridge.cpp">
+    <ClCompile Include="sources\emulation\RP2A03Cpu.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
-    <ClCompile Include="sources\emulation\NesCpu.cpp">
-      <Filter>Sources\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\emulation\SoundChip.cpp">
+    <ClCompile Include="sources\emulation\AY89XXPsg.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimAY8910.cpp">
@@ -379,6 +388,18 @@
     </ClCompile>
     <ClCompile Include="sources\simulation\SimSN76489.cpp">
       <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\NESCartridge.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\Z80Cpu.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\machines\AY.cpp">
+      <Filter>Sources\emulation\machines</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\machines\NSF.cpp">
+      <Filter>Sources\emulation\machines</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

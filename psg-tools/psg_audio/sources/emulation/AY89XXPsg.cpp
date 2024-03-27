@@ -22,7 +22,7 @@
 // YM2203 English datasheet: http://www.appleii-box.de/APPLE2/JonasCard/YM2203%20datasheet.pdf
 // YM2203 Japanese datasheet contents, translated: http://www.larwe.com/technical/chip_ymopn.html
 
-#include "SoundChip.h"
+#include "AY89XXPsg.h"
 #include <string.h>
 #include <math.h>
 
@@ -129,7 +129,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
-SoundChip::SoundChip(ChipType chipType, PSGType psgType, int clockRate, int sampleRate)
+AY89XXPsg::AY89XXPsg(ChipType chipType, PSGType psgType, int clockRate, int sampleRate)
 	: m_chipType(chipType)
 	, m_dacTable((!(m_chipType == ChipType::AY8930)) && (psgType == PSGType::AY) ? AY_DAC_TABLE : YM_DAC_TABLE)
 	, m_counter(0)
@@ -140,7 +140,7 @@ SoundChip::SoundChip(ChipType chipType, PSGType psgType, int clockRate, int samp
 	Reset();
 }
 
-void SoundChip::Reset()
+void AY89XXPsg::Reset()
 {
 	m_mode = 0; // AY-3-8910 compatible mode
 	memset(&m_regs, 0, sizeof(m_regs));
@@ -153,14 +153,14 @@ void SoundChip::Reset()
 	m_noise.Reset();
 }
 
-void SoundChip::Write(uint8_t reg, uint8_t data)
+void AY89XXPsg::Write(uint8_t reg, uint8_t data)
 {
 	reg &= 0x0F;
 	reg |= get_register_bank();
 	WriteDirect(reg, data);
 }
 
-void SoundChip::WriteDirect(uint8_t reg, uint8_t data)
+void AY89XXPsg::WriteDirect(uint8_t reg, uint8_t data)
 {
 	if (m_chipType == ChipType::AY8914)
 	{
@@ -282,7 +282,7 @@ void SoundChip::WriteDirect(uint8_t reg, uint8_t data)
 	}
 }
 
-void SoundChip::Process(double& outA, double& outB, double& outC)
+void AY89XXPsg::Process(double& outA, double& outB, double& outC)
 {
 	// The 8910 has three outputs, each output is the mix of one of the three
 	// tone generators and of the (single) noise generator. The two are mixed
@@ -347,7 +347,7 @@ void SoundChip::Process(double& outA, double& outB, double& outC)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundChip::ToneUnit::Reset()
+void AY89XXPsg::ToneUnit::Reset()
 {
 	SetPeriod(false, 0, 0);
 	SetVolume(0);
@@ -358,7 +358,7 @@ void SoundChip::ToneUnit::Reset()
 	m_output = 0;
 }
 
-void SoundChip::ToneUnit::Update(bool isExp)
+void AY89XXPsg::ToneUnit::Update(bool isExp)
 {
 	if (isExp)
 	{
@@ -380,41 +380,41 @@ void SoundChip::ToneUnit::Update(bool isExp)
 	}
 }
 
-void SoundChip::ToneUnit::SetPeriod(bool isExp, uint8_t fine, uint8_t coarse)
+void AY89XXPsg::ToneUnit::SetPeriod(bool isExp, uint8_t fine, uint8_t coarse)
 {
 	coarse &= (isExp ? 0xFF : 0x0F);
 	m_period = fine | (coarse << 8);
 	m_period |= (m_period == 0);
 }
 
-void SoundChip::ToneUnit::SetVolume(uint8_t volume)
+void AY89XXPsg::ToneUnit::SetVolume(uint8_t volume)
 {
 	m_volume = volume;
 }
 
-void SoundChip::ToneUnit::SetDuty(uint8_t duty)
+void AY89XXPsg::ToneUnit::SetDuty(uint8_t duty)
 {
 	m_dutyCycle = DUTY_CYCLES[(duty & 0x08) ? 0x08 : (duty & 0x0F)];
 }
 
-int SoundChip::ToneUnit::GetOutput() const
+int AY89XXPsg::ToneUnit::GetOutput() const
 {
 	return m_output;
 }
 
-int SoundChip::ToneUnit::GetVolume(bool isExp) const
+int AY89XXPsg::ToneUnit::GetVolume(bool isExp) const
 {
 	return (isExp ? (m_volume & 0x1F) : ((m_volume & 0x0F) << 1 | 0x01));
 }
 
-int SoundChip::ToneUnit::GetEField(bool isExp, bool isWide) const
+int AY89XXPsg::ToneUnit::GetEField(bool isExp, bool isWide) const
 {
 	return (m_volume >> (isExp ? 5 : 4)) & (isWide ? 3 : 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundChip::NoiseUnit::Reset()
+void AY89XXPsg::NoiseUnit::Reset()
 {
 	SetPeriod(false, 0);
 	SetMaskAND(0);
@@ -427,7 +427,7 @@ void SoundChip::NoiseUnit::Reset()
 	m_output = 0;
 }
 
-void SoundChip::NoiseUnit::Update(bool isExp, bool isNew)
+void AY89XXPsg::NoiseUnit::Update(bool isExp, bool isNew)
 {
 	// The Random Number Generator of the 8910 is a 17-bit shift
 	// register. The input to the shift register is bit0 XOR bit3
@@ -459,23 +459,23 @@ void SoundChip::NoiseUnit::Update(bool isExp, bool isNew)
 	}
 }
 
-void SoundChip::NoiseUnit::SetPeriod(bool isExp, uint8_t period)
+void AY89XXPsg::NoiseUnit::SetPeriod(bool isExp, uint8_t period)
 {
 	m_period = (period & (isExp ? 0xFF : 0x1F));
 	m_period |= (m_period == 0);
 }
 
-void SoundChip::NoiseUnit::SetMaskAND(uint8_t mask)
+void AY89XXPsg::NoiseUnit::SetMaskAND(uint8_t mask)
 {
 	m_maskAND = (mask & 0xFF);
 }
 
-void SoundChip::NoiseUnit::SetMaskOR(uint8_t mask)
+void AY89XXPsg::NoiseUnit::SetMaskOR(uint8_t mask)
 {
 	m_maskOR = (mask & 0xFF);
 }
 
-int SoundChip::NoiseUnit::GetOutput() const
+int AY89XXPsg::NoiseUnit::GetOutput() const
 {
 	return m_output;
 }
@@ -507,13 +507,13 @@ namespace
 	};
 }
 
-void SoundChip::EnvelopeUnit::Reset()
+void AY89XXPsg::EnvelopeUnit::Reset()
 {
 	SetPeriod(0, 0);
 	SetShape(0);
 }
 
-void SoundChip::EnvelopeUnit::Update()
+void AY89XXPsg::EnvelopeUnit::Update()
 {
 	if (++m_counter >= m_period)
 	{
@@ -528,13 +528,13 @@ void SoundChip::EnvelopeUnit::Update()
 	}
 }
 
-void SoundChip::EnvelopeUnit::SetPeriod(uint8_t fine, uint8_t coarse)
+void AY89XXPsg::EnvelopeUnit::SetPeriod(uint8_t fine, uint8_t coarse)
 {
 	m_period = fine | (coarse << 8);
 	m_period |= (m_period == 0);
 }
 
-void SoundChip::EnvelopeUnit::SetShape(uint8_t shape)
+void AY89XXPsg::EnvelopeUnit::SetShape(uint8_t shape)
 {
 	m_shape = (shape & 0x0F);
 	m_counter = 0;
@@ -542,7 +542,7 @@ void SoundChip::EnvelopeUnit::SetShape(uint8_t shape)
 	m_volume = envelopes[m_shape][m_segment][1];
 }
 
-int SoundChip::EnvelopeUnit::GetVolume() const
+int AY89XXPsg::EnvelopeUnit::GetVolume() const
 {
 	return m_volume;
 }
@@ -550,7 +550,7 @@ int SoundChip::EnvelopeUnit::GetVolume() const
 ////////////////////////////////////////////////////////////////////////////////
 
 
-void SoundChip::Process()
+void AY89XXPsg::Process()
 {
 	double* c_A = m_interpolator[0].c;
 	double* c_B = m_interpolator[1].c;
@@ -620,7 +620,7 @@ void SoundChip::Process()
 	m_out[2] = Decimate(firC);
 }
 
-void SoundChip::RemoveDC()
+void AY89XXPsg::RemoveDC()
 {
 	m_out[0] = FilterDC(m_dcFilter[0], m_dcFilterIndex, m_out[0]);
 	m_out[1] = FilterDC(m_dcFilter[1], m_dcFilterIndex, m_out[1]);
@@ -628,22 +628,22 @@ void SoundChip::RemoveDC()
 	m_dcFilterIndex = (m_dcFilterIndex + 1) & (DC_FILTER_SIZE - 1);
 }
 
-double SoundChip::GetOutA() const
+double AY89XXPsg::GetOutA() const
 {
 	return m_out[0];
 }
 
-double SoundChip::GetOutB() const
+double AY89XXPsg::GetOutB() const
 {
 	return m_out[1];
 }
 
-double SoundChip::GetOutC() const
+double AY89XXPsg::GetOutC() const
 {
 	return m_out[2];
 }
 
-double SoundChip::Decimate(double* x) const
+double AY89XXPsg::Decimate(double* x) const
 {
 	double y =
 		-0.0000046183113992051936 * (x[ 1] + x[191]) +
@@ -736,7 +736,7 @@ double SoundChip::Decimate(double* x) const
 	return y;
 }
 
-double SoundChip::FilterDC(DCFilter& filter, int index, double x) const
+double AY89XXPsg::FilterDC(DCFilter& filter, int index, double x) const
 {
 	filter.sum += -filter.delay[index] + x;
 	filter.delay[index] = x;

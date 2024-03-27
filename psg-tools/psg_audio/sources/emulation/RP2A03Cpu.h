@@ -1,6 +1,6 @@
 #pragma once
 
-class NesCpu
+class RP2A03Cpu
 {
 public:
 	enum class Clock

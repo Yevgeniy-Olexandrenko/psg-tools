@@ -1,4 +1,5 @@
-#include "NesApu.h"
+#include "RP2A03Apu.h"
+#include "RP2A03Cpu.h"
 #include <string>
 #include <initializer_list>
 
@@ -54,25 +55,25 @@ const uint8_t length_lut[32] =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-NesApu::NesApu()
+RP2A03Apu::RP2A03Apu()
     : m_noisePeriods(nullptr)
     , m_dmcPeriods(nullptr)
     , m_cpuCycles(0)
 {
-    Init(44100, (int)NesCpu::Clock::NTSC);
+    Init(44100, (int)RP2A03Cpu::Clock::NTSC);
 }
 
-void NesApu::Init(int sampleRate, int cpuClock)
+void RP2A03Apu::Init(int sampleRate, int cpuClock)
 {
     m_cpuClock = cpuClock;
     m_cpuCyclesPerSample = (uint32_t)((((uint64_t)cpuClock) << 16) / sampleRate);
 
-    if (m_cpuClock == (uint32_t)NesCpu::Clock::NTSC)
+    if (m_cpuClock == (uint32_t)RP2A03Cpu::Clock::NTSC)
     {
         m_noisePeriods = noise_periods_ntsc;
         m_dmcPeriods = dmc_periods_ntsc;
     }
-    else if (m_cpuClock == (uint32_t)NesCpu::Clock::PAL)
+    else if (m_cpuClock == (uint32_t)RP2A03Cpu::Clock::PAL)
     {
         m_noisePeriods = noise_periods_pal;
         m_dmcPeriods = dmc_periods_pal;
@@ -87,7 +88,7 @@ void NesApu::Init(int sampleRate, int cpuClock)
     Reset();
 }
 
-void NesApu::Reset()
+void RP2A03Apu::Reset()
 {
     memset(&m_pulse1,   0, sizeof(m_pulse1)   );
     memset(&m_pulse2,   0, sizeof(m_pulse2)   );
@@ -103,7 +104,7 @@ void NesApu::Reset()
     m_noise.shiftreg = 1;
 }
 
-void NesApu::Write(uint16_t addr, uint8_t data)
+void RP2A03Apu::Write(uint16_t addr, uint8_t data)
 {
     switch (addr)
     {
@@ -234,7 +235,7 @@ void NesApu::Write(uint16_t addr, uint8_t data)
     }
 }
 
-uint8_t NesApu::Read(uint16_t addr)
+uint8_t RP2A03Apu::Read(uint16_t addr)
 {
     if (addr == STATUS)
     {
@@ -248,7 +249,7 @@ uint8_t NesApu::Read(uint16_t addr)
     return 0;
 }
 
-int32_t NesApu::Output()
+int32_t RP2A03Apu::Output()
 {
     m_cpuCycles += m_cpuCyclesPerSample;
     Process(m_cpuCycles >> 16);
@@ -286,7 +287,7 @@ int32_t NesApu::Output()
     return (int32_t)((int64_t)(m_P12MixLut[pulse1 + pulse2] + m_TNDMixLut[(triangle + (triangle << 1)) + (noise << 1) + dmc]) - 0x7fffffffL);
 }
 
-void NesApu::Process(uint32_t cpu_cycles)
+void RP2A03Apu::Process(uint32_t cpu_cycles)
 {
     for (uint32_t cycle = 0; cycle < cpu_cycles; ++cycle)
     {
@@ -437,7 +438,7 @@ void NesApu::Process(uint32_t cpu_cycles)
     }
 }
 
-void NesApu::CalculateSweepPulse1()
+void RP2A03Apu::CalculateSweepPulse1()
 {
     m_pulse1.sweep.target = m_pulse1.sweep.negate
         ? m_pulse1.timer_period - ((m_pulse1.timer_period >> m_pulse1.sweep.shift) - 1)
@@ -445,7 +446,7 @@ void NesApu::CalculateSweepPulse1()
     m_pulse1.sweep.silence = ((m_pulse1.timer_period < 8) || (m_pulse1.sweep.target > 0x7FF));
 }
 
-void NesApu::CalculateSweepPulse2()
+void RP2A03Apu::CalculateSweepPulse2()
 {
     m_pulse2.sweep.target = m_pulse2.sweep.negate
         ? m_pulse2.timer_period - (m_pulse2.timer_period >> m_pulse2.sweep.shift)
@@ -453,7 +454,7 @@ void NesApu::CalculateSweepPulse2()
     m_pulse2.sweep.silence = ((m_pulse2.timer_period < 8) || (m_pulse2.sweep.target > 0x7FF));
 }
 
-void NesApu::UpdateQuarterFrame()
+void RP2A03Apu::UpdateQuarterFrame()
 {
     // process envelopes (pulses and noise)
     for (Envelope* envelope : { &m_pulse1.envelope, &m_pulse2.envelope, &m_noise.envelope })
@@ -482,7 +483,7 @@ void NesApu::UpdateQuarterFrame()
     if (!m_triangle.control) m_triangle.halt = false;
 }
 
-void NesApu::UpdateHalfFrame()
+void RP2A03Apu::UpdateHalfFrame()
 {
     // process length counters of pulses, triangle, noise, and DMC
     if (m_pulse1.enabled)
@@ -550,7 +551,7 @@ void NesApu::UpdateHalfFrame()
     }
 }
 
-void NesApu::UpdateNoise()
+void RP2A03Apu::UpdateNoise()
 {
     uint16_t feedback = m_noise.mode
         ? ((m_noise.shiftreg & 1) ^ ((m_noise.shiftreg >> 5) & 1))
@@ -558,7 +559,7 @@ void NesApu::UpdateNoise()
     m_noise.shiftreg = (m_noise.shiftreg >> 1) | feedback;
 }
 
-uint8_t NesApu::CpuRead(uint16_t addr)
+uint8_t RP2A03Apu::CpuRead(uint16_t addr)
 {
     // TODO
 

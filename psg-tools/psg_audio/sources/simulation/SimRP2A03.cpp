@@ -33,7 +33,7 @@ SimRP2A03::SimRP2A03()
 
 void SimRP2A03::ConfigureClock(int srcClock, int dstClock)
 {
-    NesApu::Init(44100, srcClock);
+    RP2A03Apu::Init(44100, srcClock);
     ChipSim::ConfigureClock(srcClock, dstClock);
 
     // destination clock must be from 1.0 to 2.0 MHz
@@ -48,14 +48,14 @@ void SimRP2A03::ConfigureOutput(OutputType outputType)
 
 void SimRP2A03::Reset()
 {
-    NesApu::Reset();
+    RP2A03Apu::Reset();
 }
 
 void SimRP2A03::Write(int chip, Register reg, uint8_t data)
 {
     if (chip == 0)
     {
-        NesApu::Write(0x4000 | reg, data);
+        RP2A03Apu::Write(0x4000 | reg, data);
     }
 }
 
@@ -64,7 +64,7 @@ void SimRP2A03::Simulate(int samples)
     while (samples--)
     {
         m_cpuCycles += m_cpuCyclesPerSample;
-        NesApu::Process(m_cpuCycles >> 16);
+        RP2A03Apu::Process(m_cpuCycles >> 16);
         m_cpuCycles &= 0xFFFF;
     }
 }
