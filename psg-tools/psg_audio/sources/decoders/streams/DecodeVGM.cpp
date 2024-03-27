@@ -1,8 +1,8 @@
 #include "DecodeVGM.h"
 #include "zlib/zlib.h"
-#include "DecodeVGM/SimAY8910.h"
-#include "DecodeVGM/SimRP2A03.h"
-#include "DecodeVGM/SimSN76489.h"
+#include "simulation/SimAY8910.h"
+#include "simulation/SimRP2A03.h"
+#include "simulation/SimSN76489.h"
 #include <sstream>
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,8 +1,8 @@
 #pragma once
 
+#include "emulation/SoundChip.h"
 #include "player/Output.h"
 #include "WaveAudio.h"
-#include "SoundChip.h"
 
 constexpr int k_emulatorSampleRate = 44100;
 

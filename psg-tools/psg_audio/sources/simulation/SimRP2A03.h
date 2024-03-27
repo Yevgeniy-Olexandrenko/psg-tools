@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ChipSim.h"
-#include "NesApu.h"
+#include "emulation/NesApu.h"
 
 class SimRP2A03 : public ChipSim, public NesApu
 {

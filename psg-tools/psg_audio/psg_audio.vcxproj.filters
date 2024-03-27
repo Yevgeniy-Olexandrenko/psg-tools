@@ -28,9 +28,6 @@
     <Filter Include="Sources\encoders\streams">
       <UniqueIdentifier>{a587b731-4146-4d34-8396-9c85ed3a372c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\decoders\streams\DecodeVGM">
-      <UniqueIdentifier>{3f2b2c05-e597-44ab-ac97-6e14b08fabe6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\filelist">
       <UniqueIdentifier>{abda03d6-254d-47ac-9ef4-ca2d2be54ab3}</UniqueIdentifier>
     </Filter>
@@ -45,6 +42,12 @@
     </Filter>
     <Filter Include="Sources\debug">
       <UniqueIdentifier>{f3f16524-479f-4b74-83ae-b3753e69e187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\emulation">
+      <UniqueIdentifier>{c92739f0-53ac-40aa-b85d-43f7923ec5ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources\simulation">
+      <UniqueIdentifier>{2fddc4cf-c329-4fe5-aa0a-abf58b1b1b20}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -98,27 +101,6 @@
     </ClInclude>
     <ClInclude Include="sources\decoders\streams\DecodeYM.h">
       <Filter>Sources\decoders\streams</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\ChipSim.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesApu.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCartridge.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\NesCpu.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimAY8910.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimRP2A03.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\decoders\streams\DecodeVGM\SimSN76489.h">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
     </ClInclude>
     <ClInclude Include="sources\decoders\Decoder.h">
       <Filter>Sources\decoders</Filter>
@@ -195,9 +177,6 @@
     <ClInclude Include="sources\player\emulator\Emulator.h">
       <Filter>Sources\player\emulator</Filter>
     </ClInclude>
-    <ClInclude Include="sources\player\emulator\SoundChip.h">
-      <Filter>Sources\player\emulator</Filter>
-    </ClInclude>
     <ClInclude Include="sources\player\emulator\WaveAudio.h">
       <Filter>Sources\player\emulator</Filter>
     </ClInclude>
@@ -224,6 +203,30 @@
     </ClInclude>
     <ClInclude Include="sources\debug\DebugStatistics.h">
       <Filter>Sources\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\NesApu.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\NesCartridge.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\NesCpu.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\SoundChip.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\simulation\ChipSim.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\simulation\SimAY8910.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\simulation\SimRP2A03.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\simulation\SimSN76489.h">
+      <Filter>Sources\simulation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -277,24 +280,6 @@
     </ClCompile>
     <ClCompile Include="sources\decoders\streams\DecodeYM.cpp">
       <Filter>Sources\decoders\streams</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesApu.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCartridge.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\NesCpu.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimAY8910.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimRP2A03.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\decoders\streams\DecodeVGM\SimSN76489.cpp">
-      <Filter>Sources\decoders\streams\DecodeVGM</Filter>
     </ClCompile>
     <ClCompile Include="sources\decoders\Decoder.cpp">
       <Filter>Sources\decoders</Filter>
@@ -356,9 +341,6 @@
     <ClCompile Include="sources\player\emulator\Emulator.cpp">
       <Filter>Sources\player\emulator</Filter>
     </ClCompile>
-    <ClCompile Include="sources\player\emulator\SoundChip.cpp">
-      <Filter>Sources\player\emulator</Filter>
-    </ClCompile>
     <ClCompile Include="sources\player\emulator\WaveAudio.cpp">
       <Filter>Sources\player\emulator</Filter>
     </ClCompile>
@@ -376,6 +358,27 @@
     </ClCompile>
     <ClCompile Include="sources\debug\DebugStatistics.cpp">
       <Filter>Sources\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\NesApu.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\NesCartridge.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\NesCpu.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\emulation\SoundChip.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimAY8910.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimRP2A03.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimSN76489.cpp">
+      <Filter>Sources\simulation</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
