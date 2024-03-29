@@ -40,8 +40,10 @@
     <ClInclude Include="sources\decoders\streams\DecodeVGM.h" />
     <ClInclude Include="sources\decoders\streams\DecodeVTX.h" />
     <ClInclude Include="sources\decoders\streams\DecodeYM.h" />
-    <ClInclude Include="sources\emulation\machines\AY.h" />
-    <ClInclude Include="sources\emulation\machines\NSF.h" />
+    <ClInclude Include="sources\emulation\Machine.h" />
+    <ClInclude Include="sources\emulation\machines\AYMachine.h" />
+    <ClInclude Include="sources\emulation\machines\NSFMachine.h" />
+    <ClInclude Include="sources\emulation\machines\VGMMachine.h" />
     <ClInclude Include="sources\emulation\NESCartridge.h" />
     <ClInclude Include="sources\emulation\RP2A03Apu.h" />
     <ClInclude Include="sources\emulation\RP2A03Cpu.h" />
@@ -101,8 +103,10 @@
     <ClCompile Include="sources\decoders\streams\DecodeVGM.cpp" />
     <ClCompile Include="sources\decoders\streams\DecodeVTX.cpp" />
     <ClCompile Include="sources\decoders\streams\DecodeYM.cpp" />
-    <ClCompile Include="sources\emulation\machines\AY.cpp" />
-    <ClCompile Include="sources\emulation\machines\NSF.cpp" />
+    <ClCompile Include="sources\emulation\Machine.cpp" />
+    <ClCompile Include="sources\emulation\machines\AYMachine.cpp" />
+    <ClCompile Include="sources\emulation\machines\NSFMachine.cpp" />
+    <ClCompile Include="sources\emulation\machines\VGMMachine.cpp" />
     <ClCompile Include="sources\emulation\NESCartridge.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Apu.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Cpu.cpp" />
