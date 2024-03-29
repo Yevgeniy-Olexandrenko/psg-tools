@@ -3,8 +3,6 @@
 #include <memory>
 #include "decoders/Decoder.h"
 
-#define DBG_DECODE_VGM 0
-
 class ChipSim;
 
 class DecodeVGM : public Decoder

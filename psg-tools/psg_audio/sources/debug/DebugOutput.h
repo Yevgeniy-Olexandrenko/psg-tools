@@ -3,6 +3,7 @@
 #if defined(_DEBUG)
 #include <cassert>
 #include <fstream>
+#include <cstdarg>
 #endif
 
 #include "DebugConfig.h"
@@ -65,15 +66,19 @@ public:
 #endif
 	}
 
-	void print_message(const std::string& msg)
+	void print_message(const char* format, ...)
 	{
 #if defined(_DEBUG)
 		if (ENABLE)
 		{
 			if (m_file)
 			{
-				assert(!msg.empty());
-				m_file << msg << std::endl;
+				char buffer[256];
+				va_list args;
+				va_start(args, format);
+				vsnprintf_s(buffer, sizeof(buffer), format, args);
+				va_end(args);
+				m_file << buffer;
 			}
 		}
 #endif

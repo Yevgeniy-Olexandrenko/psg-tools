@@ -1,33 +1,12 @@
 #include "DecodeVGM.h"
-#include "zlib/zlib.h"
+#include <sstream>
+#include <zlib/zlib.h>
 #include "simulation/SimAY8910.h"
 #include "simulation/SimRP2A03.h"
 #include "simulation/SimSN76489.h"
-#include <sstream>
+#include "debug/DebugOutput.h"
 
-////////////////////////////////////////////////////////////////////////////////
-
-#if DBG_DECODE_VGM && defined(_DEBUG)
-#include <fstream>
-static std::ofstream dbg;
-static void dbg_close() { if (dbg.is_open()) dbg.close(); }
-static void dbg_open () { dbg_close(); dbg.open("dbg_decode_vgm.txt"); }
-static void dbg_print_endl() { if (dbg.is_open()) dbg << std::endl; }
-static void dbg_print_payload(int r, int d)
-{
-    if (dbg.is_open())
-    {
-        dbg << 'r' << std::hex << std::setw(2) << std::setfill('0') << r;
-        dbg << ':' << std::hex << std::setw(2) << std::setfill('0') << d;
-        dbg << ' ';
-    }
-}
-#else
-static void dbg_open() {}
-static void dbg_close() {}
-static void dbg_print_endl() {}
-static void dbg_print_payload(int r, int d) {}
-#endif
+static DebugOutput<DBG_DECODE_VGM> dbg;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -205,7 +184,7 @@ bool DecodeVGM::Open(Stream& stream)
                             stream.info.type(stream.info.type() + " (" + GD3[4] + ")");
                     }
                 }
-                dbg_open();
+                dbg.open("decode_vgm_" + stream.ToString(Stream::Property::Tag));
                 return true;
             }
             else
@@ -223,8 +202,9 @@ bool DecodeVGM::Decode(Frame& frame)
     if (m_processedSamples >= m_samplesPerFrame)
     {
         m_simulator->Simulate(m_samplesPerFrame);
-    }
-    else while (m_processedSamples < m_samplesPerFrame)
+    } 
+    else
+    while (m_processedSamples < m_samplesPerFrame)
     {
         if (int samples = DecodeBlock())
         {
@@ -234,7 +214,7 @@ bool DecodeVGM::Decode(Frame& frame)
         else return false;
     }
     m_processedSamples -= m_samplesPerFrame;
-    dbg_print_endl();
+    dbg.print_message("%d\n", m_processedSamples);
     return true;
 }
 
@@ -242,7 +222,7 @@ void DecodeVGM::Close(Stream& stream)
 {
     stream.Finalize(m_loop);
     delete[] m_data;
-    dbg_close();
+    dbg.close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -276,6 +256,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[0];
                 uint8_t dd = m_dataPtr[1];
                 m_simulator->Write((aa & 0x20) >> 5, 0, dd);
+                dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 1;
         }
@@ -288,7 +269,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
-                dbg_print_payload(aa, dd);
+                dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 2;
         }
@@ -301,7 +282,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write(0, aa, dd);
-                dbg_print_payload(aa, dd);
+                dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 2;
         }
@@ -309,8 +290,16 @@ int DecodeVGM::DecodeBlock()
         // Data block 0x67 0x66 tt ss ss ss ss, just skip it
         else if (m_dataPtr[0] == 0x67)
         {
-            uint32_t dataLength = *(uint32_t*)(&m_dataPtr[3]);
-            m_dataPtr += (6 + dataLength);
+            uint32_t dataSize = *(uint32_t*)(&m_dataPtr[3]) - 2;
+            if (m_simulator->type() == ChipSim::Type::RP2A03)
+            {
+                uint16_t dataAddr = *(uint16_t*)(&m_dataPtr[7]);
+
+                // TODO
+
+                dbg.print_message("d%04X:%05d ", dataAddr, dataSize);
+            }
+            m_dataPtr += (6 + dataSize + 2);
         }
 
         // Wait n samples, n can range from 0 to 65535 (approx 1.49 seconds).
@@ -352,5 +341,6 @@ int DecodeVGM::DecodeBlock()
         }
         m_dataPtr++;
     }
+    dbg.print_message("w%05d ", samples);
     return samples;
 }
