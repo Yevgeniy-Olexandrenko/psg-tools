@@ -228,9 +228,6 @@
     <ClInclude Include="sources\simulation\SimSN76489.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
-    <ClInclude Include="sources\emulation\NESCartridge.h">
-      <Filter>Sources\emulation</Filter>
-    </ClInclude>
     <ClInclude Include="sources\emulation\Z80Cpu.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
@@ -245,6 +242,9 @@
     </ClInclude>
     <ClInclude Include="sources\emulation\machines\VGMMachine.h">
       <Filter>Sources\emulation\machines</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\emulation\Memory.h">
+      <Filter>Sources\emulation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -394,9 +394,6 @@
     </ClCompile>
     <ClCompile Include="sources\simulation\SimSN76489.cpp">
       <Filter>Sources\simulation</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\emulation\NESCartridge.cpp">
-      <Filter>Sources\emulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\emulation\Z80Cpu.cpp">
       <Filter>Sources\emulation</Filter>

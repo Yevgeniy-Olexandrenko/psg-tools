@@ -44,7 +44,7 @@
     <ClInclude Include="sources\emulation\machines\AYMachine.h" />
     <ClInclude Include="sources\emulation\machines\NSFMachine.h" />
     <ClInclude Include="sources\emulation\machines\VGMMachine.h" />
-    <ClInclude Include="sources\emulation\NESCartridge.h" />
+    <ClInclude Include="sources\emulation\Memory.h" />
     <ClInclude Include="sources\emulation\RP2A03Apu.h" />
     <ClInclude Include="sources\emulation\RP2A03Cpu.h" />
     <ClInclude Include="sources\emulation\AY89XXPsg.h" />
@@ -107,7 +107,6 @@
     <ClCompile Include="sources\emulation\machines\AYMachine.cpp" />
     <ClCompile Include="sources\emulation\machines\NSFMachine.cpp" />
     <ClCompile Include="sources\emulation\machines\VGMMachine.cpp" />
-    <ClCompile Include="sources\emulation\NESCartridge.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Apu.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Cpu.cpp" />
     <ClCompile Include="sources\emulation\AY89XXPsg.cpp" />

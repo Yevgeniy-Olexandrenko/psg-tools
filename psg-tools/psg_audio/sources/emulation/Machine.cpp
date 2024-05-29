@@ -1,61 +1,48 @@
 #include "Machine.h"
-#include <cassert>
 
-void Machine::Bus::Handler::OnBusWrite(int tag, Addr addr, Data data)
+void Machine::Bus::Write(addr_t addr, data_t data)
 {
-	// DO NOTHING
+    HandleWrite(m_writeHandlers, addr, data);
 }
 
-Machine::Data Machine::Bus::Handler::OnBusRead(int tag, Addr addr) const
+data_t Machine::Bus::Read(addr_t addr)
 {
-	return Bus::OPEN;
+    return HandleRead(m_readHandlers, addr);
 }
 
-void Machine::Bus::AddWriteReadHandler(Handler* handler, Addr from, Addr to, int tag)
+void Machine::Bus::IOWrite(addr_t port, data_t data)
 {
-	AddWriteHandler(handler, from, to, tag);
-	AddReadHandler(handler, from, to, tag);
+    HandleWrite(m_ioWriteHandlers, port, data);
 }
 
-void Machine::Bus::AddWriteHandler(Handler* handler, Addr from, Addr to, int tag)
+data_t Machine::Bus::IORead(addr_t port)
 {
-	assert(handler != nullptr && from <= to);
-	m_writeHandlers.push_back({ handler, from, to, tag });
+    return HandleRead(m_ioReadHandlers, port);
 }
 
-void Machine::Bus::AddReadHandler(Handler* handler, Addr from, Addr to, int tag)
+void Machine::Bus::HandleWrite(const Handlers& handlers, addr_t addr, data_t data)
 {
-	assert(handler != nullptr && from <= to);
-	m_readHandlers.push_back({ handler, from, to, tag });
+    for (const auto& handler : handlers)
+    {
+        if (addr >= handler.from && addr <= handler.to)
+        {
+            data_t wrdata = data;
+            handler.call(addr - handler.from, wrdata);
+        }
+    }
 }
 
-void Machine::Bus::Write(Addr addr, Data data)
+data_t Machine::Bus::HandleRead(const Handlers& handlers, addr_t addr)
 {
-	for (auto& range : m_writeHandlers)
-	{
-		if (addr >= range.from && addr <= range.to)
-		{
-			range.handler->OnBusWrite(range.tag, addr, data);
-			break;
-		}
-	}
-}
-
-Machine::Data Machine::Bus::Read(Addr addr)
-{
-	Data data = Bus::OPEN;
-	for (auto& range : m_readHandlers)
-	{
-		if (addr >= range.from && addr <= range.to)
-		{
-			data = range.handler->OnBusRead(range.tag, addr);
-			break;
-		}
-	}
-	return data;
-}
-
-Machine::Bus& Machine::GetBus()
-{
-	return m_bus;
+    data_t data = 0xFF;
+    for (const auto& handler : handlers)
+    {
+        if (addr >= handler.from && addr <= handler.to)
+        {
+            data_t rddata = data;
+            handler.call(addr - handler.from, rddata);
+            data &= rddata;
+        }
+    }
+    return data;
 }

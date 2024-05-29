@@ -1,8 +1,9 @@
 #pragma once
 
 #include "emulation/Machine.h"
+#include "emulation/Memory.h"
 
-class NSFMachine : public Machine, public Machine::Bus::Handler
+class NSFMachine : public Machine
 {
 public:
     // Spec: https://wiki.nesdev.org/w/index.php/NSF
@@ -28,10 +29,12 @@ public:
     };
     #pragma pack(pop)
 
-	bool Init(const Header& header);
+    bool PowerOn(const Header& header);
 
-	void OnBusWrite(int tag, Addr addr, Data data) override;
-	Data OnBusRead(int tag, Addr addr) const override;
+private:
+    void OnSolidRomRead(addr_t addr, data_t& data);
+    void OnMapperRegWrite(addr_t addr, data_t& data);
+    void OnMappedRomRead(addr_t addr, data_t& data);
 
 private:
     uint32_t m_music_offset;
@@ -41,9 +44,9 @@ private:
     uint32_t m_playback_rate;
     uint32_t m_clock_rate;
 
-    Data m_cpuRAM[2048];
-    Data m_prgRAM[8192];
+    RAM<0x0000, 0x07FF> m_cpuRAM;
+    RAM<0x6000, 0x7FFF> m_prgRAM;
 
     bool m_bank_switched;
-	Data m_bank[8];
+    data_t m_bank[8];
 };

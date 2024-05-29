@@ -1,41 +1,107 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <functional>
 #include <vector>
+
+using data_t = uint8_t;
+using addr_t = uint16_t;
 
 class Machine
 {
 public:
-	using Addr = uint16_t;
-	using Data = uint8_t;
+    // --------------------------------------
+    // Machine bus used to connect components
+    // --------------------------------------
+    class Bus
+    {
+        struct Handler  { addr_t from, to; std::function<void(addr_t, data_t&)> call; };
+        using  Handlers = std::vector<Handler>;
 
-	class Bus
-	{
-		static const Data OPEN = 0x00;
+    public:
+        // Memory address space
+        template<typename T> 
+        Bus& AttachWRHandler(addr_t from, addr_t to, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            assert(from <= to);
+            m_writeHandlers.push_back({ from, to, std::bind(method, object, std::placeholders::_1, std::placeholders::_2) });
+            return *this;
+        }
 
-	public:
-		class Handler
-		{
-		public:
-			virtual void OnBusWrite(int tag, Addr addr, Data data);
-			virtual Data OnBusRead(int tag, Addr addr) const;
-		};
+        template<typename T>
+        Bus& AttachRDHandler(addr_t from, addr_t to, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            assert(from <= to);
+            m_readHandlers.push_back({ from, to, std::bind(method, object, std::placeholders::_1, std::placeholders::_2) });
+            return *this;
+        }
 
-		void AddWriteReadHandler(Handler* handler, Addr from, Addr to, int tag);
-		void AddWriteHandler(Handler* handler, Addr from, Addr to, int tag);
-		void AddReadHandler(Handler* handler, Addr from, Addr to, int tag);
-		
-		void Write(Addr addr, Data data);
-		Data Read(Addr addr);
+        // I/O address space
+        template<typename T>
+        Bus& AttachIOWRHandler(addr_t from, addr_t to, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            assert(from <= to);
+            m_ioWriteHandlers.push_back({ from, to, std::bind(method, object, std::placeholders::_1, std::placeholders::_2) });
+            return *this;
+        }
 
-	private:
-		struct HandlerRange { Handler* handler; Addr from, to; int tag; };
-		std::vector<HandlerRange> m_writeHandlers;
-		std::vector<HandlerRange> m_readHandlers;
-	};
+        template<typename T>
+        Bus& AttachIOWRHandler(addr_t addr, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            return AttachIOWRHandler(addr, addr, object, method);
+        }
 
-	Bus& GetBus();
+        template<typename T>
+        Bus& AttachIORDHandler(addr_t from, addr_t to, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            assert(from <= to);
+            m_ioReadHandlers.push_back({ from, to, std::bind(method, object, std::placeholders::_1, std::placeholders::_2) });
+            return *this;
+        }
+
+        template<typename T>
+        Bus& AttachIORDHandler(addr_t addr, void (T::* method)(addr_t, data_t&), T* object)
+        {
+            return AttachIORDHandler(addr, addr, object, method);
+        }
+
+    private:
+        Handlers m_writeHandlers;
+        Handlers m_readHandlers;
+        Handlers m_ioWriteHandlers;
+        Handlers m_ioReadHandlers;
+
+    public:
+        void Write(addr_t addr, data_t data);
+        data_t Read(addr_t addr);
+
+        void IOWrite(addr_t port, data_t data);
+        data_t IORead(addr_t port);
+
+    private:
+        void HandleWrite(const Handlers& handlers, addr_t addr, data_t data);
+        data_t HandleRead(const Handlers& handlers, addr_t addr);
+    };
+
+    // -----------------------------------
+    // Component to be attached to the bus
+    // -----------------------------------
+    class Component
+    {
+    public:
+        virtual Bus& AttachToBus(Bus& bus) { m_bus = &bus; return *m_bus; }
+        virtual Bus& GetBus() const final  { assert(m_bus != nullptr); return *m_bus; }
+
+    private:
+        Bus* m_bus = nullptr;
+    };
+
+    // ---------------------------
+    // Access to the machine's bus
+    // ---------------------------
+    Bus& GetBus() { return m_bus; }
 
 private:
-	Bus m_bus;
+    Bus m_bus;
 };
