@@ -65,10 +65,8 @@ bool Streamer::DeviceWrite(int chip, const Data& data)
 	// prepare packet
 	std::vector<uint8_t> packet;
 	packet.push_back(chip ? 0xFE : 0xFF);
-	for (const auto& pair : data)
+	for (const auto& [reg, val] : data)
 	{
-		const uint8_t& reg = pair.first;
-		const uint8_t& val = pair.second;
 		packet.push_back(reg);
 		packet.push_back(val);
 	}
