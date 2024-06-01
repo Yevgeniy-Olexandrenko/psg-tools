@@ -15,18 +15,17 @@ class EncodeAYM : public Encoder
     struct Delta
     {
         int16_t value;
-        uint8_t bits;
+        size_t  bits;
 
         Delta(uint16_t from, uint16_t to);
     };
 
     struct DeltaCache
     {
-        int8_t index(const Delta& delta);
+        std::array<int16_t, 32> cache;
+        int record{ 0 };
 
-    private:
-        std::array<int16_t, 32> m_cache;
-        int8_t m_record{ 0 };
+        int8_t GetRecord(const Delta& delta);
     };
 
     class Chunk : public BitOutputStream
@@ -51,13 +50,13 @@ public:
 private:
     void WriteDelta(const Delta& delta, BitOutputStream& stream);
     void WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream);
-    void WriteFrameChunk(const Frame& frame);
     void WriteStepChunk();
+    void WriteFrameChunk(const Frame& frame);
     void WriteChunk(const Chunk& chunk);
 
 private:
     std::ofstream m_output;
-    DeltaCache m_deltaList;
+    DeltaCache m_deltaCache;
     uint16_t m_oldStep = 1;
     uint16_t m_newStep = 1;
     Frame m_frame;
