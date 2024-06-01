@@ -52,6 +52,9 @@
     <Filter Include="Sources\emulation\machines">
       <UniqueIdentifier>{eb6ef295-7afc-478b-a73c-5075518d10de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\utils">
+      <UniqueIdentifier>{beb0e571-c26d-41de-ad0e-e6f57f1ef06d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\PSGAudio.h">
@@ -108,9 +111,6 @@
     <ClInclude Include="sources\decoders\Decoder.h">
       <Filter>Sources\decoders</Filter>
     </ClInclude>
-    <ClInclude Include="sources\encoders\BitStream.h">
-      <Filter>Sources\encoders</Filter>
-    </ClInclude>
     <ClInclude Include="sources\encoders\Encoder.h">
       <Filter>Sources\encoders</Filter>
     </ClInclude>
@@ -123,9 +123,6 @@
     <ClInclude Include="sources\encoders\streams\EncodeRSF.h">
       <Filter>Sources\encoders\streams</Filter>
     </ClInclude>
-    <ClInclude Include="sources\encoders\streams\EncodeTST.h">
-      <Filter>Sources\encoders\streams</Filter>
-    </ClInclude>
     <ClInclude Include="sources\encoders\streams\EncodeVGM.h">
       <Filter>Sources\encoders\streams</Filter>
     </ClInclude>
@@ -134,9 +131,6 @@
     </ClInclude>
     <ClInclude Include="sources\encoders\streams\EncodeYM.h">
       <Filter>Sources\encoders\streams</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\encoders\specific\EncodeTXT.h">
-      <Filter>Sources\encoders\specific</Filter>
     </ClInclude>
     <ClInclude Include="sources\encoders\specific\EncodeWAV.h">
       <Filter>Sources\encoders\specific</Filter>
@@ -246,6 +240,9 @@
     <ClInclude Include="sources\emulation\Memory.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="sources\utils\BitStream.h">
+      <Filter>Sources\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGAudio.cpp">
@@ -302,9 +299,6 @@
     <ClCompile Include="sources\decoders\Decoder.cpp">
       <Filter>Sources\decoders</Filter>
     </ClCompile>
-    <ClCompile Include="sources\encoders\BitStream.cpp">
-      <Filter>Sources\encoders</Filter>
-    </ClCompile>
     <ClCompile Include="sources\encoders\Encoder.cpp">
       <Filter>Sources\encoders</Filter>
     </ClCompile>
@@ -317,9 +311,6 @@
     <ClCompile Include="sources\encoders\streams\EncodeRSF.cpp">
       <Filter>Sources\encoders\streams</Filter>
     </ClCompile>
-    <ClCompile Include="sources\encoders\streams\EncodeTST.cpp">
-      <Filter>Sources\encoders\streams</Filter>
-    </ClCompile>
     <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp">
       <Filter>Sources\encoders\streams</Filter>
     </ClCompile>
@@ -328,9 +319,6 @@
     </ClCompile>
     <ClCompile Include="sources\encoders\streams\EncodeYM.cpp">
       <Filter>Sources\encoders\streams</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\encoders\specific\EncodeTXT.cpp">
-      <Filter>Sources\encoders\specific</Filter>
     </ClCompile>
     <ClCompile Include="sources\encoders\specific\EncodeWAV.cpp">
       <Filter>Sources\encoders\specific</Filter>
@@ -409,6 +397,9 @@
     </ClCompile>
     <ClCompile Include="sources\emulation\machines\VGMMachine.cpp">
       <Filter>Sources\emulation\machines</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\utils\BitStream.cpp">
+      <Filter>Sources\utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

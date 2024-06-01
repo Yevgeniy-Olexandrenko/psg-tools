@@ -18,11 +18,9 @@
 #include "decoders/streams/DecodeYM.h"
 
 // specific encoders
-#include "encoders/specific/EncodeTXT.h"
 #include "encoders/specific/EncodeWAV.h"
 
 // stream encoders
-#include "encoders/streams/EncodeTST.h"
 #include "encoders/streams/EncodeAYM.h"
 #include "encoders/streams/EncodePSG.h"
 #include "encoders/streams/EncodeRSF.h"
@@ -108,11 +106,9 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 {
 	std::shared_ptr<Encoder> encoders[]
 	{
-		std::shared_ptr<Encoder>(new EncodeTST()),
 		std::shared_ptr<Encoder>(new EncodePSG()),
 		std::shared_ptr<Encoder>(new EncodeRSF()),
 		std::shared_ptr<Encoder>(new EncodeAYM()),
-		std::shared_ptr<Encoder>(new EncodeTXT()),
 	};
 
 	std::shared_ptr<FrameProcessor> processors[]
