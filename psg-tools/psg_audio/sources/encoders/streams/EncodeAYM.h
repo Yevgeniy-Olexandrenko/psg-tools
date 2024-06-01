@@ -22,10 +22,10 @@ class EncodeAYM : public Encoder
 
     struct DeltaCache
     {
-        std::array<int16_t, 64> cache;
         int nextRecord{ 0 };
-
-        int8_t FindRecord(const Delta& delta);
+        std::array<int16_t, 64> cache;
+        
+        int FindRecord(const Delta& delta);
     };
 
     class Chunk : public BitOutputStream

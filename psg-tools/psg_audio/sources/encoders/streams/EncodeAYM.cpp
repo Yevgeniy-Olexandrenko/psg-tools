@@ -36,15 +36,15 @@ EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
     else if (value <= 2047i16 && value >= (-2047i16 - 1)) bits = 12;
 }
 
-int8_t EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
+int EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
 {
 #if AYM_OPT_DELTA_CACHE
     if (delta.bits > 4)
     {
         auto cacheSize = int(cache.size());
-        for (int8_t i = 0; i < cacheSize; ++i)
+        for (int record = 0; record < cacheSize; ++record)
         {
-            if (cache[i] == delta.value) return i;
+            if (cache[record] == delta.value) return record;
         }
 
         cache[nextRecord] = delta.value;
@@ -124,21 +124,21 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
     auto record = m_deltaCache.FindRecord(delta);
     if (record < 0)
     {
-        switch (delta.value)
-        {
-        default:
+#if AYM_OPT_DELTA_SHORTS
+        // write delta shorts
+        if (delta.value == +1) stream.Write<3>(0b100);
+        else
+        if (delta.value == -1) stream.Write<3>(0b101);
+        else
+#endif
+        {   // write width and value of delta
             stream.Write<3>(delta.bits / 4 - 1);
             stream.Write(delta.value, delta.bits);
-            break;
-
-#if AYM_OPT_DELTA_SHORTS
-        case +1: stream.Write<3>(0b100); break;
-        case -1: stream.Write<3>(0b101); break;
-#endif
         }
     }
     else
-    {
+    {   // write record number in cache
+        // instead of the delta itself
         stream.Write<8>(0b11000000 | record);
     }
 }
@@ -170,7 +170,7 @@ void EncodeAYM::WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutp
     if (frame[chip].IsChanged(Register::E_Shape))     hiMask |= (1 << 2);
 
     if (!isLast) hiMask |= (1 << 3);
-    if (hiMask) loMask |= (1 << 7);
+    if ( hiMask) loMask |= (1 << 7);
 
     stream.Write<8>(loMask);
     if (loMask & (1 << 7)) stream.Write<4>(hiMask);
