@@ -49,14 +49,11 @@
     <ClInclude Include="sources\emulation\RP2A03Cpu.h" />
     <ClInclude Include="sources\emulation\AY89XXPsg.h" />
     <ClInclude Include="sources\emulation\Z80Cpu.h" />
-    <ClInclude Include="sources\encoders\BitStream.h" />
     <ClInclude Include="sources\encoders\Encoder.h" />
-    <ClInclude Include="sources\encoders\specific\EncodeTXT.h" />
     <ClInclude Include="sources\encoders\specific\EncodeWAV.h" />
     <ClInclude Include="sources\encoders\streams\EncodeAYM.h" />
     <ClInclude Include="sources\encoders\streams\EncodePSG.h" />
     <ClInclude Include="sources\encoders\streams\EncodeRSF.h" />
-    <ClInclude Include="sources\encoders\streams\EncodeTST.h" />
     <ClInclude Include="sources\encoders\streams\EncodeVGM.h" />
     <ClInclude Include="sources\encoders\streams\EncodeVTX.h" />
     <ClInclude Include="sources\encoders\streams\EncodeYM.h" />
@@ -83,6 +80,7 @@
     <ClInclude Include="sources\stream\Frame.h" />
     <ClInclude Include="sources\stream\Property.h" />
     <ClInclude Include="sources\stream\Stream.h" />
+    <ClInclude Include="sources\utils\BitStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\debug\DebugStatistics.cpp" />
@@ -111,14 +109,11 @@
     <ClCompile Include="sources\emulation\RP2A03Cpu.cpp" />
     <ClCompile Include="sources\emulation\AY89XXPsg.cpp" />
     <ClCompile Include="sources\emulation\Z80Cpu.cpp" />
-    <ClCompile Include="sources\encoders\BitStream.cpp" />
     <ClCompile Include="sources\encoders\Encoder.cpp" />
-    <ClCompile Include="sources\encoders\specific\EncodeTXT.cpp" />
     <ClCompile Include="sources\encoders\specific\EncodeWAV.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeAYM.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodePSG.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeRSF.cpp" />
-    <ClCompile Include="sources\encoders\streams\EncodeTST.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeVGM.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeYM.cpp" />
@@ -139,6 +134,7 @@
     <ClCompile Include="sources\stream\Chip.cpp" />
     <ClCompile Include="sources\stream\Frame.cpp" />
     <ClCompile Include="sources\stream\Stream.cpp" />
+    <ClCompile Include="sources\utils\BitStream.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

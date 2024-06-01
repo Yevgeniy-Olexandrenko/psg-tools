@@ -175,7 +175,7 @@ public:
 
 		bool IsChanged(Register reg) const;
 		bool IsChanged(Register reg, uint8_t mask) const;
-		bool IsChanged(PRegister preg) const;
+		bool IsChanged__(PRegister preg) const;
 
 		void Update(Register reg, uint8_t data);
 		void Update(PRegister preg, uint16_t data);
@@ -194,8 +194,8 @@ public:
 
 	private:
 		friend class Frame;
-		uint8_t m_data[25];
-		uint8_t m_diff[25];
+		uint8_t m_data[25]{};
+		uint8_t m_diff[25]{};
 		mutable bool m_update{ false };
 	};
 

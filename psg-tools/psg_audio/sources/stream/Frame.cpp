@@ -406,7 +406,7 @@ bool Frame::Registers::IsChanged(Register reg, uint8_t mask) const
 	return (GetInfo(reg, info) ? (m_diff[info.index] & mask) : false);
 }
 
-bool Frame::Registers::IsChanged(PRegister preg) const
+bool Frame::Registers::IsChanged__(PRegister preg) const
 {
 	bool changed = false;
 	switch (preg)

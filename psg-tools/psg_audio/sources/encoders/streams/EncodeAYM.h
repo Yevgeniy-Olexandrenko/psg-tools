@@ -3,19 +3,18 @@
 #include <sstream>
 #include "stream/Property.h"
 #include "encoders/Encoder.h"
-#include "encoders/BitStream.h"
+#include "utils/BitStream.h"
 
 #define DBG_ENCODE_AYM 1
 
 class EncodeAYM : public Encoder
 {
-	class Delta
+	struct Delta
 	{
-	public:
-		Delta(uint16_t from, uint16_t to);
+		int16_t value;
+		uint8_t bits;
 
-		RO_PROP_DEF(int16_t, value);
-		RO_PROP_DEF(uint8_t, size);
+		Delta(uint16_t from, uint16_t to);
 	};
 
 	class DeltaList
@@ -29,18 +28,17 @@ class EncodeAYM : public Encoder
 		uint8_t m_index;
 	};
 
-	class Chunk
+	class Chunk : public BitOutputStream
 	{
 	public:
-		void Start();
-		void Stop();
-
-		BitStream& GetStream();
+		Chunk();
+		void Finish();
+		
 		const uint8_t* GetData() const;
 		const size_t GetSize() const;
 
-	private:
-		BitStream m_stream;
+	protected:
+		std::ostringstream m_stream;
 		std::string m_data;
 	};
 
@@ -50,8 +48,8 @@ public:
 	void Close(const Stream& stream) override;
 
 private:
-	void WriteDelta(const Delta& delta, BitStream& stream);
-	void WriteChipData(const Frame& frame, int chip, bool isLast, BitStream& stream);
+	void WriteDelta(const Delta& delta, BitOutputStream& stream);
+	void WriteChipData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream);
 	void WriteFrameChunk(const Frame& frame);
 	void WriteStepChunk();
 	void WriteChunk(const Chunk& chunk);
