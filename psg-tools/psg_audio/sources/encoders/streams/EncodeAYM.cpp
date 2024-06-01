@@ -36,19 +36,19 @@ EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
     else if (value <= 2047i16 && value >= (-2047i16 - 1)) bits = 12;
 }
 
-int8_t EncodeAYM::DeltaCache::GetRecord(const Delta& delta)
+int8_t EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
 {
 #if AYM_OPT_DELTA_CACHE
     if (delta.bits > 4)
     {
-        auto size = int(cache.size());
-        for (int8_t i = 0; i < size; ++i)
+        auto cacheSize = int(cache.size());
+        for (int8_t i = 0; i < cacheSize; ++i)
         {
             if (cache[i] == delta.value) return i;
         }
 
-        cache[record] = delta.value;
-        if (++record >= size) record = 0;
+        cache[nextRecord] = delta.value;
+        if (++nextRecord >= cacheSize) nextRecord = 0;
     }
 #endif
     return -1;
@@ -121,7 +121,7 @@ void EncodeAYM::Close(const Stream& stream)
 
 void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
 {
-    auto record = m_deltaCache.GetRecord(delta);
+    auto record = m_deltaCache.FindRecord(delta);
     if (record < 0)
     {
         switch (delta.value)
@@ -134,13 +134,12 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
 #if AYM_OPT_DELTA_SHORTS
         case +1: stream.Write<3>(0b100); break;
         case -1: stream.Write<3>(0b101); break;
-        case -2: stream.Write<3>(0b110); break;
 #endif
         }
     }
     else
     {
-        stream.Write<8>(0b11100000 | record);
+        stream.Write<8>(0b11000000 | record);
     }
 }
 
