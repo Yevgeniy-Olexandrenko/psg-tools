@@ -25,6 +25,8 @@ std::ofstream debug_out;
 #define DebugClose()
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+
 EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
     : value(to - from)
     , bits(16)
@@ -34,33 +36,43 @@ EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
     else if (value <= 2047i16 && value >= (-2047i16 - 1)) bits = 12;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+int8_t EncodeAYM::DeltaCache::index(const Delta& delta)
+{
+#if AYM_OPT_DELTA_CACHE
+    if (delta.bits > 4)
+    {
+        auto size = int(m_cache.size());
+        for (int8_t i = 0; i < size; ++i)
+        {
+            if (m_cache[i] == delta.value) return i;
+        }
 
-EncodeAYM::DeltaList::DeltaList()
-    : m_list{}
-    , m_index(0)
+        m_cache[m_record] = delta.value;
+        if (++m_record >= size) m_record = 0;
+    }
+#endif
+    return -1;
+}
+
+EncodeAYM::Chunk::Chunk()
+    : BitOutputStream(m_stream)
 {
 }
 
-int8_t EncodeAYM::DeltaList::GetIndex(const Delta& delta)
+void EncodeAYM::Chunk::Finish()
 {
-    int8_t index = -1;
-    if (delta.bits > 4)
-    {
-        int size = sizeof(m_list) / sizeof(m_list[0]);
-        for (int i = 0; i < size; ++i)
-        {
-            if (m_list[i] == delta.value)
-            {
-                return i;
-            }
-        }
+    Flush();
+    m_data = m_stream.str();
+}
 
-        index = m_index;
-        m_list[m_index] = delta.value;
-        if (++m_index == size) m_index = 0;
-    }
-    return index;
+const uint8_t* EncodeAYM::Chunk::GetData() const
+{
+    return reinterpret_cast<const uint8_t*>(m_data.data());
+}
+
+const size_t EncodeAYM::Chunk::GetSize() const
+{
+    return m_data.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,27 +117,11 @@ void EncodeAYM::Close(const Stream& stream)
     DebugClose();
 }
 
-void EncodeAYM::WriteFrameChunk(const Frame& frame)
-{
-    Chunk chunk;
-    if (m_isTS)
-    {
-        WriteChipData(frame, 0, false, chunk);
-        WriteChipData(frame, 1, true, chunk);
-    }
-    else
-    {
-        WriteChipData(frame, 0, true, chunk);
-    }
-    chunk.Finish();
-    WriteChunk(chunk);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
 {
-    auto index = m_deltaList.GetIndex(delta);
+    auto index = m_deltaList.index(delta);
     if (index < 0)
     {
         switch (delta.value)
@@ -135,10 +131,11 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
             stream.Write(delta.value, delta.bits);
             break;
 
-        case  0:
-            stream.Write<3>(0b100); break;
-        case +1: stream.Write<3>(0b101); break;
-        case -1: stream.Write<3>(0b110); break;
+#if AYM_OPT_DELTA_SHORTS
+        case +1: stream.Write<3>(0b100); break;
+        case -1: stream.Write<3>(0b101); break;
+        case -2: stream.Write<3>(0b110); break;
+#endif
         }
     }
     else
@@ -147,17 +144,17 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
     }
 }
 
-void EncodeAYM::WriteChipData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream)
+void EncodeAYM::WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream)
 {
     const auto WriteRDelta = [&](Register r)
-    {
-        WriteDelta({ m_frame[chip].Read(r), frame[chip].Read(r) }, stream);
-    };
+        {
+            WriteDelta({ m_frame[chip].Read(r), frame[chip].Read(r) }, stream);
+        };
 
     const auto WritePDelta = [&](PRegister p)
-    {
-        WriteDelta({ m_frame[chip].Read(p), frame[chip].Read(p) }, stream);
-    };
+        {
+            WriteDelta({ m_frame[chip].Read(p), frame[chip].Read(p) }, stream);
+        };
 
     uint8_t loMask = 0;
     uint8_t hiMask = 0;
@@ -174,7 +171,7 @@ void EncodeAYM::WriteChipData(const Frame& frame, int chip, bool isLast, BitOutp
     if (frame[chip].IsChanged(Register::E_Shape))     hiMask |= (1 << 2);
 
     if (!isLast) hiMask |= (1 << 3);
-    if (hiMask ) loMask |= (1 << 7);
+    if (hiMask) loMask |= (1 << 7);
 
     stream.Write<8>(loMask);
     if (loMask & (1 << 7)) stream.Write<4>(hiMask);
@@ -208,6 +205,22 @@ void EncodeAYM::WriteStepChunk()
     }
 }
 
+void EncodeAYM::WriteFrameChunk(const Frame& frame)
+{
+    Chunk chunk;
+    if (m_isTS)
+    {
+        WriteRegsData(frame, 0, false, chunk);
+        WriteRegsData(frame, 1, true, chunk);
+    }
+    else
+    {
+        WriteRegsData(frame, 0, true, chunk);
+    }
+    chunk.Finish();
+    WriteChunk(chunk);
+}
+
 void EncodeAYM::WriteChunk(const Chunk& chunk)
 {
     auto data = chunk.GetData();
@@ -227,27 +240,4 @@ void EncodeAYM::WriteChunk(const Chunk& chunk)
     }
     DebugPrintNewLine();
 #endif
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-EncodeAYM::Chunk::Chunk()
-    : BitOutputStream(m_stream)
-{
-}
-
-void EncodeAYM::Chunk::Finish()
-{
-    Flush();
-    m_data = m_stream.str();
-}
-
-const uint8_t* EncodeAYM::Chunk::GetData() const
-{
-    return reinterpret_cast<const uint8_t*>(m_data.data());
-}
-
-const size_t EncodeAYM::Chunk::GetSize() const
-{
-    return m_data.size();
 }
