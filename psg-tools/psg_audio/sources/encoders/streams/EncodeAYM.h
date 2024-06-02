@@ -30,7 +30,7 @@ class EncodeAYM : public Encoder
         int FindRecord(const Delta& delta);
     };
 
-    class Chunk : public BitOutputStream
+    class  Chunk : public BitOutputStream
     {
         std::ostringstream stream;
 
@@ -56,17 +56,15 @@ public:
         High   = DELTA_CACHE + CHUNK_CACHE + COMPRESS_LZW
     };
 
-    EncodeAYM();
     void Configure(Profile profile);
-
     bool Open(const Stream& stream) override;
     void Encode(const Frame& frame) override;
     void Close(const Stream& stream) override;
 
 private:
     void WriteDelta(const Delta& delta, BitOutputStream& stream);
-    void WriteRegsData(const Frame& frame, int chip, BitOutputStream& stream);
-    void WriteStepChunk();
+    void WriteRegisters(const Frame& frame, int chip, BitOutputStream& stream);
+    void WriteSkipChunk();
     void WriteFrameChunk(const Frame& frame);
     void WriteChunk(Chunk& chunk);
 
@@ -75,8 +73,7 @@ private:
     std::ofstream m_output;
     DeltaCache m_deltaCache;
     ChunkCache m_chunkCache;
-    uint16_t m_oldStep;
-    uint16_t m_newStep;
+    bool  m_isTS{ false };
+    int   m_skip{ 0 };
     Frame m_frame;
-    bool m_isTS;
 };

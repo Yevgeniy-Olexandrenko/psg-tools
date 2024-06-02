@@ -3,6 +3,7 @@
 
 static DebugOutput<DBG_ENCODE_AYM> dbg;
 uint8_t EncodeAYM::m_profile{ uint8_t(Profile::High) };
+enum { TAG_CMD = 0x00, CMD_SKIP = 0, CMD_CREF = 1, CMD_RESERVED_2 =  2, CMD_RESERVED_3 = 3 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -66,13 +67,6 @@ int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EncodeAYM::EncodeAYM()
-    : m_isTS(false)
-    , m_oldStep(1)
-    , m_newStep(1)
-{
-}
-
 void EncodeAYM::Configure(Profile profile)
 {
     m_profile = uint8_t(profile);
@@ -101,19 +95,19 @@ void EncodeAYM::Encode(const Frame& frame)
 {
     if (frame.HasChanges())
     {
-        WriteStepChunk();
+        WriteSkipChunk();
         WriteFrameChunk(frame);
     }
-    else
+    else 
     {
-        m_newStep++;
+        m_skip++;
     }
     m_frame = frame;
 }
 
 void EncodeAYM::Close(const Stream& stream)
 {
-    WriteStepChunk();
+    WriteSkipChunk();
     m_output.close();
     dbg.close();
 }
@@ -142,7 +136,7 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
     }
 }
 
-void EncodeAYM::WriteRegsData(const Frame& frame, int chip, BitOutputStream& stream)
+void EncodeAYM::WriteRegisters(const Frame& frame, int chip, BitOutputStream& stream)
 {
     const auto WriteRDelta = [&](Register r)
         {
@@ -186,28 +180,29 @@ void EncodeAYM::WriteRegsData(const Frame& frame, int chip, BitOutputStream& str
     if (hiMask & (1 << 2)) WriteRDelta(Register::E_Shape);
 }
 
-// TODO
-void EncodeAYM::WriteStepChunk()
+void EncodeAYM::WriteSkipChunk()
 {
-    if (m_newStep != m_oldStep || m_newStep == 64)
+    if (m_skip > 0)
     {
-        Chunk chunk;
-        chunk
-            .Write<8>(0x00)
-            .Write<2>(0x00)
-            .Write<6>(m_newStep - 1);
-        WriteChunk(chunk);
+        for (; m_skip >= 64; m_skip -= 64)
+        {
+            Chunk chunk;
+            chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(64 - 1);
+            WriteChunk(chunk);
+        }
 
-        m_oldStep = m_newStep;
-        m_newStep = 1;
+        Chunk chunk;
+        chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(m_skip - 1);
+        WriteChunk(chunk);
+        m_skip = 0;
     }
 }
 
 void EncodeAYM::WriteFrameChunk(const Frame& frame)
 {
     Chunk chunk;
-    WriteRegsData(frame, 0, chunk);
-    if (m_isTS) WriteRegsData(frame, 1, chunk);
+    WriteRegisters(frame, 0, chunk);
+    if (m_isTS) WriteRegisters(frame, 1, chunk);
     WriteChunk(chunk);
 }
 
@@ -219,10 +214,7 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
     if (record >= 0)
     {
         Chunk chunk;
-        chunk
-            .Write<8>(0x00)
-            .Write<2>(0x01)
-            .Write<6>(record);
+        chunk.Write<8>(TAG_CMD).Write<2>(CMD_CREF).Write<6>(record);
         chunkData = chunk.GetData();
     }
 
