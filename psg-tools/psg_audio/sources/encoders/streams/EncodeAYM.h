@@ -35,15 +35,16 @@ class EncodeAYM : public Encoder
 
     public:
         Chunk();
-        const std::string GetData();
+        using Data = std::string;
+        const Data GetData();
     };
 
     struct ChunkCache
     {
         int nextRecord{ 0 };
-        std::array<const std::string, 16> cache;
+        std::array<Chunk::Data, 64> cache;
 
-        int FindRecord(Chunk& chunk);
+        int FindRecord(const Chunk::Data& chunkData);
     };
 
 public:
@@ -61,6 +62,7 @@ private:
 private:
     std::ofstream m_output;
     DeltaCache m_deltaCache;
+    ChunkCache m_chunkCache;
     uint16_t m_oldStep = 1;
     uint16_t m_newStep = 1;
     Frame m_frame;

@@ -13,7 +13,7 @@ BitOutputStream::~BitOutputStream()
     Flush();
 }
 
-void BitOutputStream::Write(uint32_t value, size_t bits)
+BitOutputStream& BitOutputStream::Write(uint32_t value, size_t bits)
 {
     constexpr auto MAX_BITS = 8 * sizeof(value);
     assert(bits > 0 && bits <= MAX_BITS);
@@ -25,15 +25,17 @@ void BitOutputStream::Write(uint32_t value, size_t bits)
         m_buffer |= (value >> (MAX_BITS - 1) & 1);
         if (++m_count == 8) Flush();
     }
+    return *this;
 }
 
-void BitOutputStream::Flush()
+BitOutputStream& BitOutputStream::Flush()
 {
     if (m_count > 0)
     {
         m_stream.put(m_buffer << (8 - m_count));
         m_buffer = m_count = 0;
     }
+    return *this;
 }
 
 BitInputStream::BitInputStream(std::istream& stream)
@@ -45,12 +47,5 @@ BitInputStream::BitInputStream(std::istream& stream)
 
 BitInputStream::~BitInputStream()
 {
-    //
-}
-
-uint32_t BitInputStream::Read(size_t width)
-{
-    //
-
-    return 0;
+    // TODO
 }

@@ -59,16 +59,28 @@ EncodeAYM::Chunk::Chunk()
 {
 }
 
-const std::string EncodeAYM::Chunk::GetData()
+const EncodeAYM::Chunk::Data EncodeAYM::Chunk::GetData()
 {
     Flush();
     return stream.str();
 }
 
-int EncodeAYM::ChunkCache::FindRecord(Chunk& chunk)
+int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 {
-    // TODO
+#if AYM_OPT_CHUNK_CACHE
+    if (chunkData.size() > 2)
+    {
+        auto cacheSize = int(cache.size());
+        for (int record = 0; record < cacheSize; ++record)
+        {
+            if (cache[record] == chunkData) return record;
+        }
 
+        cache[nextRecord] = chunkData;
+        if (++nextRecord >= cacheSize) 
+            nextRecord = 0;
+    }
+#endif
     return -1;
 }
 
@@ -184,13 +196,16 @@ void EncodeAYM::WriteRegsData(const Frame& frame, int chip, BitOutputStream& str
     if (hiMask & (1 << 2)) WriteRDelta(Register::E_Shape);
 }
 
+// TODO
 void EncodeAYM::WriteStepChunk()
 {
-    if (m_newStep != m_oldStep)
+    if (m_newStep != m_oldStep || m_newStep == 64)
     {
         Chunk chunk;
-        chunk.Write<8>(0x00);
-        WriteDelta({ m_oldStep, m_newStep }, chunk);
+        chunk
+            .Write<8>(0x00)
+            .Write<2>(0x00)
+            .Write<6>(m_newStep - 1);
         WriteChunk(chunk);
 
         m_oldStep = m_newStep;
@@ -208,19 +223,33 @@ void EncodeAYM::WriteFrameChunk(const Frame& frame)
 
 void EncodeAYM::WriteChunk(Chunk& chunk)
 {
-    const std::string& chunkData = chunk.GetData();
-    auto data = chunkData.c_str();
-    auto size = chunkData.size();
-    m_output.write(data, size);
+    Chunk::Data chunkData = chunk.GetData();
+
+    auto record = m_chunkCache.FindRecord(chunkData);
+    if (record >= 0)
+    {
+        Chunk chunk;
+        chunk
+            .Write<8>(0x00)
+            .Write<2>(0x01)
+            .Write<6>(record);
+        chunkData = chunk.GetData();
+    }
+
+    m_output.write(chunkData.c_str(), chunkData.size());
 
 #if DBG_ENCODE_AYM
+    auto data = chunkData.c_str();
+    auto size = chunkData.size();
     for (size_t i = 0; i < size; ++i)
     {
         uint8_t dd = data[i];
         if (i == 0)
         {
-            if (dd) { DebugPrintMessage("regs:"); }
-            else    { DebugPrintMessage("skip:"); }
+            if (dd) { DebugPrintMessage("R"); }
+            else    { DebugPrintMessage("C"); }
+            DebugPrintByteValue(uint8_t(size));
+            DebugPrintMessage(":");
         }
         DebugPrintByteValue(dd);
     }
