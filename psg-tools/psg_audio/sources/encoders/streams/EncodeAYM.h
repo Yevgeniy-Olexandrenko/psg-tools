@@ -5,14 +5,15 @@
 #include "encoders/Encoder.h"
 #include "utils/BitStream.h"
 
-#define DBG_ENCODE_AYM 1
-
-#define AYM_OPT_DELTA_CACHE  1
-#define AYM_OPT_DELTA_SHORTS 1
-#define AYM_OPT_CHUNK_CACHE  1
-
 class EncodeAYM : public Encoder
 {
+    enum Technique
+    {
+        DELTA_CACHE  = 1 << 0,
+        CHUNK_CACHE  = 1 << 1,
+        COMPRESS_LZW = 1 << 2
+    };
+
     struct Delta
     {
         int16_t value;
@@ -48,6 +49,16 @@ class EncodeAYM : public Encoder
     };
 
 public:
+    enum class Profile : uint8_t
+    {
+        Low    = 0,
+        Medium = DELTA_CACHE + CHUNK_CACHE,
+        High   = DELTA_CACHE + CHUNK_CACHE + COMPRESS_LZW
+    };
+
+    EncodeAYM();
+    void Configure(Profile profile);
+
     bool Open(const Stream& stream) override;
     void Encode(const Frame& frame) override;
     void Close(const Stream& stream) override;
@@ -60,12 +71,12 @@ private:
     void WriteChunk(Chunk& chunk);
 
 private:
+    static uint8_t m_profile;
     std::ofstream m_output;
     DeltaCache m_deltaCache;
     ChunkCache m_chunkCache;
-    uint16_t m_oldStep = 1;
-    uint16_t m_newStep = 1;
+    uint16_t m_oldStep;
+    uint16_t m_newStep;
     Frame m_frame;
     bool m_isTS;
 };
-

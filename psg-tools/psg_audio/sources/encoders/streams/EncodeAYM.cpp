@@ -2,30 +2,7 @@
 #include "debug/DebugOutput.h"
 
 static DebugOutput<DBG_ENCODE_AYM> dbg;
-
-////////////////////////////////////////////////////////////////////////////////
-
-//// debug output
-//#if DBG_ENCODE_AYM
-//std::ofstream debug_out;
-//#define DebugOpen() \
-//    debug_out.open("dbg_encode_aym.txt");
-//#define DebugPrintByteValue(dd) \
-//    debug_out << std::hex << std::setw(2) << std::setfill('0') << int(dd); \
-//    debug_out << ' ';
-//#define DebugPrintMessage(msg) \
-//    debug_out << msg; \
-//    debug_out << ' ';
-//#define DebugPrintNewLine() \
-//    debug_out << std::endl;
-//#define DebugClose() \
-//    debug_out.close();
-//#else
-//#define DebugOpen()
-//#define DebugPrintWrite(aa, bb)
-//#define DebugPrintNewLine()
-//#define DebugClose()
-//#endif
+uint8_t EncodeAYM::m_profile{ uint8_t(Profile::High) };
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -40,19 +17,20 @@ EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
 
 int EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
 {
-#if AYM_OPT_DELTA_CACHE
-    if (delta.bits > 4)
+    if (m_profile & DELTA_CACHE)
     {
-        auto cacheSize = int(cache.size());
-        for (int record = 0; record < cacheSize; ++record)
+        if (delta.bits > 4)
         {
-            if (cache[record] == delta.value) return record;
-        }
+            auto cacheSize = int(cache.size());
+            for (int record = 0; record < cacheSize; ++record)
+            {
+                if (cache[record] == delta.value) return record;
+            }
 
-        cache[nextRecord] = delta.value;
-        if (++nextRecord >= cacheSize) nextRecord = 0;
+            cache[nextRecord] = delta.value;
+            if (++nextRecord >= cacheSize) nextRecord = 0;
+        }
     }
-#endif
     return -1;
 }
 
@@ -69,23 +47,36 @@ const EncodeAYM::Chunk::Data EncodeAYM::Chunk::GetData()
 
 int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 {
-#if AYM_OPT_CHUNK_CACHE
-    if (chunkData.size() > 2)
+    if (m_profile & CHUNK_CACHE)
     {
-        auto cacheSize = int(cache.size());
-        for (int record = 0; record < cacheSize; ++record)
+        if (chunkData.size() > 2)
         {
-            if (cache[record] == chunkData) return record;
-        }
+            auto cacheSize = int(cache.size());
+            for (int record = 0; record < cacheSize; ++record)
+            {
+                if (cache[record] == chunkData) return record;
+            }
 
-        cache[nextRecord] = chunkData;
-        if (++nextRecord >= cacheSize) nextRecord = 0;
+            cache[nextRecord] = chunkData;
+            if (++nextRecord >= cacheSize) nextRecord = 0;
+        }
     }
-#endif
     return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+EncodeAYM::EncodeAYM()
+    : m_isTS(false)
+    , m_oldStep(1)
+    , m_newStep(1)
+{
+}
+
+void EncodeAYM::Configure(Profile profile)
+{
+    m_profile = uint8_t(profile);
+}
 
 bool EncodeAYM::Open(const Stream& stream)
 {
@@ -134,13 +125,11 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
     auto record = m_deltaCache.FindRecord(delta);
     if (record < 0)
     {
-#if AYM_OPT_DELTA_SHORTS
         // write delta shorts
         if (delta.value == +1) stream.Write<3>(0b100);
         else
         if (delta.value == -1) stream.Write<3>(0b101);
         else
-#endif
         {   // write width and value of delta
             stream.Write<3>(delta.bits / 4 - 1);
             stream.Write(delta.value, delta.bits);
@@ -239,7 +228,7 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
 
     m_output.write(chunkData.c_str(), chunkData.size());
 
-#if DBG_ENCODE_AYM
+    // debug output
     auto data = chunkData.c_str();
     auto size = chunkData.size();
     for (size_t i = 0; i < size; ++i)
@@ -255,5 +244,4 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
         dbg.print_message("%02X ", dd);
     }
     dbg.print_endline();
-#endif
 }
