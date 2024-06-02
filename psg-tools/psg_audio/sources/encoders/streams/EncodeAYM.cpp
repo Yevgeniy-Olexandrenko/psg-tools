@@ -1,29 +1,31 @@
 #include "EncodeAYM.h"
-#include <cassert>
+#include "debug/DebugOutput.h"
+
+static DebugOutput<DBG_ENCODE_AYM> dbg;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// debug output
-#if DBG_ENCODE_AYM
-std::ofstream debug_out;
-#define DebugOpen() \
-    debug_out.open("dbg_encode_aym.txt");
-#define DebugPrintByteValue(dd) \
-    debug_out << std::hex << std::setw(2) << std::setfill('0') << int(dd); \
-    debug_out << ' ';
-#define DebugPrintMessage(msg) \
-    debug_out << msg; \
-    debug_out << ' ';
-#define DebugPrintNewLine() \
-    debug_out << std::endl;
-#define DebugClose() \
-    debug_out.close();
-#else
-#define DebugOpen()
-#define DebugPrintWrite(aa, bb)
-#define DebugPrintNewLine()
-#define DebugClose()
-#endif
+//// debug output
+//#if DBG_ENCODE_AYM
+//std::ofstream debug_out;
+//#define DebugOpen() \
+//    debug_out.open("dbg_encode_aym.txt");
+//#define DebugPrintByteValue(dd) \
+//    debug_out << std::hex << std::setw(2) << std::setfill('0') << int(dd); \
+//    debug_out << ' ';
+//#define DebugPrintMessage(msg) \
+//    debug_out << msg; \
+//    debug_out << ' ';
+//#define DebugPrintNewLine() \
+//    debug_out << std::endl;
+//#define DebugClose() \
+//    debug_out.close();
+//#else
+//#define DebugOpen()
+//#define DebugPrintWrite(aa, bb)
+//#define DebugPrintNewLine()
+//#define DebugClose()
+//#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -77,8 +79,7 @@ int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
         }
 
         cache[nextRecord] = chunkData;
-        if (++nextRecord >= cacheSize) 
-            nextRecord = 0;
+        if (++nextRecord >= cacheSize) nextRecord = 0;
     }
 #endif
     return -1;
@@ -98,7 +99,7 @@ bool EncodeAYM::Open(const Stream& stream)
 
             // TODO
 
-            DebugOpen();
+            dbg.open("encode_aym_" + stream.ToString(Stream::Property::Tag));
             return true;
         }
     }
@@ -123,7 +124,7 @@ void EncodeAYM::Close(const Stream& stream)
 {
     WriteStepChunk();
     m_output.close();
-    DebugClose();
+    dbg.close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -246,13 +247,13 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
         uint8_t dd = data[i];
         if (i == 0)
         {
-            if (dd) { DebugPrintMessage("R"); }
-            else    { DebugPrintMessage("C"); }
-            DebugPrintByteValue(uint8_t(size));
-            DebugPrintMessage(":");
+            if (dd) 
+                dbg.print_message("reg%02X: ", uint8_t(size));
+            else
+                dbg.print_message("cmd%02X: ", data[i + 1] & 0b11000000);
         }
-        DebugPrintByteValue(dd);
+        dbg.print_message("%02X ", dd);
     }
-    DebugPrintNewLine();
+    dbg.print_endline();
 #endif
 }
