@@ -9,6 +9,7 @@
 
 #define AYM_OPT_DELTA_CACHE  1
 #define AYM_OPT_DELTA_SHORTS 1
+#define AYM_OPT_CHUNK_CACHE  1
 
 class EncodeAYM : public Encoder
 {
@@ -30,16 +31,19 @@ class EncodeAYM : public Encoder
 
     class Chunk : public BitOutputStream
     {
+        std::ostringstream stream;
+
     public:
         Chunk();
-        void Finish();
-        
-        const uint8_t* GetData() const;
-        const size_t GetSize() const;
+        const std::string GetData();
+    };
 
-    protected:
-        std::ostringstream m_stream;
-        std::string m_data;
+    struct ChunkCache
+    {
+        int nextRecord{ 0 };
+        std::array<const std::string, 16> cache;
+
+        int FindRecord(Chunk& chunk);
     };
 
 public:
@@ -49,10 +53,10 @@ public:
 
 private:
     void WriteDelta(const Delta& delta, BitOutputStream& stream);
-    void WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream);
+    void WriteRegsData(const Frame& frame, int chip, BitOutputStream& stream);
     void WriteStepChunk();
     void WriteFrameChunk(const Frame& frame);
-    void WriteChunk(const Chunk& chunk);
+    void WriteChunk(Chunk& chunk);
 
 private:
     std::ofstream m_output;

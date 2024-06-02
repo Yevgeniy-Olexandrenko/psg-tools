@@ -55,24 +55,21 @@ int EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
 }
 
 EncodeAYM::Chunk::Chunk()
-    : BitOutputStream(m_stream)
+    : BitOutputStream(stream)
 {
 }
 
-void EncodeAYM::Chunk::Finish()
+const std::string EncodeAYM::Chunk::GetData()
 {
     Flush();
-    m_data = m_stream.str();
+    return stream.str();
 }
 
-const uint8_t* EncodeAYM::Chunk::GetData() const
+int EncodeAYM::ChunkCache::FindRecord(Chunk& chunk)
 {
-    return reinterpret_cast<const uint8_t*>(m_data.data());
-}
+    // TODO
 
-const size_t EncodeAYM::Chunk::GetSize() const
-{
-    return m_data.size();
+    return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +140,7 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
     }
 }
 
-void EncodeAYM::WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutputStream& stream)
+void EncodeAYM::WriteRegsData(const Frame& frame, int chip, BitOutputStream& stream)
 {
     const auto WriteRDelta = [&](Register r)
         {
@@ -169,7 +166,7 @@ void EncodeAYM::WriteRegsData(const Frame& frame, int chip, bool isLast, BitOutp
     if (frame[chip].IsChanged__(PRegister::E_Period)) hiMask |= (1 << 1);
     if (frame[chip].IsChanged(Register::E_Shape))     hiMask |= (1 << 2);
 
-    if (!isLast) hiMask |= (1 << 3);
+ // if (!isLast) hiMask |= (1 << 3);
     if ( hiMask) loMask |= (1 << 7);
 
     stream.Write<8>(loMask);
@@ -192,11 +189,8 @@ void EncodeAYM::WriteStepChunk()
     if (m_newStep != m_oldStep)
     {
         Chunk chunk;
-
         chunk.Write<8>(0x00);
         WriteDelta({ m_oldStep, m_newStep }, chunk);
-
-        chunk.Finish();
         WriteChunk(chunk);
 
         m_oldStep = m_newStep;
@@ -207,24 +201,17 @@ void EncodeAYM::WriteStepChunk()
 void EncodeAYM::WriteFrameChunk(const Frame& frame)
 {
     Chunk chunk;
-    if (m_isTS)
-    {
-        WriteRegsData(frame, 0, false, chunk);
-        WriteRegsData(frame, 1, true, chunk);
-    }
-    else
-    {
-        WriteRegsData(frame, 0, true, chunk);
-    }
-    chunk.Finish();
+    WriteRegsData(frame, 0, chunk);
+    if (m_isTS) WriteRegsData(frame, 1, chunk);
     WriteChunk(chunk);
 }
 
-void EncodeAYM::WriteChunk(const Chunk& chunk)
+void EncodeAYM::WriteChunk(Chunk& chunk)
 {
-    auto data = chunk.GetData();
-    auto size = chunk.GetSize();
-    m_output.write(reinterpret_cast<const char*>(data), size);
+    const std::string& chunkData = chunk.GetData();
+    auto data = chunkData.c_str();
+    auto size = chunkData.size();
+    m_output.write(data, size);
 
 #if DBG_ENCODE_AYM
     for (size_t i = 0; i < size; ++i)
