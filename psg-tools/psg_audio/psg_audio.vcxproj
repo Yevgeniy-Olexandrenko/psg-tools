@@ -81,6 +81,7 @@
     <ClInclude Include="sources\stream\Property.h" />
     <ClInclude Include="sources\stream\Stream.h" />
     <ClInclude Include="sources\utils\BitStream.h" />
+    <ClInclude Include="sources\utils\LZ78.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\debug\DebugStatistics.cpp" />

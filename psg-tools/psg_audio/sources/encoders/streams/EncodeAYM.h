@@ -4,14 +4,15 @@
 #include <sstream>
 #include "encoders/Encoder.h"
 #include "utils/BitStream.h"
+#include "utils/LZ78.h"
 
 class EncodeAYM : public Encoder
 {
     enum Technique
     {
-        DELTA_CACHE  = 1 << 0,
-        CHUNK_CACHE  = 1 << 1,
-        COMPRESS_LZW = 1 << 2
+        DELTA_CACHE = 1 << 0,
+        CHUNK_CACHE = 1 << 1,
+        ENCODE_LZ78 = 1 << 2
     };
 
     struct Delta
@@ -51,12 +52,14 @@ class EncodeAYM : public Encoder
 public:
     enum class Profile : uint8_t
     {
-        Low    = 0,
+        Low    = DELTA_CACHE,
         Medium = DELTA_CACHE + CHUNK_CACHE,
-        High   = DELTA_CACHE + CHUNK_CACHE + COMPRESS_LZW
+        High   = CHUNK_CACHE + ENCODE_LZ78
     };
 
+    EncodeAYM();
     void Configure(Profile profile);
+
     bool Open(const Stream& stream) override;
     void Encode(const Frame& frame) override;
     void Close(const Stream& stream) override;
@@ -66,14 +69,18 @@ private:
     void WriteRegisters(const Frame& frame, int chip, BitOutputStream& stream);
     void WriteSkipChunk();
     void WriteFrameChunk(const Frame& frame);
-    void WriteChunk(Chunk& chunk);
+    void WriteChunk(Chunk& chunk, BitOutputStream& stream);
+    void DebugPrint(const char* data, size_t size);
 
 private:
     static uint8_t m_profile;
     std::ofstream m_output;
+    BitOutputStream m_stream;
     DeltaCache m_deltaCache;
     ChunkCache m_chunkCache;
     bool  m_isTS{ false };
     int   m_skip{ 0 };
     Frame m_frame;
+
+    LZ78Encoder<Chunk::Data, 4096> m_lz78Encoder;
 };

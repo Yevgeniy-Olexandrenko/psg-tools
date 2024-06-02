@@ -67,6 +67,11 @@ int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+EncodeAYM::EncodeAYM()
+    : m_stream(m_output)
+{
+}
+
 void EncodeAYM::Configure(Profile profile)
 {
     m_profile = uint8_t(profile);
@@ -108,6 +113,7 @@ void EncodeAYM::Encode(const Frame& frame)
 void EncodeAYM::Close(const Stream& stream)
 {
     WriteSkipChunk();
+    m_stream.Flush();
     m_output.close();
     dbg.close();
 }
@@ -188,12 +194,12 @@ void EncodeAYM::WriteSkipChunk()
         {
             Chunk chunk;
             chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(64 - 1);
-            WriteChunk(chunk);
+            WriteChunk(chunk, m_stream);
         }
 
         Chunk chunk;
         chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(m_skip - 1);
-        WriteChunk(chunk);
+        WriteChunk(chunk, m_stream);
         m_skip = 0;
     }
 }
@@ -203,10 +209,10 @@ void EncodeAYM::WriteFrameChunk(const Frame& frame)
     Chunk chunk;
     WriteRegisters(frame, 0, chunk);
     if (m_isTS) WriteRegisters(frame, 1, chunk);
-    WriteChunk(chunk);
+    WriteChunk(chunk, m_stream);
 }
 
-void EncodeAYM::WriteChunk(Chunk& chunk)
+void EncodeAYM::WriteChunk(Chunk& chunk, BitOutputStream& stream)
 {
     Chunk::Data chunkData = chunk.GetData();
 
@@ -218,17 +224,39 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
         chunkData = chunk.GetData();
     }
 
-    m_output.write(chunkData.c_str(), chunkData.size());
+    if (m_profile & ENCODE_LZ78)
+    {
+        // encode LZ78
+        if (m_lz78Encoder.Encode(chunkData))
+        {
+            auto encoded = m_lz78Encoder.GetEncodedData();
+            auto prefix  = encoded.first;
 
-    // debug output
-    auto data = chunkData.c_str();
-    auto size = chunkData.size();
+            if (prefix == 0) stream.Write<1>(0b0);
+            else if (prefix < 1024) stream.Write<2>(0b10).Write<10>(prefix);
+            else if (prefix < 4096) stream.Write<2>(0b11).Write<12>(prefix);
+            else dbg.print_message("(!) ");
+            stream.Write(encoded.second.c_str(), encoded.second.size());
+
+            dbg.print_message("LZ78-%03X: ", encoded.first);
+            DebugPrint(encoded.second.c_str(), encoded.second.size());
+        }
+    }
+    else
+    {
+        stream.Write(chunkData.c_str(), chunkData.size());
+        DebugPrint(chunkData.c_str(), chunkData.size());
+    }
+}
+
+void EncodeAYM::DebugPrint(const char* data, size_t size)
+{
     for (size_t i = 0; i < size; ++i)
     {
         uint8_t dd = data[i];
         if (i == 0)
         {
-            if (dd) 
+            if (dd)
                 dbg.print_message("reg%02X: ", uint8_t(size));
             else
                 dbg.print_message("cmd%02X: ", data[i + 1] & 0b11000000);

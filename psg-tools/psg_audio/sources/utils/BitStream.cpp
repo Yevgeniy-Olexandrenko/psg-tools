@@ -28,6 +28,12 @@ BitOutputStream& BitOutputStream::Write(uint32_t value, size_t bits)
     return *this;
 }
 
+BitOutputStream& BitOutputStream::Write(const char* data, size_t size)
+{
+    for (size_t i = 0; i < size; ++i) Write(data[i]);
+    return *this;
+}
+
 BitOutputStream& BitOutputStream::Flush()
 {
     if (m_count > 0)

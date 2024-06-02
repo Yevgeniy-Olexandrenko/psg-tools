@@ -243,6 +243,9 @@
     <ClInclude Include="sources\utils\BitStream.h">
       <Filter>Sources\utils</Filter>
     </ClInclude>
+    <ClInclude Include="sources\utils\LZ78.h">
+      <Filter>Sources\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGAudio.cpp">

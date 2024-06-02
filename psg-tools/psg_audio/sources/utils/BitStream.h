@@ -14,7 +14,8 @@ public:
         return Write(value, width);
     }
 
-    BitOutputStream& Write(uint32_t value, size_t width);
+    BitOutputStream& Write(uint32_t value, size_t width = 8);
+    BitOutputStream& Write(const char* data, size_t size);
     BitOutputStream& Flush();
 
 protected:
