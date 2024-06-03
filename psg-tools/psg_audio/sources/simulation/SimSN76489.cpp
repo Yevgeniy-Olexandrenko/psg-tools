@@ -133,7 +133,7 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[1]);
 
             EnableTone(mixer, Frame::Channel::A);
-            frame[chip].Update(PRegister::A_Period, period);
+            frame[chip].Update(Register::Period::A, period);
             frame[chip].Update(Register::A_Volume, volume);
         }
 
@@ -144,7 +144,7 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[3]);
 
             EnableTone(mixer, Frame::Channel::B);
-            frame[chip].Update(PRegister::B_Period, period);
+            frame[chip].Update(Register::Period::B, period);
             frame[chip].Update(Register::B_Volume, volume);
         }
 
@@ -155,7 +155,7 @@ void SimSN76489::Convert(Frame& frame)
             uint8_t  volume = ConvertVolume(SN76489[chip].Registers[5]);
 
             EnableTone(mixer, Frame::Channel::C);
-            frame[chip].Update(PRegister::C_Period, period);
+            frame[chip].Update(Register::Period::C, period);
             frame[chip].Update(Register::C_Volume, volume);
         }
 
@@ -173,7 +173,7 @@ void SimSN76489::Convert(Frame& frame)
             int volumeA = frame[chip].Read(Register::A_Volume);
             int volumeC = frame[chip].Read(Register::C_Volume);
 
-            frame[chip].Update(PRegister::N_Period, period);
+            frame[chip].Update(Register::Period::N, period);
 
             if (!enable0)
             {

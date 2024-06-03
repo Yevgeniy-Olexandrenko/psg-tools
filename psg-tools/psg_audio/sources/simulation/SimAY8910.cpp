@@ -41,21 +41,21 @@ void SimAY8910::Convert(Frame& frame)
             uint16_t nBound = (isExpMode ? 0x00FF : 0x001F);
 
             // safe period conversion based on clock ratio
-            const auto ConvertPeriod = [&](PRegister preg, uint16_t bound)
+            const auto ConvertPeriod = [&](Register::Period regp, uint16_t bound)
             {
-                auto period = uint32_t(m_pframe[chip].Read(preg) * m_clockRatio + 0.5f);
-                m_pframe[chip].Update(preg, uint16_t(period > bound ? bound : period));
+                auto period = uint32_t(m_pframe[chip].Read(regp) * m_clockRatio + 0.5f);
+                m_pframe[chip].Update(regp, uint16_t(period > bound ? bound : period));
             };
 
             // convert tone and envelope periods
             for (int chan = 0; chan < 3; ++chan)
             {
-                ConvertPeriod(PRegister::t_period[chan], tBound);
-                ConvertPeriod(PRegister::e_period[chan], 0xFFFF);
+                ConvertPeriod(Register::t_period[chan], tBound);
+                ConvertPeriod(Register::e_period[chan], 0xFFFF);
             }
 
             // convert noise period
-            ConvertPeriod(PRegister::N_Period, nBound);
+            ConvertPeriod(Register::Period::N, nBound);
         }
     }
 

@@ -3,17 +3,6 @@
 #include <iomanip>
 #include <vector>
 
-const Register::Index Register::t_fine   [] { A_Fine,    B_Fine,    C_Fine    };
-const Register::Index Register::t_coarse [] { A_Coarse,  B_Coarse,  C_Coarse  };
-const Register::Index Register::t_duty   [] { A_Duty,    B_Duty,    C_Duty    };
-const Register::Index Register::volume   [] { A_Volume,  B_Volume,  C_Volume  };
-const Register::Index Register::e_fine   [] { EA_Fine,   EB_Fine,   EC_Fine   };
-const Register::Index Register::e_coarse [] { EA_Coarse, EB_Coarse, EC_Coarse };
-const Register::Index Register::e_shape  [] { EA_Shape,  EB_Shape,  EC_Shape  };
-
-const PRegister::Index PRegister::t_period [] { A_Period,  B_Period,  C_Period  };
-const PRegister::Index PRegister::e_period [] { EA_Period, EB_Period, EC_Period };
-
 namespace
 {
 	struct RegDefine
@@ -357,17 +346,18 @@ uint8_t Frame::Registers::Read(Register reg) const
 	return 0x00;
 }
 
-uint16_t Frame::Registers::Read(PRegister preg) const
+uint16_t Frame::Registers::Read(Register::Period regp) const
 {
 	uint16_t data = 0;
-	switch (preg)
+	switch (regp)
 	{
-	case PRegister::A_Period:  case PRegister::B_Period:  case PRegister::C_Period:
-	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
-		data |= Read(preg + 1) << 8;
+	case Register::Period::A:  case Register::Period::B:  case Register::Period::C:
+	case Register::Period::EA: case Register::Period::EB: case Register::Period::EC:
+		data |= Read(Register::Coarse(regp)) << 8;
 		[[fallthrough]];
-	case PRegister::N_Period:
-		data |= Read(preg + 0);
+
+	case Register::Period::N:
+		data |= Read(Register::Fine(regp));
 	}
 	return data;
 }
@@ -406,17 +396,18 @@ bool Frame::Registers::IsChanged(Register reg, uint8_t mask) const
 	return (GetInfo(reg, info) ? (m_diff[info.index] & mask) : false);
 }
 
-bool Frame::Registers::IsChanged__(PRegister preg) const
+bool Frame::Registers::IsChanged(Register::Period regp) const
 {
 	bool changed = false;
-	switch (preg)
+	switch (regp)
 	{
-	case PRegister::A_Period : case PRegister::B_Period : case PRegister::C_Period :
-	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
-		changed |= IsChanged(preg + 1);
+	case Register::Period::A : case Register::Period::B : case Register::Period::C :
+	case Register::Period::EA: case Register::Period::EB: case Register::Period::EC:
+		changed |= IsChanged(Register::Coarse(regp));
 		[[fallthrough]];
-	case PRegister::N_Period:
-		changed |= IsChanged(preg + 0);
+
+	case Register::Period::N:
+		changed |= IsChanged(Register::Fine(regp));
 	}
 	return changed;
 }
@@ -462,16 +453,17 @@ void Frame::Registers::Update(Register reg, uint8_t data)
 	}
 }
 
-void Frame::Registers::Update(PRegister preg, uint16_t data)
+void Frame::Registers::Update(Register::Period regp, uint16_t data)
 {
-	switch (preg)
+	switch (regp)
 	{
-	case PRegister::A_Period : case PRegister::B_Period : case PRegister::C_Period :
-	case PRegister::EA_Period: case PRegister::EB_Period: case PRegister::EC_Period:
-		Update(preg + 1, data >> 8);
+	case Register::Period::A : case Register::Period::B : case Register::Period::C :
+	case Register::Period::EA: case Register::Period::EB: case Register::Period::EC:
+		Update(Register::Coarse(regp), data >> 8);
 		[[fallthrough]];
-	case PRegister::N_Period:
-		Update(preg + 0, uint8_t(data));
+
+	case Register::Period::N:
+		Update(Register::Fine(regp), uint8_t(data));
 	}
 }
 

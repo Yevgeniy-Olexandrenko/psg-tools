@@ -28,7 +28,7 @@ private:
     void ConvertToDoubleChip(const State& state, Frame& frame);
     void ConvertToAY8930Chip(const State& state, Frame& frame);
 
-    template<Register::Index shape_reg, PRegister::Index peiod_reg>
+    template<Register::Value shape_reg, Register::Period peiod_reg>
     void EnableTriangleEnvelopeOnChannelB(const State& state, Frame& frame);
     void DisableTriangleEnvelopeOnChannelB(Frame& frame);
     void DistributeNoiseBetweenChannels(const State& state, Frame& frame, uint8_t& mixer);

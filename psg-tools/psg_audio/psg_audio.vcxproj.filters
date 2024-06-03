@@ -246,6 +246,9 @@
     <ClInclude Include="sources\utils\LZ78.h">
       <Filter>Sources\utils</Filter>
     </ClInclude>
+    <ClInclude Include="sources\stream\Register.h">
+      <Filter>Sources\stream</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGAudio.cpp">
@@ -403,6 +406,9 @@
     </ClCompile>
     <ClCompile Include="sources\utils\BitStream.cpp">
       <Filter>Sources\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\stream\Register.cpp">
+      <Filter>Sources\stream</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

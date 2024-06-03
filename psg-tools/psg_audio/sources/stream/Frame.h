@@ -1,103 +1,7 @@
 #pragma once
 
-#include <stdint.h>
+#include "Register.h"
 #include "debug/DebugPayload.h"
-
-class Register
-{
-	uint8_t m_index;
-
-public:
-	enum Index
-	{
-		// bank A
-		A_Fine    = 0x00, // 00
-		A_Coarse  = 0x01, // 01
-		B_Fine    = 0x02, // 02
-		B_Coarse  = 0x03, // 03
-		C_Fine    = 0x04, // 04
-		C_Coarse  = 0x05, // 05
-		N_Period  = 0x06, // 06
-		Mixer     = 0x07, // 07
-		A_Volume  = 0x08, // 08
-		B_Volume  = 0x09, // 09
-		C_Volume  = 0x0A, // 10
-		EA_Fine   = 0x0B, // 11
-		EA_Coarse = 0x0C, // 12
-		EA_Shape  = 0x0D, // 13
-
-		// bank B
-		EB_Fine   = 0x10, // 14
-		EB_Coarse = 0x11, // 15
-		EC_Fine   = 0x12, // 16
-		EC_Coarse = 0x13, // 17
-		EB_Shape  = 0x14, // 18
-		EC_Shape  = 0x15, // 19
-		A_Duty    = 0x16, // 20
-		B_Duty    = 0x17, // 21
-		C_Duty    = 0x18, // 22
-		N_AndMask = 0x19, // 23
-		N_OrMask  = 0x1A, // 24
-
-		// aliases
-		E_Fine    = EA_Fine,
-		E_Coarse  = EA_Coarse,
-		E_Shape   = EA_Shape,
-		Mode_Bank = EA_Shape,
-
-		A_Period  = A_Fine,
-		B_Period  = B_Fine,
-		C_Period  = C_Fine,
-		E_Period  = E_Fine,
-		EA_Period = EA_Fine,
-		EB_Period = EB_Fine,
-		EC_Period = EC_Fine,
-
-		BankA_Fst = 0x00,
-		BankA_Lst = 0x0D,
-		BankB_Fst = 0x10,
-		BankB_Lst = 0x1D,
-	};
-
-	Register(const uint8_t& index) : m_index(index) {}
-	Register(const Index&   index) : m_index(static_cast<uint8_t>(index)) {}
-	Register& operator= (const Index& index) { m_index = static_cast<uint8_t>(index); return *this; }
-	operator uint8_t&() { return m_index; }
-
-	static const Index t_fine   [];
-	static const Index t_coarse [];
-	static const Index t_duty   [];
-	static const Index volume   [];
-	static const Index e_fine   [];
-	static const Index e_coarse [];
-	static const Index e_shape  [];
-};
-
-class PRegister
-{
-	uint8_t m_index;
-
-public:
-	enum Index
-	{
-		A_Period  = Register::A_Fine,
-		B_Period  = Register::B_Fine,
-		C_Period  = Register::C_Fine,
-		N_Period  = Register::N_Period,
-		E_Period  = Register::E_Fine,
-		EA_Period = Register::EA_Fine,
-		EB_Period = Register::EB_Fine,
-		EC_Period = Register::EC_Fine
-	};
-
-	PRegister(const Index& index) : m_index(static_cast<uint8_t>(index)) {}
-	PRegister& operator= (const Index& index) { m_index = static_cast<uint8_t>(index); return *this; }
-	operator Register () { return Register(m_index); }
-	operator uint8_t& () { return m_index; }
-
-	static const Index t_period[];
-	static const Index e_period[];
-};
 
 using FrameId = uint32_t;
 constexpr uint8_t c_modeBankRegIdx = 0x0D;
@@ -170,15 +74,15 @@ public:
 
 	public:
 		uint8_t  Read(Register reg) const;
-		uint16_t Read(PRegister preg) const;
+		uint16_t Read(Register::Period regp) const;
 		void     Read(int chan, Channel& data) const;
 
 		bool IsChanged(Register reg) const;
 		bool IsChanged(Register reg, uint8_t mask) const;
-		bool IsChanged__(PRegister preg) const;
+		bool IsChanged(Register::Period regp) const;
 
 		void Update(Register reg, uint8_t data);
-		void Update(PRegister preg, uint16_t data);
+		void Update(Register::Period regp, uint16_t data);
 		void Update(int chan, const Channel& data);
 
 	public:

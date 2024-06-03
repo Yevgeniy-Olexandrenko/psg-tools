@@ -28,7 +28,7 @@ public:
 
                     if (enableE && !(enableT || enableN))
                     {
-                        m_frame[chip].Update(PRegister::t_period[chan], uint16_t(0));
+                        m_frame[chip].Update(Register::t_period[chan], uint16_t(0));
                         m_frame[chip].Update(Register::t_duty[chan], 8);
                         mixer &= ~(m_frame[chip].tmask(chan));
                     }
