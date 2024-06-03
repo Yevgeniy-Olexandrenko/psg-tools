@@ -258,8 +258,7 @@ void EncodeAYM::WriteLZ78EncodedData()
     auto index = encoded.first;
 
     if (index == 0) m_stream.Write<1>(0b0);
-    else if (index < 1024) m_stream.Write<2>(0b10).Write<10>(index);
-    else if (index < 4096) m_stream.Write<2>(0b11).Write<12>(index);
+    else if (index < 4096) m_stream.Write<1>(0b1).Write<12>(index);
     else dbg.print_message("(!) ");
     m_stream.Write(encoded.second.c_str(), encoded.second.size());
 
