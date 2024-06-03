@@ -69,8 +69,9 @@ private:
     void WriteRegisters(const Frame& frame, int chip, BitOutputStream& stream);
     void WriteSkipChunk();
     void WriteFrameChunk(const Frame& frame);
-    void WriteChunk(Chunk& chunk, BitOutputStream& stream);
-    void DebugPrint(const char* data, size_t size);
+    void WriteChunk(Chunk& chunk);
+    void WriteLZ78EncodedData();
+    void FinalizeWriting();
 
 private:
     static uint8_t m_profile;

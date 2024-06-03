@@ -3,52 +3,54 @@
 #include <unordered_map>
 #include <vector>
 
-struct LZ78PairHash 
+template <typename T, size_t DICT_SIZE> 
+class LZ78Encoder 
 {
-    template <class T1, class T2>
-    std::size_t operator() (const std::pair<T1, T2>& p) const 
+    struct LZ78PairHash
     {
-        auto h1 = std::hash<T1>{}(p.first);
-        auto h2 = std::hash<T2>{}(p.second);
-        return h1 ^ (h2 << 1);
-    }
-};
+        template <class T1, class T2>
+        std::size_t operator() (const std::pair<T1, T2>& p) const
+        {
+            auto h1 = std::hash<T1>{}(p.first);
+            auto h2 = std::hash<T2>{}(p.second);
+            return h1 ^ (h2 << 1);
+        }
+    };
 
-template <typename T, size_t DICT_SIZE> class LZ78Encoder 
-{
 public:
     using EncodedData = std::pair<int, T>;
 
-    LZ78Encoder()
-        : m_dictIndex(0) 
-        , m_lastIndex(0)
-    {
-        Reset();
-    }
+    LZ78Encoder() { Reset(); }
 
     void Reset()
     {
         m_dictionary.clear();
         m_dictionary[{0, T()}] = 0;
         m_dictIndex = 1;
+        m_lastIndex = 0;
     }
 
     bool Encode(const T& symbol) 
     {
-        auto key = std::make_pair(m_lastIndex, symbol);
-        if (m_dictionary.find(key) == m_dictionary.end()) 
+        if (m_dictIndex >= DICT_SIZE) Reset();
+        m_encodedData = std::make_pair(m_lastIndex, symbol);
+
+        if (m_dictionary.find(m_encodedData) == m_dictionary.end())
         {
-            m_dictionary[key] = m_dictIndex++;
-            m_encodedData = std::make_pair(m_lastIndex, symbol);
+            m_dictionary[m_encodedData] = m_dictIndex++;
             m_lastIndex = 0;
-            if (m_dictIndex >= DICT_SIZE) Reset();
             return true;
         }
         else 
         {
-            m_lastIndex = m_dictionary[key];
+            m_lastIndex = m_dictionary[m_encodedData];
             return false;
         }
+    }
+
+    bool HasUnfinishedEncoding() const
+    {
+        return (m_lastIndex > 0);
     }
 
     const EncodedData& GetEncodedData() const
@@ -63,17 +65,14 @@ private:
     int m_lastIndex;
 };
 
-template <typename T, size_t DICT_SIZE> class LZ78Decoder
+template <typename T, size_t DICT_SIZE> 
+class LZ78Decoder
 {
 public:
     using EncodedData = std::pair<int, T>;
     using DecodedData = std::vector<T>;
 
-    LZ78Decoder()
-        : m_dictIndex(0)
-    {
-        Reset();
-    }
+    LZ78Decoder() { Reset(); }
 
     void Reset()
     {

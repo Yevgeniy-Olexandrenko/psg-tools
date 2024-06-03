@@ -2,6 +2,21 @@
 #include "debug/DebugOutput.h"
 
 static DebugOutput<DBG_ENCODE_AYM> dbg;
+static void DebugPrint(const char* data, size_t size)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        uint8_t dd = data[i];
+        if (i == 0)
+        {
+            if (dd) dbg.print_message("reg%02X: ", uint8_t(size));
+            else    dbg.print_message("cmd%02X: ", data[i + 1] & 0b11000000);
+        }
+        dbg.print_message("%02X ", dd);
+    }
+    dbg.print_endline();
+}
+
 uint8_t EncodeAYM::m_profile{ uint8_t(Profile::High) };
 enum { TAG_CMD = 0x00, CMD_SKIP = 0, CMD_CREF = 1, CMD_RESERVED_2 =  2, CMD_RESERVED_3 = 3 };
 
@@ -112,8 +127,7 @@ void EncodeAYM::Encode(const Frame& frame)
 
 void EncodeAYM::Close(const Stream& stream)
 {
-    WriteSkipChunk();
-    m_stream.Flush();
+    FinalizeWriting();
     m_output.close();
     dbg.close();
 }
@@ -194,12 +208,12 @@ void EncodeAYM::WriteSkipChunk()
         {
             Chunk chunk;
             chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(64 - 1);
-            WriteChunk(chunk, m_stream);
+            WriteChunk(chunk);
         }
 
         Chunk chunk;
         chunk.Write<8>(TAG_CMD).Write<2>(CMD_SKIP).Write<6>(m_skip - 1);
-        WriteChunk(chunk, m_stream);
+        WriteChunk(chunk);
         m_skip = 0;
     }
 }
@@ -209,10 +223,10 @@ void EncodeAYM::WriteFrameChunk(const Frame& frame)
     Chunk chunk;
     WriteRegisters(frame, 0, chunk);
     if (m_isTS) WriteRegisters(frame, 1, chunk);
-    WriteChunk(chunk, m_stream);
+    WriteChunk(chunk);
 }
 
-void EncodeAYM::WriteChunk(Chunk& chunk, BitOutputStream& stream)
+void EncodeAYM::WriteChunk(Chunk& chunk)
 {
     Chunk::Data chunkData = chunk.GetData();
 
@@ -226,42 +240,42 @@ void EncodeAYM::WriteChunk(Chunk& chunk, BitOutputStream& stream)
 
     if (m_profile & ENCODE_LZ78)
     {
-        // encode LZ78
         if (m_lz78Encoder.Encode(chunkData))
         {
-            auto encoded = m_lz78Encoder.GetEncodedData();
-            auto prefix  = encoded.first;
-
-            if (prefix == 0) stream.Write<1>(0b0);
-            else if (prefix < 1024) stream.Write<2>(0b10).Write<10>(prefix);
-            else if (prefix < 4096) stream.Write<2>(0b11).Write<12>(prefix);
-            else dbg.print_message("(!) ");
-            stream.Write(encoded.second.c_str(), encoded.second.size());
-
-            dbg.print_message("LZ78-%03X: ", encoded.first);
-            DebugPrint(encoded.second.c_str(), encoded.second.size());
+            WriteLZ78EncodedData();
         }
     }
     else
     {
-        stream.Write(chunkData.c_str(), chunkData.size());
+        m_stream.Write(chunkData.c_str(), chunkData.size());
         DebugPrint(chunkData.c_str(), chunkData.size());
     }
 }
 
-void EncodeAYM::DebugPrint(const char* data, size_t size)
+void EncodeAYM::WriteLZ78EncodedData()
 {
-    for (size_t i = 0; i < size; ++i)
+    auto encoded = m_lz78Encoder.GetEncodedData();
+    auto index = encoded.first;
+
+    if (index == 0) m_stream.Write<1>(0b0);
+    else if (index < 1024) m_stream.Write<2>(0b10).Write<10>(index);
+    else if (index < 4096) m_stream.Write<2>(0b11).Write<12>(index);
+    else dbg.print_message("(!) ");
+    m_stream.Write(encoded.second.c_str(), encoded.second.size());
+
+    dbg.print_message("LZ78-%03X: ", encoded.first);
+    DebugPrint(encoded.second.c_str(), encoded.second.size());
+}
+
+void EncodeAYM::FinalizeWriting()
+{
+    WriteSkipChunk();
+    if (m_profile & ENCODE_LZ78)
     {
-        uint8_t dd = data[i];
-        if (i == 0)
+        if (m_lz78Encoder.HasUnfinishedEncoding())
         {
-            if (dd)
-                dbg.print_message("reg%02X: ", uint8_t(size));
-            else
-                dbg.print_message("cmd%02X: ", data[i + 1] & 0b11000000);
+            WriteLZ78EncodedData();
         }
-        dbg.print_message("%02X ", dd);
     }
-    dbg.print_endline();
+    m_stream.Flush();
 }
