@@ -20,7 +20,7 @@ protected:
     void OnFrameEncoded(const Stream& stream, FrameId frameId) override;
 
 private:
-    Chip& m_chip;
+    Chip m_chip;
     FilelistTraversal& m_filelist;
     Filelist::Path& m_output;
     Termination& m_termination;

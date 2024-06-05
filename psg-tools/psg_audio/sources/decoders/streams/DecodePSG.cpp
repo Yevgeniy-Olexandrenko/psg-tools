@@ -15,8 +15,8 @@ bool DecodePSG::Open(Stream& stream)
 
         if (m_input && header.m_sig == PSGSignature)
         {
-            stream.info.type("PSG stream");
-            stream.play.frameRate(header.m_fps ? header.m_fps : 50);
+            stream.info.type = "PSG stream";
+            stream.play.frameRate = (header.m_fps ? header.m_fps : 50);
 
             m_skip = 0;
             return true;
@@ -73,11 +73,11 @@ void DecodePSG::Close(Stream& stream)
     m_input.close();
 
     if (stream.IsExpandedModeUsed(0))
-        stream.schip.first.model(Chip::Model::AY8930);
+        stream.schip.first.model = Chip::Model::AY8930;
 
     if (stream.IsExpandedModeUsed(1))
-        stream.schip.second.model(Chip::Model::AY8930);
+        stream.schip.second.model = Chip::Model::AY8930;
 
-    if (stream.IsSecondChipUsed() && !stream.schip.second.modelKnown())
-        stream.schip.second.model(stream.schip.first.model());
+    if (stream.IsSecondChipUsed() && !stream.schip.second.modelKnown)
+        stream.schip.second.model = stream.schip.first.model;
 }

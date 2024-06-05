@@ -10,11 +10,11 @@ class ChipClockRateConvert : public FrameProcessor
 public:
     ChipClockRateConvert(const Chip& srcChip, const Chip& dstChip)
         : m_ratio(1.f)
-        , m_count(dstChip.count())
+        , m_count(dstChip.count)
     {
-        if (srcChip.clockKnown() && dstChip.clockKnown())
+        if (srcChip.clockKnown && dstChip.clockKnown)
         {
-            m_ratio = float(dstChip.clockValue()) / float(srcChip.clockValue());
+            m_ratio = float(dstChip.clockValue) / float(srcChip.clockValue);
         }
     }
 

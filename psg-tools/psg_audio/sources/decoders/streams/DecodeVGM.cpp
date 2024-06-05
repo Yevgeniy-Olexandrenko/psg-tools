@@ -66,9 +66,9 @@ bool DecodeVGM::Open(Stream& stream)
                     auto twoChips = bool(header.sn76489Clock & 0x40000000);
 
                     Chip::Model model = Chip::Model::AY8910;
-                    stream.schip.first.model(model);
-                    stream.schip.clockValue(clockRate / 2);
-                    if (twoChips) stream.schip.second.model(model);
+                    stream.schip.first.model = model;
+                    stream.schip.clockValue = clockRate / 2;
+                    if (twoChips) stream.schip.second.model = model;
                     //stream.schip.output(Chip::Output::Mono);
 
                     // TODO
@@ -87,9 +87,9 @@ bool DecodeVGM::Open(Stream& stream)
                     auto twoChips = bool(header.ay8910Clock & 0x40000000);
           
                     // setup chip model, clock rate and 2nd chip if needed
-                    stream.schip.first.model(model);
-                    stream.schip.clockValue(clockRate);
-                    if (twoChips) stream.schip.second.model(model);
+                    stream.schip.first.model = model;
+                    stream.schip.clockValue = clockRate;
+                    if (twoChips) stream.schip.second.model = model;
                 }
 
                 else if (m_simulator->type() == ChipSim::Type::RP2A03)
@@ -98,42 +98,42 @@ bool DecodeVGM::Open(Stream& stream)
                     if (clockRate / 1000 == 1662) frameRate = 50;
 
                     // setup chip clock rate
-                    if (stream.dchip.clockKnown())
-                        stream.schip.clock(stream.dchip.clock());
+                    if (stream.dchip.clockKnown)
+                        stream.schip.clock = stream.dchip.clock;
                     else
-                        stream.schip.clockValue(clockRate);
+                        stream.schip.clockValue = clockRate;
 
                     // setup first chip (YM2149 used by default)
-                    if (stream.dchip.first.model() != Chip::Model::Compatible)
-                        stream.schip.first.model(stream.dchip.first.model());
+                    if (stream.dchip.first.model != Chip::Model::Compatible)
+                        stream.schip.first.model = stream.dchip.first.model;
                     else
-                        stream.schip.first.model(Chip::Model::YM2149);
+                        stream.schip.first.model = Chip::Model::YM2149;
 
                     // setup output Strereo or Mono (Mono used by default)
-                    if (stream.dchip.outputKnown())
-                        stream.schip.output(stream.dchip.output());
+                    if (stream.dchip.outputKnown)
+                        stream.schip.output = stream.dchip.output;
                     else
-                        stream.schip.output(Chip::Output::Mono);
+                        stream.schip.output = Chip::Output::Mono;
 
                     // configure simulator output type and update chip if required
                     auto outputType = SimRP2A03::OutputType::SingleChip;
-                    if (stream.dchip.first.model() == Chip::Model::AY8930)
+                    if (stream.dchip.first.model == Chip::Model::AY8930)
                     {
                         outputType = SimRP2A03::OutputType::AY8930Chip;
-                        stream.schip.first.model(Chip::Model::AY8930);
+                        stream.schip.first.model = Chip::Model::AY8930;
                     }
-                    else if (stream.dchip.count() == 2)
+                    else if (stream.dchip.count == 2)
                     {
                         outputType = SimRP2A03::OutputType::DoubleChip;
-                        stream.schip.second.model(stream.schip.first.model());
+                        stream.schip.second.model = stream.schip.first.model;
                     }
                     static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType);
                 }
 
-                stream.info.type("VGM stream");
-                stream.play.frameRate(frameRate);
+                stream.info.type = "VGM stream";
+                stream.play.frameRate = frameRate;
 
-                m_simulator->ConfigureClock(clockRate, stream.schip.clockValue());
+                m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
                 m_samplesPerFrame = (44100 / frameRate);
                 m_processedSamples = 0;
 
@@ -176,12 +176,12 @@ bool DecodeVGM::Open(Stream& stream)
                             ReadString()                // Notes
                         };
 
-                        stream.info.title(GD3[0]);
-                        stream.info.artist(GD3[6]);
-                        stream.info.comment(GD3[2]);
+                        stream.info.title = GD3[0];
+                        stream.info.artist = GD3[6];
+                        stream.info.comment = GD3[2];
 
                         if (!GD3[4].empty())
-                            stream.info.type(stream.info.type() + " (" + GD3[4] + ")");
+                            stream.info.type = (std::string)stream.info.type + " (" + GD3[4] + ")";
                     }
                 }
                 dbg.open("decode_vgm_" + stream.ToString(Stream::Property::Tag));

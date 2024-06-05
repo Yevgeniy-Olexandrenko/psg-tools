@@ -37,8 +37,8 @@ bool DecodePT2::Open(Stream& stream)
                     Init();
                     isDetected = true;
 
-                    stream.info.title(ReadString(header.musicName, 30));
-                    stream.info.type("ProTracker 2.x module");
+                    stream.info.title = ReadString(header.musicName, 30);
+                    stream.info.type = "ProTracker 2.x module";
                 }
             }
             fileStream.close();

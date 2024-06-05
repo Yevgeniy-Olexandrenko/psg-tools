@@ -28,19 +28,19 @@ bool Emulator::DeviceInit(const Stream& stream, Chip& dchip)
     WaveAudio::Pause();
 
     // create sound chip emulator instances
-    for (int chip = 0; chip < dchip.count(); ++chip)
+    for (int chip = 0; chip < dchip.count; ++chip)
     {
         // create sound chip emulator by model
         switch (dchip.model(chip))
         {
-        case Chip::Model::AY8910: m_psg[chip].reset(new ChipAY8910(dchip.clockValue(), k_emulatorSampleRate)); break;
-        case Chip::Model::YM2149: m_psg[chip].reset(new ChipYM2149(dchip.clockValue(), k_emulatorSampleRate)); break;
-        case Chip::Model::AY8930: m_psg[chip].reset(new ChipAY8930(dchip.clockValue(), k_emulatorSampleRate)); break;
+        case Chip::Model::AY8910: m_psg[chip].reset(new ChipAY8910(dchip.clockValue, k_emulatorSampleRate)); break;
+        case Chip::Model::YM2149: m_psg[chip].reset(new ChipYM2149(dchip.clockValue, k_emulatorSampleRate)); break;
+        case Chip::Model::AY8930: m_psg[chip].reset(new ChipAY8930(dchip.clockValue, k_emulatorSampleRate)); break;
         }
         m_psg[chip]->Reset();   
     }
 
-    if (dchip.output() == Chip::Output::Mono)
+    if (dchip.output == Chip::Output::Mono)
     {
         SetPan(0, 0.5f, false);
         SetPan(1, 0.5f, false);

@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <filesystem>
-#include "Property.h"
 #include "Frame.h"
 #include "Chip.h"
 #include "debug/DebugPayload.h"
@@ -27,14 +26,19 @@ public:
 	{
 		Info(Stream& stream);
 
-		RW_PROP_DEF( std::string, title   );
-		RW_PROP_DEF( std::string, artist  );
-		RW_PROP_DEF( std::string, comment );
-		RW_PROP_DEF( std::string, type    );
+		Property<std::string>  title;
+		Property<std::string>  artist;
+		Property<std::string>  comment;
+		Property<std::string>  type;
+		ReadOnlyProperty<bool> titleKnown;
+		ReadOnlyProperty<bool> artistKnown;
+		ReadOnlyProperty<bool> commentKnown;
 
-		RO_PROP_DEC( bool, titleKnown   );
-		RO_PROP_DEC( bool, artistKnown  );
-		RO_PROP_DEC( bool, commentKnown );
+	private:
+		std::string m_title;
+		std::string m_artist;
+		std::string m_comment;
+		std::string m_type;
 	};
 
 	struct Play : public Delegate
@@ -42,9 +46,9 @@ public:
 		Play(Stream& stream);
 		friend class Stream;
 
-		RO_PROP_DEC( size_t,    framesCount );
-		RO_PROP_IMP( FrameId,   lastFrameId );
-		RW_PROP_DEF( FrameRate, frameRate   );
+		Property<FrameRate>       frameRate;
+		ReadOnlyProperty<size_t>  framesCount;
+		ReadOnlyProperty<FrameId> lastFrameId;
 
 	public:
 		const Frame& GetFrame(FrameId frameId) const;
@@ -53,12 +57,15 @@ public:
 		void GetDuration(int& hh, int& mm, int& ss) const;		
 
 	private:
+		size_t GetFramesCount() const;
 		void Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId);
 
 	private:
-		FrameId m_loopFrameId;
-		size_t  m_loopFramesCount;
-		size_t  m_extraLoops;
+		FrameRate m_frameRate;
+		FrameId   m_lastFrameId;
+		FrameId   m_loopFrameId;
+		size_t    m_loopFramesCount;
+		size_t    m_extraLoops;
 	};
 
 public:
@@ -70,10 +77,15 @@ public:
 	Stream();
 	std::string ToString(Property property) const;
 
-	RO_PROP_DEC( size_t,  framesCount );
-	RO_PROP_DEC( FrameId, lastFrameId );
-	RO_PROP_DEF( FrameId, loopFrameId );
-	RO_PROP_DEC( bool,    hasLoop     );
+	//RO_PROP_DEC( size_t,  framesCount );
+	//RO_PROP_DEC( FrameId, lastFrameId );
+	//RO_PROP_DEF( FrameId, loopFrameId );
+	//RO_PROP_DEC( bool,    hasLoop     );
+
+	ReadOnlyProperty<size_t>  framesCount;
+	ReadOnlyProperty<FrameId> lastFrameId;
+	ReadOnlyProperty<FrameId> loopFrameId;
+	ReadOnlyProperty<bool>    hasLoop;
 	
 public:
 	bool AddFrame(const Frame& frame);
@@ -107,7 +119,8 @@ public:
 	Chip dchip; // destination chip configuration defined by user
 
 private:
-	Frames m_frames;
+	Frames  m_frames;
+	FrameId m_loopFrameId;
 	bool m_isSecondChipUsed;
 	bool m_isExpandedModeUsed[2];
 };

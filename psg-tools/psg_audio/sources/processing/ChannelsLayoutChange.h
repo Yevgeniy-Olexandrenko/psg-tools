@@ -15,10 +15,10 @@ public:
 #ifdef Enable_ChannelsLayoutChange
 	const Frame& Execute(const Frame& frame) override
     {
-        assert(m_chip.outputKnown());
-        assert(m_chip.stereoKnown());
+        assert(m_chip.outputKnown);
+        assert(m_chip.stereoKnown);
 
-        if (m_chip.output() == Chip::Output::Stereo && m_chip.stereo() != Chip::Stereo::ABC)
+        if (m_chip.output == Chip::Output::Stereo && m_chip.stereo != Chip::Stereo::ABC)
         {
             const auto SwapChannels = [&](int chip, int L, int R)
             {
@@ -30,9 +30,9 @@ public:
             };
 
             Update(frame);
-            for (int chip = 0; chip < m_chip.count(); ++chip)
+            for (int chip = 0; chip < m_chip.count; ++chip)
             {
-                switch (m_chip.stereo())
+                switch (m_chip.stereo)
                 {
                 case Chip::Stereo::ACB:
                     SwapChannels(chip, Frame::Channel::B, Frame::Channel::C);

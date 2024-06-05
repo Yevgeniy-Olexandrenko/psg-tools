@@ -35,25 +35,25 @@ bool DecodePT3::Open(Stream& stream)
                 Init();
                 isDetected = true;
 
-                stream.info.title(ReadString(&m_data[0x1E], 32));
-                stream.info.artist(ReadString(&m_data[0x42], 32));
+                stream.info.title = ReadString(&m_data[0x1E], 32);
+                stream.info.artist = ReadString(&m_data[0x42], 32);
                 if (isVT)
-                    stream.info.type(VTSignature + " (PT v3." + std::string(1, '0' + m_version) + ") module");
+                    stream.info.type = VTSignature + " (PT v3." + std::string(1, '0' + m_version) + ") module";
                 else
-                    stream.info.type(ReadString(&m_data[0x00], 14) + " module");
+                    stream.info.type = ReadString(&m_data[0x00], 14) + " module";
 
                 if (m_module[0].m_hdr->tonTableId == 1)
                 {
-                    stream.schip.clock(Chip::Clock::F1773400);
+                    stream.schip.clock = Chip::Clock::F1773400;
                 }
                 else if (m_module[0].m_hdr->tonTableId == 2 && m_version > 3)
                 {
-                    stream.schip.clock(Chip::Clock::F1750000);
+                    stream.schip.clock = Chip::Clock::F1750000;
                 }
 
                 if (m_isTS)
                 {
-                    stream.schip.second.model(stream.schip.first.model());
+                    stream.schip.second.model = stream.schip.first.model;
                 }
             }
             fileStream.close();

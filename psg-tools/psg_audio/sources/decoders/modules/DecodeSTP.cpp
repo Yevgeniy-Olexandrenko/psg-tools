@@ -60,9 +60,9 @@ bool DecodeSTP::Open(Stream& stream)
 
                     if (!memcmp(&m_data[10], KSASignature.data(), KSASignature.size()))
                     {
-                        stream.info.title(ReadString(&m_data[38], 25));
+                        stream.info.title = ReadString(&m_data[38], 25);
                     }
-                    stream.info.type("Sound Tracker Pro module");
+                    stream.info.type = "Sound Tracker Pro module";
                 }
             }
             fileStream.close();

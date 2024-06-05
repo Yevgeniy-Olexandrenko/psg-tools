@@ -78,11 +78,11 @@
     <ClInclude Include="sources\simulation\SimSN76489.h" />
     <ClInclude Include="sources\stream\Chip.h" />
     <ClInclude Include="sources\stream\Frame.h" />
-    <ClInclude Include="sources\stream\Property.h" />
     <ClInclude Include="sources\stream\Register.h" />
     <ClInclude Include="sources\stream\Stream.h" />
     <ClInclude Include="sources\utils\BitStream.h" />
     <ClInclude Include="sources\utils\LZ78.h" />
+    <ClInclude Include="sources\utils\Property.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\debug\DebugStatistics.cpp" />

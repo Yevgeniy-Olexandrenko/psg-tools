@@ -30,25 +30,25 @@ bool DecodeVTX::Open(Stream& stream)
 			
 			if (chipType != Chip::Model::Unknown)
 			{
-				stream.schip.first.model(chipType);
-				stream.schip.clockValue(hdr.chipFreq);
-				stream.play.frameRate(hdr.frameFreq);
+				stream.schip.first.model = chipType;
+				stream.schip.clockValue = hdr.chipFreq;
+				stream.play.frameRate = hdr.frameFreq;
 
 				if (hdr.stereo == Stereo::MONO)
 				{
-					stream.schip.output(Chip::Output::Mono);
+					stream.schip.output = Chip::Output::Mono;
 				}
 				else
 				{
-					stream.schip.output(Chip::Output::Stereo);
+					stream.schip.output = Chip::Output::Stereo;
 					switch (hdr.stereo)
 					{
-					case Stereo::ABC: stream.schip.stereo(Chip::Stereo::ABC); break;
-					case Stereo::ACB: stream.schip.stereo(Chip::Stereo::ACB); break;
-					case Stereo::BAC: stream.schip.stereo(Chip::Stereo::BAC); break;
-					case Stereo::BCA: stream.schip.stereo(Chip::Stereo::BCA); break;
-					case Stereo::CAB: stream.schip.stereo(Chip::Stereo::CAB); break;
-					case Stereo::CBA: stream.schip.stereo(Chip::Stereo::CBA); break;
+					case Stereo::ABC: stream.schip.stereo = Chip::Stereo::ABC; break;
+					case Stereo::ACB: stream.schip.stereo = Chip::Stereo::ACB; break;
+					case Stereo::BAC: stream.schip.stereo = Chip::Stereo::BAC; break;
+					case Stereo::BCA: stream.schip.stereo = Chip::Stereo::BCA; break;
+					case Stereo::CAB: stream.schip.stereo = Chip::Stereo::CAB; break;
+					case Stereo::CBA: stream.schip.stereo = Chip::Stereo::CBA; break;
 					}
 				}
 
@@ -66,10 +66,10 @@ bool DecodeVTX::Open(Stream& stream)
 				std::string tracker = GetTextProperty(fileStream); // store in extras
 				std::string comment = GetTextProperty(fileStream);
 
-				stream.info.title(title);
-				stream.info.artist(author);
-				stream.info.comment(comment);
-				stream.info.type("VTX stream");
+				stream.info.title = title;
+				stream.info.artist = author;
+				stream.info.comment = comment;
+				stream.info.type = "VTX stream";
 
 				// unpack frames data
 				uint32_t packedSize = fileSize - (uint32_t)fileStream.tellg();

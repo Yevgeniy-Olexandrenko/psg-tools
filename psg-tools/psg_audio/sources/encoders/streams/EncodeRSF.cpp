@@ -13,22 +13,22 @@ bool EncodeRSF::Open(const Stream& stream)
         if (m_output)
         {
             size_t dataOffset = 20
-                + stream.info.title().length() + 1
-                + stream.info.artist().length() + 1
-                + stream.info.comment().length() + 1;
+                + ((std::string)stream.info.title).length() + 1
+                + ((std::string)stream.info.artist).length() + 1
+                + ((std::string)stream.info.comment).length() + 1;
 
             Header header;
             header.m_sigAndVer = RSFSignature;
-            header.m_frameRate = stream.play.frameRate();
+            header.m_frameRate = stream.play.frameRate;
             header.m_dataOffset = uint16_t(dataOffset);
-            header.m_frameCount = uint32_t(stream.framesCount());
-            header.m_loopFrame = stream.loopFrameId();
-            header.m_chipFreq = stream.dchip.clockValue();
+            header.m_frameCount = uint32_t(stream.framesCount);
+            header.m_loopFrame = stream.loopFrameId;
+            header.m_chipFreq = stream.dchip.clockValue;
             m_output.write((char*)&header, sizeof(header));
 
-            m_output << stream.info.title() << char(0);
-            m_output << stream.info.artist() << char(0);
-            m_output << stream.info.comment() << char(0);
+            m_output << (std::string)stream.info.title << char(0);
+            m_output << (std::string)stream.info.artist << char(0);
+            m_output << (std::string)stream.info.comment << char(0);
 
             m_skip = 0;
             return true;

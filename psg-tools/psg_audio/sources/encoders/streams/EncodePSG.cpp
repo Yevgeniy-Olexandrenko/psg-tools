@@ -10,7 +10,7 @@ bool EncodePSG::Open(const Stream& stream)
             m_output << "PSG";
             m_output << uint8_t(0x1A);
             m_output << uint8_t(0x0A);
-            m_output << uint8_t(stream.play.frameRate());
+            m_output << uint8_t(stream.play.frameRate);
             m_output << std::string(10, 0x00);
 
             m_skip = 0;

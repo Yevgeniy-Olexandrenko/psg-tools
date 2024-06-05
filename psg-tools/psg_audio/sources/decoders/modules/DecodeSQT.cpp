@@ -70,8 +70,8 @@ bool DecodeSQT::Open(Stream& stream)
                         while (m_data[positionPointer]) positionPointer += 7;
                         m_lastPosition = (positionPointer - m_positionsPointer) / 7;
 
-                        stream.info.type("SQ-Tracker module");
-                        stream.schip.clock(Chip::Clock::F1773400);
+                        stream.info.type = "SQ-Tracker module";
+                        stream.schip.clock = Chip::Clock::F1773400;
                     }
                     else delete[] m_data;
                 }

@@ -14,22 +14,14 @@ namespace
 
 Stream::Info::Info(Stream& stream)
 	: Delegate(stream)
+	, title(m_title)
+	, artist(m_artist)
+	, comment(m_comment)
+	, type(m_type)
+	, titleKnown([this]() { return !m_title.empty(); })
+	, artistKnown([this]() { return !m_artist.empty(); })
+	, commentKnown([this]() { return !m_comment.empty(); })
 {
-}
-
-bool Stream::Info::titleKnown() const
-{
-	return !m_title.empty();
-}
-
-bool Stream::Info::artistKnown() const
-{
-	return !m_artist.empty();
-}
-
-bool Stream::Info::commentKnown() const
-{
-	return !m_comment.empty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,40 +32,38 @@ Stream::Play::Play(Stream& stream)
 	, m_loopFrameId(0)
 	, m_loopFramesCount(0)
 	, m_extraLoops(0)
+	, frameRate(m_frameRate)
+	, framesCount([this]() { return this->GetFramesCount(); })
+	, lastFrameId([this]() { return FrameId(framesCount - 1); })
 {
-}
-
-size_t Stream::Play::framesCount() const
-{
-	if (m_lastFrameId == m_stream.lastFrameId())
-	{
-		return (m_stream.framesCount() + m_loopFramesCount * m_extraLoops);
-	}
-	return size_t(m_lastFrameId + 1);
-}
-
-FrameId Stream::Play::lastFrameId() const
-{
-	return FrameId(framesCount() - 1);
 }
 
 const Frame& Stream::Play::GetFrame(FrameId frameId) const
 {
-	if (frameId >= m_stream.framesCount())
+	if (frameId >= m_stream.framesCount)
 	{
-		frameId = m_loopFrameId + FrameId((frameId - m_stream.framesCount()) % m_loopFramesCount);
+		frameId = m_loopFrameId + FrameId((frameId - m_stream.framesCount) % m_loopFramesCount);
 	}
 	return m_stream.GetFrame(frameId);
 }
 
 void Stream::Play::GetDuration(int& hh, int& mm, int& ss, int& ms) const
 {
-	m_stream.ComputeDuration(framesCount(), hh, mm, ss, ms);
+	m_stream.ComputeDuration(framesCount, hh, mm, ss, ms);
 }
 
 void Stream::Play::GetDuration(int& hh, int& mm, int& ss) const
 {
-	m_stream.ComputeDuration(framesCount(), hh, mm, ss);
+	m_stream.ComputeDuration(framesCount, hh, mm, ss);
+}
+
+size_t Stream::Play::GetFramesCount() const
+{
+	if (m_lastFrameId == m_stream.lastFrameId)
+	{
+		return (m_stream.framesCount + m_loopFramesCount * m_extraLoops);
+	}
+	return size_t(m_lastFrameId + 1);
 }
 
 void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId)
@@ -82,24 +72,24 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
 	m_loopFramesCount = loopFramesCount;
 	m_lastFrameId = lastFrameId;
 
-	if (m_loopFrameId < m_stream.framesCount() / 2)
+	if (m_loopFrameId < m_stream.framesCount / 2)
 	{
 		// playback loop available, compute new duration using maximum extra loops amount
-		auto maxPlaybackFrames = size_t((k_prefDurationMM * 60 + k_prefDurationSS) * frameRate());
-		if (maxPlaybackFrames > m_stream.framesCount())
+		auto maxPlaybackFrames = size_t((k_prefDurationMM * 60 + k_prefDurationSS) * frameRate);
+		if (maxPlaybackFrames > m_stream.framesCount)
 		{
-			m_extraLoops = int((maxPlaybackFrames - m_stream.framesCount()) / m_loopFramesCount);
+			m_extraLoops = int((maxPlaybackFrames - m_stream.framesCount) / m_loopFramesCount);
 			m_extraLoops = std::min(m_extraLoops, size_t(k_maxExtraLoops));
 		}
 	}
 	else
 	{
 		// playback loop not available, cut the silence at the end of the stream
-		for (FrameId frameId = m_stream.lastFrameId(); frameId > 0; --frameId)
+		for (FrameId frameId = m_stream.lastFrameId; frameId > 0; --frameId)
 		{
 			if (m_stream.GetFrame(frameId).IsAudible())
 			{
-				lastFrameId = (frameId + frameRate() * k_maxSilenceSec);
+				lastFrameId = (frameId + frameRate * k_maxSilenceSec);
 				if (lastFrameId < m_lastFrameId) m_lastFrameId = lastFrameId;
 				break;
 			}
@@ -114,6 +104,10 @@ Stream::Stream()
 	, play(*this)
 	, m_isSecondChipUsed(false)
 	, m_isExpandedModeUsed{}
+	, framesCount([this]() { return m_frames.size(); })
+	, lastFrameId([this]() { return FrameId(framesCount - 1); })
+	, loopFrameId(m_loopFrameId)
+	, hasLoop([this]() { return (m_loopFrameId > 0); })
 {
 }
 
@@ -144,28 +138,28 @@ std::string Stream::ToString(Property property) const
 		break;
 
 	case Property::Title:
-		stream << info.title();
+		stream << (std::string)info.title;
 		break;
 
 	case Property::Artist:
-		stream << info.artist();
+		stream << (std::string)info.artist;
 		break;
 
 	case Property::Comment:
-		stream << info.comment();
+		stream << (std::string)info.comment;
 		break;
 
 	case Property::Type:
-		stream << info.type();
+		stream << (std::string)info.type;
 		break;;
 
 	case Property::Chip:
 		return schip.toString();
 
 	case Property::Frames:
-	{	stream << framesCount();
-		if (hasLoop()) stream << " -> " << m_loopFrameId;
-		stream << " @ " << play.frameRate() << " Hz";
+	{	stream << framesCount;
+		if (hasLoop) stream << " -> " << loopFrameId;
+		stream << " @ " << play.frameRate << " Hz";
 	}	break;
 
 	case Property::Duration:
@@ -193,27 +187,12 @@ std::string Stream::ToString(Property property) const
 	return stream.str();
 }
 
-size_t Stream::framesCount() const
-{
-	return m_frames.size();
-}
-
-FrameId Stream::lastFrameId() const
-{
-	return FrameId(framesCount() - 1);
-}
-
-bool Stream::hasLoop() const
-{
-	return (m_loopFrameId > 0);
-}
-
 bool Stream::AddFrame(const Frame& frame)
 {
-	if (framesCount() < 100000)
+	if (framesCount < 100000)
 	{
 		m_frames.push_back(frame);
-		m_frames.back().SetId(lastFrameId());
+		m_frames.back().SetId(lastFrameId);
 
 		m_isSecondChipUsed |= m_frames.back()[1].HasChanges();
 		m_isExpandedModeUsed[0] |= m_frames.back()[0].IsExpMode();
@@ -230,21 +209,21 @@ const Frame& Stream::GetFrame(FrameId frameId) const
 
 void Stream::Finalize(FrameId loopFrameId)
 {
-	m_loopFrameId = (loopFrameId < framesCount() ? loopFrameId : 0);
-	loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount()));
+	m_loopFrameId = (loopFrameId < framesCount ? loopFrameId : 0);
+	loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount));
 
-	play.Prepare(loopFrameId, framesCount() - loopFrameId, lastFrameId());
+	play.Prepare(loopFrameId, framesCount - loopFrameId, lastFrameId);
 	ConfigureDestinationChip();
 }
 
 void Stream::GetDuration(int& hh, int& mm, int& ss, int& ms) const
 {
-	ComputeDuration(framesCount(), hh, mm, ss, ms);
+	ComputeDuration(framesCount, hh, mm, ss, ms);
 }
 
 void Stream::GetDuration(int& hh, int& mm, int& ss) const
 {
-	ComputeDuration(framesCount(), hh, mm, ss);
+	ComputeDuration(framesCount, hh, mm, ss);
 }
 
 bool Stream::IsSecondChipUsed() const
@@ -264,7 +243,7 @@ bool Stream::IsExpandedModeUsed(int chip) const
 
 void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const
 {
-	auto duration = (frameCount * 1000) / play.frameRate();
+	auto duration = (frameCount * 1000) / play.frameRate;
 	ms = int(duration % 1000); duration /= 1000;
 	ss = int(duration % 60);   duration /= 60;
 	mm = int(duration % 60);   duration /= 60;
@@ -273,7 +252,7 @@ void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& 
 
 void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
 {
-	auto duration = (((frameCount * 1000) / play.frameRate()) + 500) / 1000;
+	auto duration = (((frameCount * 1000) / play.frameRate) + 500) / 1000;
 	ss = int(duration % 60); duration /= 60;
 	mm = int(duration % 60); duration /= 60;
 	hh = int(duration);
@@ -299,8 +278,8 @@ void Stream::print_payload(std::ostream& stream) const
 {
 	if (stream)
 	{
-		int loop = (hasLoop() ? loopFrameId() : -1);
-		for (FrameId frameId = 0; frameId < framesCount(); ++frameId)
+		int loop = (hasLoop ? loopFrameId : -1);
+		for (FrameId frameId = 0; frameId < framesCount; ++frameId)
 		{
 			const Frame& frame = GetFrame(frameId);
 			if (int(frameId) == loop)
@@ -311,7 +290,7 @@ void Stream::print_payload(std::ostream& stream) const
 			frame.print_footer(stream);
 			stream << std::endl;
 
-			if ((frameId + 1) % play.frameRate() == 0) stream << std::endl;
+			if ((frameId + 1) % play.frameRate == 0) stream << std::endl;
 		}
 	}
 }
@@ -328,54 +307,54 @@ void Stream::print_footer(std::ostream& stream) const
 void Stream::ConfigureDestinationChip()
 {
 	// configure model of the 1st destination chip
-	if (dchip.first.model() == Chip::Model::Compatible)
+	if (dchip.first.model == Chip::Model::Compatible)
 	{
-		switch (schip.first.model())
+		switch (schip.first.model)
 		{
 		case Chip::Model::AY8930:
 		case Chip::Model::YM2149:
-			dchip.first.model(schip.first.model());
+			dchip.first.model = schip.first.model;
 			break;
 		default:
-			dchip.first.model(Chip::Model::AY8910);
+			dchip.first.model = Chip::Model::AY8910;
 			break;
 		}
 	}
 
 	// configure model of the 2nd destination chip
-	if (schip.second.modelKnown())
+	if (schip.second.modelKnown)
 	{
-		if (!dchip.second.modelKnown() || dchip.second.model() == Chip::Model::Compatible)
+		if (!dchip.second.modelKnown || dchip.second.model == Chip::Model::Compatible)
 		{
-			switch (schip.second.model())
+			switch (schip.second.model)
 			{
 			case Chip::Model::AY8910:
 			case Chip::Model::AY8930:
 			case Chip::Model::YM2149:
-				dchip.second.model(schip.second.model());
+				dchip.second.model = schip.second.model;
 				break;
 			default:
-				dchip.second.model(dchip.first.model());
+				dchip.second.model = dchip.first.model;
 				break;
 			}
 		}
 	}
 	else
 	{
-		dchip.second.model(Chip::Model::Unknown);
+		dchip.second.model = Chip::Model::Unknown;
 	}
 
 	// configure clock rate, output type and stereo type of destination chip
-	if (!dchip.clockKnown ()) dchip.clock (schip.clockKnown () ? schip.clock () : Chip::Clock::F1750000);
-	if (!dchip.outputKnown()) dchip.output(schip.outputKnown() ? schip.output() : Chip::Output::Stereo);
-	if (!dchip.stereoKnown()) dchip.stereo(schip.stereoKnown() ? schip.stereo() : Chip::Stereo::ABC);
+	if (!dchip.clockKnown ) dchip.clock  = (schip.clockKnown  ? schip.clock  : Chip::Clock::F1750000);
+	if (!dchip.outputKnown) dchip.output = (schip.outputKnown ? schip.output : Chip::Output::Stereo);
+	if (!dchip.stereoKnown) dchip.stereo = (schip.stereoKnown ? schip.stereo : Chip::Stereo::ABC);
 
 	// restrict stereo modes available for exp mode
-	if (IsExpandedModeUsed() && dchip.output() == Chip::Output::Stereo)
+	if (IsExpandedModeUsed() && dchip.output == Chip::Output::Stereo)
 	{
-		if (dchip.stereo() != Chip::Stereo::ABC && dchip.stereo() != Chip::Stereo::ACB)
+		if (dchip.stereo != Chip::Stereo::ABC && dchip.stereo != Chip::Stereo::ACB)
 		{
-			dchip.stereo(Chip::Stereo::ABC);
+			dchip.stereo = Chip::Stereo::ABC;
 		}
 	}
 }

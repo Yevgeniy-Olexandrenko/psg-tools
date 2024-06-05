@@ -38,9 +38,9 @@ bool DecodePSC::Open(Stream& stream)
                     isDetected = true;
 
                     std::string ver("1.00"); ver[3] += m_version;
-                    stream.info.title(ReadString(&m_data[0x19], 20));
-                    stream.info.artist(ReadString(&m_data[0x31], 20));
-                    stream.info.type("Pro Sound Creator v" + ver + " module");
+                    stream.info.title = ReadString(&m_data[0x19], 20);
+                    stream.info.artist = ReadString(&m_data[0x31], 20);
+                    stream.info.type = "Pro Sound Creator v" + ver + " module";
                 }
             }
             fileStream.close();

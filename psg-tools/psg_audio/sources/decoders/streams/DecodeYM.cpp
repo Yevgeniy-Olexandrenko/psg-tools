@@ -58,12 +58,12 @@ bool DecodeYM::Open(Stream& stream)
                             std::string author(p); p += author.size() + 1;
                             std::string comment(p); p += comment.size() + 1;
 
-                            stream.schip.clockValue(GetU32(ym5->chipFreq));
-                            stream.play.frameRate(GetU16(ym5->playFreq));
-                            stream.info.title(title);
-                            stream.info.artist(author);
-                            stream.info.comment(comment);
-                            stream.info.type(id.substr(0, 3) + " stream");
+                            stream.schip.clockValue = GetU32(ym5->chipFreq);
+                            stream.play.frameRate = GetU16(ym5->playFreq);
+                            stream.info.title = title;
+                            stream.info.artist = author;
+                            stream.info.comment = comment;
+                            stream.info.type = id.substr(0, 3) + " stream";
 
                             m_offset = ((uint8_t*)p - m_data);
                             m_frames = GetU32(ym5->numOfFrames);
@@ -76,8 +76,8 @@ bool DecodeYM::Open(Stream& stream)
 
                         else if (id == "YM2!" || id == "YM3!" || id == "YM3b")
                         {
-                            stream.play.frameRate(50); // already set to 50 in stream by default
-                            stream.info.type(id.substr(0, 3) + " stream");
+                            stream.play.frameRate = 50; // already set to 50 in stream by default
+                            stream.info.type = id.substr(0, 3) + " stream";
 
                             m_offset = id.size();
                             m_frames = (depackedSize - id.size()) / 14;

@@ -73,9 +73,9 @@ bool DecodeSTC::Open(Stream& stream)
                                     length++;
                             }
                         }
-                        stream.info.comment(ReadString(header.identifier, length));
+                        stream.info.comment = ReadString(header.identifier, length);
                     }
-                    stream.info.type("Sound Tracker module");
+                    stream.info.type = "Sound Tracker module";
                 }
             }
             fileStream.close();

@@ -35,12 +35,12 @@ bool Output::Init(const Stream& stream)
         if (m_alive)
         {
             // check if the destination chip setup is correct
-            m_alive &= m_dchip.clockKnown();
-            m_alive &= m_dchip.outputKnown();
-            if (m_dchip.count() == 2) 
-                m_alive &= m_dchip.second.modelKnown();
-            if (m_dchip.output() == Chip::Output::Stereo)
-                m_alive &= m_dchip.stereoKnown();
+            m_alive &= m_dchip.clockKnown;
+            m_alive &= m_dchip.outputKnown;
+            if (m_dchip.count == 2) 
+                m_alive &= m_dchip.second.modelKnown;
+            if (m_dchip.output == Chip::Output::Stereo)
+                m_alive &= m_dchip.stereoKnown;
             assert(m_alive);
 
             if (m_alive)
@@ -66,7 +66,7 @@ bool Output::Write(const Frame& frame)
 
         // output to chip(s)
         Data data(32);
-        for (int chip = 0; chip < m_dchip.count(); ++chip)
+        for (int chip = 0; chip < m_dchip.count; ++chip)
         {
             data.clear();
             bool switchBanks = false;
@@ -128,16 +128,16 @@ void Output::GetLevels(float& L, float& C, float& R) const
     float b = ComputeChannelLevel(0, Frame::Channel::B);
     float c = ComputeChannelLevel(0, Frame::Channel::C);
 
-    if (m_dchip.count() == 2)
+    if (m_dchip.count == 2)
     {
         a = (0.5f * (a + ComputeChannelLevel(1, Frame::Channel::A)));
         b = (0.5f * (b + ComputeChannelLevel(1, Frame::Channel::B)));
         c = (0.5f * (c + ComputeChannelLevel(1, Frame::Channel::C)));
     }
 
-    if (m_dchip.output() == Chip::Output::Stereo)
+    if (m_dchip.output == Chip::Output::Stereo)
     {
-        switch (m_dchip.stereo())
+        switch (m_dchip.stereo)
         {
         case Chip::Stereo::ABC: L = a; C = b; R = c; break;
         case Chip::Stereo::ACB: L = a; C = c; R = b; break;
@@ -158,7 +158,7 @@ void Output::GetLevels(float& L, float& R) const
     float l, c, r;
     GetLevels(l, c, r);
 
-    if (m_dchip.output() == Chip::Output::Stereo)
+    if (m_dchip.output == Chip::Output::Stereo)
     {
         L = ((l + 0.5f * c) / 1.5f);
         R = ((r + 0.5f * c) / 1.5f);

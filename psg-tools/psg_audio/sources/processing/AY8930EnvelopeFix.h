@@ -15,7 +15,7 @@ public:
 	const Frame& Execute(const Frame& frame) override
     {
         Update(frame);
-        for (int chip = 0; chip <  m_chip.count(); ++chip)
+        for (int chip = 0; chip <  m_chip.count; ++chip)
         {
             if (m_chip.model(chip) == Chip::Model::AY8930)
             {

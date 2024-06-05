@@ -40,15 +40,15 @@ bool DecodeASC::Open(Stream& stream)
                         auto artistId = (titleId + 19 + 20);
                         if (!memcmp(artistId, " BY ", 4))
                         {
-                            stream.info.title(ReadString(titleId + 19, 20));
-                            stream.info.artist(ReadString(artistId + 4, 20));
+                            stream.info.title = ReadString(titleId + 19, 20);
+                            stream.info.artist = ReadString(artistId + 4, 20);
                         }
                         else
                         {
-                            stream.info.title(ReadString(titleId + 19, 20 + 4 + 20));
+                            stream.info.title = ReadString(titleId + 19, 20 + 4 + 20);
                         }
                     }
-                    stream.info.type("ASC Sound Master module");
+                    stream.info.type = "ASC Sound Master module";
                 }
             }
         }

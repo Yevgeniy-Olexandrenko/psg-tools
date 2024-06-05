@@ -50,12 +50,12 @@ bool Streamer::DeviceOpen()
 
 bool Streamer::DeviceInit(const Stream& stream, Chip& dchip)
 {
-	dchip.second.model(Chip::Model::Unknown);
-	dchip.clock(Chip::Clock::F1773400);
-	if (!dchip.outputKnown() || dchip.output() == Chip::Output::Mono)
+	dchip.second.model = Chip::Model::Unknown;
+	dchip.clock = Chip::Clock::F1773400;
+	if (!dchip.outputKnown || dchip.output == Chip::Output::Mono)
 	{
-		dchip.output(Chip::Output::Stereo);
-		dchip.stereo(Chip::Stereo::ABC);
+		dchip.output = Chip::Output::Stereo;
+		dchip.stereo = Chip::Stereo::ABC;
 	}
 	return true;
 }

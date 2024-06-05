@@ -230,7 +230,7 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
         }
         else
         {
-            float rewindStep = 0.4f * stream.play.frameRate();
+            float rewindStep = 0.4f * stream.play.frameRate;
             if (m_step < 1.f) rewindStep = 1.f;
 
             if (gui::GetKeyState(VK_LEFT).held)

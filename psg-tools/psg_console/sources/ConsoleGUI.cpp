@@ -581,7 +581,7 @@ namespace gui
         for (int i = int(frameId - range1), y = 1; i <= int(frameId + range2); ++i, ++y)
         {
             bool highlight = (i == frameId);
-            bool useFakeFrame = (i < 0 || i >= int(stream.play.framesCount()));
+            bool useFakeFrame = (i < 0 || i >= int(stream.play.framesCount));
             const Frame& frame = useFakeFrame ? fakeFrame : stream.play.GetFrame(i);
 
             // print frame number
@@ -682,7 +682,7 @@ namespace gui
 	size_t PrintPlaybackProgress(const Stream& stream, int frameId)
 	{
         int hh, mm, ss, ms;
-        size_t playbackFrames  = stream.play.framesCount();
+        size_t playbackFrames  = stream.play.framesCount;
         size_t remainingFrames = (playbackFrames - frameId);
         stream.ComputeDuration(remainingFrames, hh, mm, ss, ms);
 
@@ -695,7 +695,7 @@ namespace gui
 
     size_t PrintEncodingProgress(const Stream& stream, int frameId)
     {
-        auto frames = stream.framesCount();
+        size_t frames = stream.framesCount;
         return PrintProgress(frameId, frames, frameId / 256, "Encoding");
     }
 }

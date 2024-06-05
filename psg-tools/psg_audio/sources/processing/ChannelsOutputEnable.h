@@ -11,7 +11,7 @@ class ChannelsOutputEnable : public FrameProcessor
 public:
     ChannelsOutputEnable(const Chip& dstChip)
         : m_enables{ true, true, true, true, true }
-        , m_count(dstChip.count())
+        , m_count(dstChip.count)
 
     {}
 

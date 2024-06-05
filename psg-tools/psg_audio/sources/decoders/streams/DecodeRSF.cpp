@@ -21,13 +21,13 @@ bool DecodeRSF::Open(Stream& stream)
 
             if (m_input.tellg() == header.m_dataOffset)
             {
-                stream.info.type("RSF stream");
-                stream.info.title(title);
-                stream.info.artist(author);
-                stream.info.comment(comment);
+                stream.info.type = "RSF stream";
+                stream.info.title = title;
+                stream.info.artist = author;
+                stream.info.comment = comment;
 
-                stream.play.frameRate(header.m_frameRate);
-                stream.schip.clockValue(header.m_chipFreq);
+                stream.play.frameRate = header.m_frameRate;
+                stream.schip.clockValue = header.m_chipFreq;
                 m_loop = header.m_loopFrame;
 
                 m_skip = 0;

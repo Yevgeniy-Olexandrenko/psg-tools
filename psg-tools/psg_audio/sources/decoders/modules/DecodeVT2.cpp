@@ -257,15 +257,15 @@ bool DecodeVT2::Open(Stream& stream)
 					isDetected = true;
 
 					VT2::Module& module = m_vt2.modules[0];
-					stream.info.title(module.title);
-					stream.info.artist(module.author);
+					stream.info.title = module.title;
+					stream.info.artist = module.author;
 					if (module.chipFreq)
-						stream.schip.clockValue(module.chipFreq);
+						stream.schip.clockValue = module.chipFreq;
 					if (m_isTS)
-						stream.schip.second.model(stream.schip.first.model());
+						stream.schip.second.model = stream.schip.first.model;
 					if (module.intFreq)
-						stream.play.frameRate((module.intFreq + 500) / 1000);
-					stream.info.type("Vortex Tracker II (PT v" + module.version + ") module");
+						stream.play.frameRate = (module.intFreq + 500) / 1000;
+					stream.info.type = "Vortex Tracker II (PT v" + module.version + ") module";
 				}
 			}
 			fileStream.close();

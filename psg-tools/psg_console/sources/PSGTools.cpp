@@ -135,33 +135,33 @@ int main(int argc, char* argv[])
         auto values = optional.value();
         if (auto fmodel = magic_enum::enum_cast<Chip::Model>(values[0]))
         {
-            chip.first.model(fmodel.value());
+            chip.first.model = fmodel.value();
         }
         if (values.size() > 1)
         {
             if (auto smodel = magic_enum::enum_cast<Chip::Model>(values[1]))
             {
-                chip.second.model(smodel.value());
+                chip.second.model = smodel.value();
             }
         }
     }
     if (auto optional = program.present<float>("chip-clock"))
     {
         auto clockRate = int(1e6f * optional.value());
-        chip.clockValue(clockRate);
+        chip.clockValue = clockRate;
     }
     if (auto optional = program.present<std::vector<std::string>>("chip-output"))
     {
         auto values = optional.value();
         if (auto output = magic_enum::enum_cast<Chip::Output>(values[0]))
         {
-            chip.output(output.value());
+            chip.output = output.value();
         }
         if (values.size() > 1)
         {
             if (auto stereo = magic_enum::enum_cast<Chip::Stereo>(values[1]))
             {
-                chip.stereo(stereo.value());
+                chip.stereo = stereo.value();
             }
         }
     }

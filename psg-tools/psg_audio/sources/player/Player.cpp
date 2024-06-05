@@ -64,7 +64,7 @@ bool Player::Init(const Stream& stream)
 	Step(1.f);
 
 	m_playing = false;
-	if (stream.framesCount() > 0 && m_output.Init(stream))
+	if (stream.framesCount > 0 && m_output.Init(stream))
 	{
 		m_stream  = &stream;
 		m_playing = true;
@@ -121,7 +121,7 @@ void Player::Playback()
 
 	auto firstFrame  = true;
 	auto frameNextTS = GetTime();
-	auto framePeriod = 1.0 / m_stream->play.frameRate();
+	auto framePeriod = 1.0 / m_stream->play.frameRate;
 
 	bool playing = m_playing;
 	while (playing && !m_paused)
@@ -145,9 +145,9 @@ void Player::Playback()
 
 		// go to next frame
 		m_frameId = (m_frameId + m_step);
-		if (m_frameId > m_stream->play.lastFrameId())
+		if (m_frameId > m_stream->play.lastFrameId)
 		{
-			m_frameId = float(m_stream->play.lastFrameId());
+			m_frameId = float(m_stream->play.lastFrameId);
 			playing = false;
 		}
 		else if (m_frameId < 0)

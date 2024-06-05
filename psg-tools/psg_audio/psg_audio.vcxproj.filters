@@ -162,9 +162,6 @@
     <ClInclude Include="sources\processing\ProcessingChain.h">
       <Filter>Sources\processing</Filter>
     </ClInclude>
-    <ClInclude Include="sources\stream\Property.h">
-      <Filter>Sources\stream</Filter>
-    </ClInclude>
     <ClInclude Include="sources\player\Output.h">
       <Filter>Sources\player</Filter>
     </ClInclude>
@@ -248,6 +245,9 @@
     </ClInclude>
     <ClInclude Include="sources\stream\Register.h">
       <Filter>Sources\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\utils\Property.h">
+      <Filter>Sources\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

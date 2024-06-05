@@ -75,7 +75,7 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 					if (!stream.AddFrame(frame)) break;
 					frame.ResetChanges();
 
-					FrameId frameId(stream.lastFrameId());
+					FrameId frameId(stream.lastFrameId);
 					OnFrameDecoded(stream, frameId);
 
 					if (IsAbortRequested())
@@ -124,7 +124,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 		if (encoder->Open(stream))
 		{
 			Frame dframe;
-			for (size_t i = 0; i < stream.framesCount(); ++i)
+			for (size_t i = 0; i < stream.framesCount; ++i)
 			{
 				auto frameId = FrameId(i);
 				const Frame& sframe = stream.GetFrame(frameId);
