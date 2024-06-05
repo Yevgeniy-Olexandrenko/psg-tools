@@ -66,15 +66,15 @@ bool Chip::hasExpMode(int index) const
 std::string Chip::toString() const
 {
     const auto OutputModel = [](std::ostream& stream, Model type)
+    {
+        switch (type)
         {
-            switch (type)
-            {
-            case Model::AY8910:	    stream << "AY-3-8910";        break;
-            case Model::YM2149:     stream << "YM2149F";          break;
-            case Model::AY8930:     stream << "AY8930";           break;
-            case Model::Compatible: stream << "AY/YM Compatible"; break;
-            }
-        };
+        case Model::AY8910:     stream << "AY-3-8910";        break;
+        case Model::YM2149:     stream << "YM2149F";          break;
+        case Model::AY8930:     stream << "AY8930";           break;
+        case Model::Compatible: stream << "AY/YM Compatible"; break;
+        }
+    };
 
     std::stringstream stream;
     if (count == 2)

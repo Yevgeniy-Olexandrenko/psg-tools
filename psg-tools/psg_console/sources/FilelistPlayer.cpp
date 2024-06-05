@@ -348,4 +348,3 @@ void FilelistPlayer::OnFramePlaying(const Stream& stream, FrameId frameId)
     m_dHeight += gui::PrintStreamFrames(stream, frameId, m_output);
     m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
 }
-
