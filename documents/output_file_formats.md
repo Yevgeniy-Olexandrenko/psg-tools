@@ -1,40 +1,40 @@
 # Register data stream formats
 
-## AYM
+### AYM
 
 Description
 
-## PSG with extensions
+### PSG with extensions
 
 Description
 
-## RSF
+### RSF
 
 Description
 
-## VGM and VGZ
+### VGM and VGZ
 
 Description
 
-## VTX
+### VTX
 
 Description
 
-## YM
+### YM
 
 Description
 
-## Output file formats comparision
+### Output file formats comparision
 
 Feature|AYM|PSG|RSF|VGM|VGZ|VTX|YM
 -|-|-|-|-|-|-|-
-TurboSound (two chips) support|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-AY8930 Expanded mode support|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Compression ratio relative to PSG|1.0|1.0|1.0|1.0|1.0|1.0|1.0
-Lightweight for unpacking|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Title and artist info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Destination chip type info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Destination chip clock info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Destination chip output config info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Playback frame rate info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Playback loop frame info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
+TurboSound (two chips) support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+AY8930 Expanded mode support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+Compression ratio relative to PSG|1.0|1.0|1.0|?.?|?.?|?.?|?.?
+Lightweight for unpacking|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
+Title and artist info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+Destination chip type info|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:
+Destination chip clock info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+Destination chip output config info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:heavy_check_mark:|:x:
+Playback frame rate info|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+Playback loop frame info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
