@@ -28,13 +28,24 @@ Description
 
 Feature|AYM|PSG|RSF|VGM|VGZ|VTX|YM
 -|-|-|-|-|-|-|-
-TurboSound (two chips) support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
-AY8930 Expanded mode support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
-Compression ratio relative to PSG|1.0|1.0|1.0|?.?|?.?|?.?|?.?
-Lightweight for unpacking|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
+Streamable in real time|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+Several compression profiles|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
+Lightweight for decompressing|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
+Compression ratio relative to PSG|2.92|1.54|1.00|?.??|?.??|?.??|?.??
 Title and artist info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
 Destination chip type info|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:
 Destination chip clock info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
 Destination chip output config info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:heavy_check_mark:|:x:
+TurboSound (two chips) support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+AY8930 Expanded mode support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
 Playback frame rate info|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
 Playback loop frame info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+Playback duration profile|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
+
+# Special formats
+
+# Register data stream formats
+
+### WAV
+
+Description
