@@ -36,13 +36,13 @@ First check for 2 special values:
 0xFE, XX – number of interrupts XX without changing of registers (skip sending XX times)
 ```
 
-Register `R00`-`R0D` values (`uint8`) that changed from previous interrupt:
+Register R00 - R0D values that changed from previous interrupt:
 
 ```
 XX1, XX2, R00, R05, R07 - sequence of values depending on the mask XX1, XX2
 ```
 
-Register mask (`2 x uint8`):
+Register mask:
 
 ```
 XX1 – HI value of register mask (bit7 - R07, bit0 - R00)
