@@ -30,7 +30,7 @@ Feature|AYM|PSG|RSF|VGM|VGZ|VTX|YM
 -|-|-|-|-|-|-|-
 Streamable in real time|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
 Several compression profiles|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Lightweight for decompressing|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
+Lightweight for decompression|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
 Compression ratio relative to PSG|2.92|1.00|1.54|?.??|?.??|?.??|?.??
 Title and artist info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
 Destination chip type info|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:
