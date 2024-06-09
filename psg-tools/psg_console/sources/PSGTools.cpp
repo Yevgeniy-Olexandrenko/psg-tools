@@ -1,4 +1,7 @@
-﻿#include "argparse/argparse.hpp"
+﻿#include <fstream>
+#include <filesystem>
+
+#include "argparse/argparse.hpp"
 #include "magic_enum/magic_enum.hpp"
 
 #include "FilelistPlayer.h"
@@ -126,7 +129,13 @@ int main(int argc, char* argv[])
     bool isRandomShuffle = program.get<bool>("shuffle");
 
     // parse list of favorites files
-    Filelist favorites(FileDecoder::FileTypes, program.get("favorites"));
+    auto path = program.get("favorites");
+    if (!std::filesystem::exists(path))
+    {
+        std::ofstream file(path);
+        file.close();
+    }
+    Filelist favorites(FileDecoder::FileTypes, path);
 
     // setup destination chip config
     Chip chip;
