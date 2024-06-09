@@ -44,8 +44,6 @@ Playback duration profile|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
 
 # Special formats
 
-# Register data stream formats
-
 ### WAV
 
 Description
