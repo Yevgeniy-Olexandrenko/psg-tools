@@ -10,23 +10,22 @@ Description
 
 ## :loud_sound:RSF
 
-RSF (Registers Stream Flow) format is smaller than PSG, contains basic text information about file and much easy to stream it using low-power devices such as microcontrollers. This format also has a better data compression ratio than PSG.
-<br/>
+RSF (Registers Stream Flow) format contains basic information about song and sound chip, the stream of registers data. It's much easy to stream using low-power devices such as microcontrollers. This format also has a better data compression ratio than PSG.
 
 #### _HEADER:_
 
-Offset|Size|Type|Purpose
--|-|-|- 
+Offset|Size|Type|Description
+:-:|:-:|:-:|- 
 00|3|text|Signature "RSF"
 03|1|uint8|Version (current is 3) 
 04|2|uint16|Frame rate (interrupt frequency) usually 50(Hz) 
 06|2|uint16|Offset to registers data 
-08|4|uint32|`frameCount` (total frames of the song) 
-12|4|uint32|`loopFrame` (frame for loop) 
-16|4|uint32|`chipFrequency` (frequency of AY) 
-20|X|text, 0|String containing 'Title' 
-XX|X|text, 0|String containing 'Author' 
-XX|X|text, 0|String containing 'Comment'
+08|4|uint32|Total frames of the song 
+12|4|uint32|Frame for loop 
+16|4|uint32|Clock frequency of AY chip 
+20|X|text, 0|Title of the song 
+XX|X|text, 0|Author of the song 
+XX|X|text, 0|Сommentary for the song
 
 #### _REGISTERS DATA:_
 
@@ -34,20 +33,20 @@ First check for 2 special values:
 
 ```
 ​​0xFF – interrupt, dont send registers to the chip (just skip sending one time)
-0xFE, XX – number of interrupts XX without changing of registers (just skip sending XX times)
+0xFE, XX – number of interrupts XX without changing of registers (skip sending XX times)
 ```
 
-Register `R00`-`R0D` values (uint8) that changed from previous interrupt:
+Register `R00`-`R0D` values (`uint8`) that changed from previous interrupt:
 
 ```
-XX1, XX2, R00, R05, R07, R0B - sequence of register data depending on the register mask XX1, XX2
+XX1, XX2, R00, R05, R07 - sequence of values depending on the mask XX1, XX2
 ```
 
-Register mask:
+Register mask (`2 x uint8`):
 
 ```
-XX1 – HI value (uint8) of register mask (bit7 - R07, bit0 - R00)
-XX2 – LO value (uint8) of register mask (bit5 - R0D, bit0 - R08, bit7,6 - UNUSED)
+XX1 – HI value of register mask (bit7 - R07, bit0 - R00)
+XX2 – LO value of register mask (bit5 - R0D, bit0 - R08, bit7,6 - UNUSED)
 ```
 
 If register mask bit contains 1, register value should follow the register mask. Example:
