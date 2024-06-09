@@ -1,46 +1,46 @@
 # Register data stream formats
 
-### AYM
+### :loud_sound:AYM
 
 Description
 
-### PSG with extensions
+### :loud_sound:PSG with extensions
 
 Description
 
-### RSF
+### :loud_sound:RSF
 
 Description
 
-### VGM and VGZ
+### :loud_sound:VGM and :loud_sound:VGZ
 
 Description
 
-### VTX
+### :loud_sound:VTX
 
 Description
 
-### YM
+### :loud_sound:YM
 
 Description
 
 ### Output file formats comparision
 
-Feature|AYM|PSG|RSF|VGM|VGZ|VTX|YM
--|-|-|-|-|-|-|-
-Streamable in real time|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
-Several compression profiles|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
-Lightweight for decompression|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
-Compression ratio relative to PSG|2.78|1.00|1.51|?.??|?.??|?.??|?.??
-Title and artist info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
-Destination chip type info|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:
-Destination chip clock info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
-Destination chip output config info|:heavy_check_mark:|:x:|:x:|:x:|:x:|:heavy_check_mark:|:x:
-TurboSound (two chips) support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
-AY8930 Expanded mode support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
-Playback frame rate info|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
-Playback loop frame info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
-Playback duration profile|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
+:pencil:Features|:loud_sound:AYM|:loud_sound:PSG|:loud_sound:RSF|:loud_sound:VGM|:loud_sound:VGZ|:loud_sound:VTX|:loud_sound:YM
+-|:-:|:-:|:-:|:-:|:-:|:-:|:-:
+:bulb: Streamable in real time|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+:bulb: TurboSound (two chips) support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+:bulb: AY8930 Expanded mode support|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:
+:gift: Several compression profiles|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
+:gift: Lightweight for decompression|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|:x:|:x:
+:gift: Compression ratio relative to PSG|2.78|1.00|1.51|?.??|?.??|?.??|?.??
+:information_source: Title and artist info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+:information_source: Destination chip type info|:heavy_check_mark:|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:
+:information_source: Destination chip clock info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+:information_source: Destination chip output config|:heavy_check_mark:|:x:|:x:|:x:|:x:|:heavy_check_mark:|:x:
+:musical_note: Playback frame rate info|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+:musical_note: Playback loop frame info|:heavy_check_mark:|:x:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:
+:musical_note: Playback duration profile|:heavy_check_mark:|:x:|:x:|:x:|:x:|:x:|:x:
 
 # Special formats
 
