@@ -10,8 +10,7 @@ public:
 
     template<size_t width, typename T> BitOutputStream& Write(T value)
     {
-        static_assert(width > 0 && width <= 8 * sizeof(uint32_t) && sizeof(T) <= sizeof(uint32_t));
-        return Write(value, width);
+        return Write(uint32_t(value), width);
     }
 
     BitOutputStream& Write(uint32_t value, size_t width = 8);
