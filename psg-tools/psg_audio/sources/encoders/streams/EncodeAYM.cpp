@@ -2,7 +2,7 @@
 #include "debug/DebugOutput.h"
 
 static DebugOutput<DBG_ENCODE_AYM> dbg;
-static void DebugPrint(const char* data, size_t size)
+static void dbg_print_chunk(const char* data, size_t size)
 {
     for (size_t i = 0; i < size; ++i)
     {
@@ -17,7 +17,7 @@ static void DebugPrint(const char* data, size_t size)
     dbg.print_endline();
 }
 
-uint8_t EncodeAYM::m_profile{ uint8_t(Profile::High) };
+uint8_t EncodeAYM::s_profile{ uint8_t(Profile::High) };
 enum { TAG_CMD = 0x00, CMD_SKIP = 0, CMD_CREF = 1, CMD_RESERVED_2 =  2, CMD_RESERVED_3 = 3 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ EncodeAYM::Delta::Delta(uint16_t from, uint16_t to)
 
 int EncodeAYM::DeltaCache::FindRecord(const Delta& delta)
 {
-    if (m_profile & DELTA_CACHE)
+    if (s_profile & DELTA_CACHE)
     {
         if (delta.bits > 4)
         {
@@ -63,7 +63,7 @@ const EncodeAYM::Chunk::Data EncodeAYM::Chunk::GetData()
 
 int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 {
-    if (m_profile & CHUNK_CACHE)
+    if (s_profile & CHUNK_CACHE)
     {
         if (chunkData.size() > 2)
         {
@@ -84,12 +84,14 @@ int EncodeAYM::ChunkCache::FindRecord(const Chunk::Data& chunkData)
 
 EncodeAYM::EncodeAYM()
     : m_stream(m_output)
+    , m_chips(1)
+    , m_skip(0)
 {
 }
 
 void EncodeAYM::Configure(Profile profile)
 {
-    m_profile = uint8_t(profile);
+    s_profile = uint8_t(profile);
 }
 
 bool EncodeAYM::Open(const Stream& stream)
@@ -99,10 +101,34 @@ bool EncodeAYM::Open(const Stream& stream)
         m_output.open(stream.file, std::fstream::binary);
         if (m_output)
         {
-            m_isTS = stream.IsSecondChipUsed();
-            m_output << "AYYM";
+            if (stream.IsSecondChipUsed()) m_chips = 2;
+            uint8_t stereo = uint8_t(Chip::Stereo(stream.dchip.stereo));
+            uint8_t output = (stream.dchip.output == Chip::Output::Mono ? 0 : stereo);
 
-            // TODO
+            // write basic info header
+            Header header;
+            header.formatSig  = 0x4D595941;
+            header.formatVer  = 1;
+            header.encProfile = s_profile;
+            header.chipCount  = m_chips;
+            header.chipFreq   = uint32_t(stream.dchip.clockValue);
+            header.chipOutput = output;
+            header.frameRate  = uint16_t(stream.play.frameRate);
+            header.frameCount = uint32_t(stream.framesCount);
+            header.frameLoop  = uint32_t(stream.loopFrameId);
+            m_output.write((char*)&header, sizeof(header));
+
+            // write chip(s) model info
+            m_output << uint8_t(Chip::Model(stream.dchip.first.model));
+            if (m_chips > 1) m_output << uint8_t(Chip::Model(stream.dchip.second.model));
+
+            // write media info
+            auto title = std::string(stream.info.title);
+            auto artist = std::string(stream.info.artist);
+            auto comment = std::string(stream.info.comment);
+            m_output << uint8_t(title.size()) << title;
+            m_output << uint8_t(artist.size()) << artist;
+            m_output << uint8_t(comment.size()) << comment;
 
             dbg.open("encode_aym_" + stream.ToString(Stream::Property::Tag));
             return true;
@@ -158,46 +184,85 @@ void EncodeAYM::WriteDelta(const Delta& delta, BitOutputStream& stream)
 
 void EncodeAYM::WriteRegisters(const Frame& frame, int chip, BitOutputStream& stream)
 {
-    const auto WriteRDelta = [&](Register r)
-        {
+    const auto CheckRChanged = [&](Register r, uint8_t& flags, uint8_t bit)
+    {
+        if (frame[chip].IsChanged(r)) flags |= (1 << bit);
+    };
+
+    const auto CheckPChanged = [&](Register::Period p, uint8_t& flags, uint8_t bit)
+    {
+        if (frame[chip].IsChanged(p)) flags |= (1 << bit);
+    };
+
+    const auto WriteRDelta = [&](const uint8_t& flags, uint8_t bit, Register r)
+    {
+        if (flags & (1 << bit)) 
             WriteDelta({ m_frame[chip].Read(r), frame[chip].Read(r) }, stream);
-        };
+    };
 
-    const auto WritePDelta = [&](Register::Period p)
-        {
+    const auto WritePDelta = [&](const uint8_t& flags, uint8_t bit, Register::Period p)
+    {
+        if (flags & (1 << bit))
             WriteDelta({ m_frame[chip].Read(p), frame[chip].Read(p) }, stream);
-        };
+    };
 
-    uint8_t loMask = 0;
-    uint8_t hiMask = 0;
+    uint8_t flags0 = 0; // 8 bit
+    uint8_t flags1 = 0; // 4 bit
+    uint8_t flags2 = 0; // 4 bit
+    uint8_t flags3 = 0; // 6 bit
 
-    if (frame[chip].IsChanged(Register::Mixer))     loMask |= (1 << 0);
-    if (frame[chip].IsChanged(Register::Period::A)) loMask |= (1 << 1);
-    if (frame[chip].IsChanged(Register::A_Volume))  loMask |= (1 << 2);
-    if (frame[chip].IsChanged(Register::Period::B)) loMask |= (1 << 3);
-    if (frame[chip].IsChanged(Register::B_Volume))  loMask |= (1 << 4);
-    if (frame[chip].IsChanged(Register::Period::C)) loMask |= (1 << 5);
-    if (frame[chip].IsChanged(Register::C_Volume))  loMask |= (1 << 6);
-    if (frame[chip].IsChanged(Register::Period::N)) hiMask |= (1 << 0);
-    if (frame[chip].IsChanged(Register::Period::E)) hiMask |= (1 << 1);
-    if (frame[chip].IsChanged(Register::E_Shape))   hiMask |= (1 << 2);
+    CheckRChanged(Register::Mixer,     flags0, 0);
+    CheckPChanged(Register::Period::A, flags0, 1);
+    CheckRChanged(Register::A_Volume,  flags0, 2);
+    CheckPChanged(Register::Period::B, flags0, 3);
+    CheckRChanged(Register::B_Volume,  flags0, 4);
+    CheckPChanged(Register::Period::C, flags0, 5);
+    CheckRChanged(Register::C_Volume,  flags0, 6);
+    CheckPChanged(Register::Period::N, flags1, 0);
+    CheckPChanged(Register::Period::E, flags1, 1);
+    CheckRChanged(Register::E_Shape,   flags0, 2);
+    
+    if (frame[chip].IsExpMode())
+    {
+        CheckRChanged(Register::A_Duty,     flags2, 0);
+        CheckRChanged(Register::B_Duty,     flags2, 1);
+        CheckRChanged(Register::C_Duty,     flags2, 2);
+        CheckPChanged(Register::Period::EB, flags3, 0);
+        CheckRChanged(Register::EB_Shape,   flags3, 1);
+        CheckPChanged(Register::Period::EC, flags3, 2);
+        CheckRChanged(Register::EC_Shape,   flags3, 3);
+        CheckRChanged(Register::N_AndMask,  flags3, 4);
+        CheckRChanged(Register::N_OrMask,   flags3, 5);
+    }
 
- // if (!isLast) hiMask |= (1 << 3);
-    if ( hiMask) loMask |= (1 << 7);
+    if (flags3) flags2 |= (1 << 3);
+    if (flags2) flags1 |= (1 << 3);
+    if (flags1) flags0 |= (1 << 7);
 
-    stream.Write<8>(loMask);
-    if (loMask & (1 << 7)) stream.Write<4>(hiMask);
+    stream.Write<8>(flags0);
+    if (flags0 & (1 << 7)) stream.Write<4>(flags1);
+    if (flags1 & (1 << 3)) stream.Write<4>(flags2);
+    if (flags2 & (1 << 3)) stream.Write<6>(flags3);
 
-    if (loMask & (1 << 0)) WriteRDelta(Register::Mixer);
-    if (loMask & (1 << 1)) WritePDelta(Register::Period::A);
-    if (loMask & (1 << 2)) WriteRDelta(Register::A_Volume);
-    if (loMask & (1 << 3)) WritePDelta(Register::Period::B);
-    if (loMask & (1 << 4)) WriteRDelta(Register::B_Volume);
-    if (loMask & (1 << 5)) WritePDelta(Register::Period::C);
-    if (loMask & (1 << 6)) WriteRDelta(Register::C_Volume);
-    if (hiMask & (1 << 0)) WritePDelta(Register::Period::N);
-    if (hiMask & (1 << 1)) WritePDelta(Register::Period::E);
-    if (hiMask & (1 << 2)) WriteRDelta(Register::E_Shape);
+    WriteRDelta(flags0, 0, Register::Mixer);
+    WritePDelta(flags0, 1, Register::Period::A);
+    WriteRDelta(flags0, 2, Register::A_Volume);
+    WritePDelta(flags0, 3, Register::Period::B);
+    WriteRDelta(flags0, 4, Register::B_Volume);
+    WritePDelta(flags0, 5, Register::Period::C);
+    WriteRDelta(flags0, 6, Register::C_Volume);
+    WritePDelta(flags1, 0, Register::Period::N);
+    WritePDelta(flags1, 1, Register::Period::E);
+    WriteRDelta(flags1, 2, Register::E_Shape);
+    WriteRDelta(flags2, 0, Register::A_Duty);
+    WriteRDelta(flags2, 1, Register::B_Duty);
+    WriteRDelta(flags2, 2, Register::C_Duty);
+    WritePDelta(flags3, 0, Register::Period::EB);
+    WriteRDelta(flags3, 1, Register::EB_Shape);
+    WritePDelta(flags3, 2, Register::Period::EC);
+    WriteRDelta(flags3, 3, Register::EC_Shape);
+    WriteRDelta(flags3, 4, Register::N_AndMask);
+    WriteRDelta(flags3, 5, Register::N_OrMask);
 }
 
 void EncodeAYM::WriteSkipChunk()
@@ -221,8 +286,10 @@ void EncodeAYM::WriteSkipChunk()
 void EncodeAYM::WriteFrameChunk(const Frame& frame)
 {
     Chunk chunk;
-    WriteRegisters(frame, 0, chunk);
-    if (m_isTS) WriteRegisters(frame, 1, chunk);
+    for (int chip = 0; chip < m_chips; ++chip)
+    {
+        WriteRegisters(frame, chip, chunk);
+    }
     WriteChunk(chunk);
 }
 
@@ -238,7 +305,7 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
         chunkData = chunk.GetData();
     }
 
-    if (m_profile & ENCODE_LZ78)
+    if (s_profile & ENCODE_LZ78)
     {
         if (m_lz78Encoder.Encode(chunkData))
         {
@@ -248,7 +315,7 @@ void EncodeAYM::WriteChunk(Chunk& chunk)
     else
     {
         m_stream.Write(chunkData.c_str(), chunkData.size());
-        DebugPrint(chunkData.c_str(), chunkData.size());
+        dbg_print_chunk(chunkData.c_str(), chunkData.size());
     }
 }
 
@@ -263,13 +330,13 @@ void EncodeAYM::WriteLZ78EncodedData()
     m_stream.Write(encoded.second.c_str(), encoded.second.size());
 
     dbg.print_message("LZ78-%03X: ", encoded.first);
-    DebugPrint(encoded.second.c_str(), encoded.second.size());
+    dbg_print_chunk(encoded.second.c_str(), encoded.second.size());
 }
 
 void EncodeAYM::FinalizeWriting()
 {
     WriteSkipChunk();
-    if (m_profile & ENCODE_LZ78)
+    if (s_profile & ENCODE_LZ78)
     {
         if (m_lz78Encoder.HasUnfinishedEncoding())
         {

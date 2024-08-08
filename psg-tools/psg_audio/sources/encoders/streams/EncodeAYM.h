@@ -8,7 +8,7 @@
 
 class EncodeAYM : public Encoder
 {
-    enum Technique
+    enum
     {
         DELTA_CACHE = 1 << 0,
         CHUNK_CACHE = 1 << 1,
@@ -31,7 +31,7 @@ class EncodeAYM : public Encoder
         int FindRecord(const Delta& delta);
     };
 
-    class  Chunk : public BitOutputStream
+    class Chunk : public BitOutputStream
     {
         std::ostringstream stream;
 
@@ -49,8 +49,23 @@ class EncodeAYM : public Encoder
         int FindRecord(const Chunk::Data& chunkData);
     };
 
+#pragma pack(push, 1)
+    struct Header
+    {
+        uint32_t formatSig;  // format signature        : AYYM
+        uint8_t  formatVer;  // format version          : 1 for now
+        uint8_t  encProfile; // encoding profile flags  : Low|Medium|High
+        uint8_t  chipCount;  // number of chips         : 1|2 supported
+        uint32_t chipFreq;   // chip(s) clock frequency : 1000000-2000000 Hz
+        uint8_t  chipOutput; // chip(s) output config   : 0-6 MONO|ABC|ACB|BAC|BCA|CAB|CBA
+        uint16_t frameRate;  // frame rate for playback : 50|60 usually
+        uint32_t frameCount; // number of frames        : 0-99999 usually
+        uint32_t frameLoop;  // loop frame for playback : 0-99999 usually
+    };
+#pragma pack(pop)
+
 public:
-    enum class Profile : uint8_t
+    enum class Profile
     {
         Low    = DELTA_CACHE,
         Medium = DELTA_CACHE + CHUNK_CACHE,
@@ -74,14 +89,15 @@ private:
     void FinalizeWriting();
 
 private:
-    static uint8_t m_profile;
+    static uint8_t s_profile;
+
     std::ofstream m_output;
     BitOutputStream m_stream;
     DeltaCache m_deltaCache;
     ChunkCache m_chunkCache;
-    bool  m_isTS{ false };
-    int   m_skip{ 0 };
     Frame m_frame;
+    int m_chips;
+    int m_skip;
 
     LZ78Encoder<Chunk::Data, 4096> m_lz78Encoder;
 };
