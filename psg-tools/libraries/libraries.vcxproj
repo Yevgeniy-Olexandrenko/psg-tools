@@ -25,6 +25,8 @@
     <ClInclude Include="sources\magic_enum\magic_enum.hpp" />
     <ClInclude Include="sources\magic_enum\magic_enum_format.hpp" />
     <ClInclude Include="sources\magic_enum\magic_enum_fuse.hpp" />
+    <ClInclude Include="sources\rtf_filter\ccontrolword.h" />
+    <ClInclude Include="sources\rtf_filter\rtf_filter.h" />
     <ClInclude Include="sources\terminal\terminal.hpp" />
     <ClInclude Include="sources\terminal\terminal_color.hpp" />
     <ClInclude Include="sources\terminal\terminal_cursor.hpp" />
@@ -53,6 +55,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\lha\lh5_decode.cpp" />
+    <ClCompile Include="sources\rtf_filter\ccontrolword.cpp" />
+    <ClCompile Include="sources\rtf_filter\rtf_filter.cpp" />
     <ClCompile Include="sources\zlib\adler32.c" />
     <ClCompile Include="sources\zlib\compress.c" />
     <ClCompile Include="sources\zlib\crc32.c" />

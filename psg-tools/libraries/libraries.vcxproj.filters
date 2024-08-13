@@ -25,6 +25,9 @@
     <Filter Include="Sources\magic_enum\doc">
       <UniqueIdentifier>{7f5d4a4f-c7a8-4c0c-ae5e-bdf8f7597b02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\rtf_filter">
+      <UniqueIdentifier>{66731a0f-63b9-4e8a-bc79-06b26d61b295}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\argparse\argparse.hpp">
@@ -89,6 +92,12 @@
     </ClInclude>
     <ClInclude Include="sources\terminal\terminal_size.hpp">
       <Filter>Sources\terminal</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\rtf_filter\ccontrolword.h">
+      <Filter>Sources\rtf_filter</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\rtf_filter\rtf_filter.h">
+      <Filter>Sources\rtf_filter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -156,6 +165,12 @@
     </ClCompile>
     <ClCompile Include="sources\zlib\zutil.c">
       <Filter>Sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\rtf_filter\ccontrolword.cpp">
+      <Filter>Sources\rtf_filter</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\rtf_filter\rtf_filter.cpp">
+      <Filter>Sources\rtf_filter</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
