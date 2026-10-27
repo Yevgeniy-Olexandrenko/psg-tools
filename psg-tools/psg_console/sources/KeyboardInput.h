@@ -28,7 +28,9 @@ public:
 private:
 	using Clock = std::chrono::steady_clock;
 
+	void Release(int vk);
+
 	KeyState m_keys[256];
-	bool m_down[256];                 // the key-down came, the key-up did not yet
-	Clock::time_point m_tapTime[256]; // the key-up came together with its key-down
+	bool m_down[256];                  // the key-down came, the key-up did not yet
+	Clock::time_point m_downTime[256]; // the last key-down, auto-repeats included
 };

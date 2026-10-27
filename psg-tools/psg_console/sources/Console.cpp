@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cwchar>
 #include <iterator>
 
 #include "Console.h"
@@ -10,6 +11,9 @@ namespace console
         // Windows 7 conhost fails console calls that move more than 64 KB
         // of data, so cells are written in chunks well below that limit.
         const int k_maxCellsPerWrite = 8000;
+
+        const WORD k_plainText = (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        const WORD k_backgroundMask = (BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY);
 
         HANDLE GetOutput()
         {
@@ -50,6 +54,36 @@ namespace console
         geometry.bufferHeight = info.dwSize.Y;
         geometry.cursorY = info.dwCursorPosition.Y;
         return true;
+    }
+
+    bool IsPseudoConsole()
+    {
+        static int s_isPseudoConsole = -1;
+        if (s_isPseudoConsole < 0)
+        {
+            wchar_t name[64]{};
+            HWND window = GetConsoleWindow();
+            s_isPseudoConsole = (window && GetClassNameW(window, name, int(std::size(name))) && !wcscmp(name, L"PseudoConsoleWindow"));
+        }
+        return (s_isPseudoConsole > 0);
+    }
+
+    WORD MapAttributes(WORD attributes)
+    {
+        // the console colors are taken at the first call, before the program
+        // has changed anything
+        static WORD s_defaultAttributes = 0;
+        static bool s_isDefaultKnown = false;
+        if (!s_isDefaultKnown)
+        {
+            CONSOLE_SCREEN_BUFFER_INFO info;
+            s_defaultAttributes = (GetInfo(info) ? info.wAttributes : k_plainText);
+            s_isDefaultKnown = true;
+        }
+
+        if (attributes == k_plainText) return s_defaultAttributes;
+        if (!(attributes & k_backgroundMask)) attributes |= (s_defaultAttributes & k_backgroundMask);
+        return attributes;
     }
 
     void ShowCursor(bool show)
@@ -116,13 +150,22 @@ namespace console
 
     void WriteLine(const std::string& text, WORD attributes)
     {
+        HANDLE handle = GetOutput();
         CONSOLE_SCREEN_BUFFER_INFO info;
-        if (!GetInfo(info)) return;
+        if (!GetInfo(info))
+        {
+            if (handle != INVALID_HANDLE_VALUE)
+            {
+                std::string line = (text + "\r\n");
+                DWORD written;
+                WriteFile(handle, line.data(), DWORD(line.size()), &written, nullptr);
+            }
+            return;
+        }
 
         // the new line goes out in the original attributes, otherwise the row
         // scrolled in by it would be filled with the text background
-        HANDLE handle = GetOutput();
-        SetConsoleTextAttribute(handle, attributes);
+        SetConsoleTextAttribute(handle, MapAttributes(attributes));
         WriteText(handle, text);
         SetConsoleTextAttribute(handle, info.wAttributes);
         WriteText(handle, "\n");

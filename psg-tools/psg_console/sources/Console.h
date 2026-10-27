@@ -24,6 +24,16 @@ namespace console
 
 	bool GetGeometry(Geometry& geometry);
 
+	// Under ConPTY (Windows Terminal and other terminals) the console buffer is
+	// exactly as tall as the window, and the terminal keeps its own copy of the
+	// text, which it reflows on resize on its own.
+	bool IsPseudoConsole();
+
+	// The colors of the program set no background, so the background of the
+	// console is used for them, and the plain grey text gets the default text
+	// color of the console. Under ConPTY that keeps the colors of the terminal.
+	WORD MapAttributes(WORD attributes);
+
 	void ShowCursor(bool show);
 	void SetCursorRow(int y);
 
@@ -42,7 +52,8 @@ namespace console
 	int WriteNewLines(int count);
 
 	// Writes text in the given attributes and moves the cursor to the next
-	// line. Long text is wrapped by the console.
+	// line. Long text is wrapped by the console. When the output is redirected
+	// to a file or a pipe, the text goes there as a plain line.
 	void WriteLine(const std::string& text, WORD attributes);
 
 	// Turns off the quick edit mode, which would freeze the output while the

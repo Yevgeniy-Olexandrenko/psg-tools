@@ -1,5 +1,7 @@
 ﻿#include <algorithm>
 #include <chrono>
+#include <csignal>
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 #include <vector>
@@ -16,6 +18,9 @@ namespace gui
     // decoding and encoding report every single frame, which is way more
     // often than the console needs to be redrawn
     const auto k_progressInterval = std::chrono::milliseconds(20);
+
+    // width of the text written when the output is redirected
+    const int k_textWidth = 79;
 
     struct Property
     {
@@ -42,6 +47,16 @@ namespace gui
         return s_region;
     }
 
+    bool isConsole()
+    {
+        console::Geometry geometry;
+        return console::GetGeometry(geometry);
+    }
+
+    void onExit() { Shutdown(); }
+    void onAbort(int) { Shutdown(); }
+    LONG WINAPI onCrash(EXCEPTION_POINTERS*) { Shutdown(); return EXCEPTION_CONTINUE_SEARCH; }
+
     void Init(const std::wstring& title)
     {
         // the console window size is never changed: under ConPTY (Windows Terminal)
@@ -49,6 +64,12 @@ namespace gui
         console::SetupInput();
         console::SetTitle(title);
         region();
+
+        // the console gets its state back even when the program ends abnormally:
+        // on exit() from a library, on std::terminate() in any thread, on a crash
+        std::atexit(onExit);
+        std::signal(SIGABRT, onAbort);
+        SetUnhandledExceptionFilter(onCrash);
     }
 
     void Shutdown()
@@ -78,7 +99,8 @@ namespace gui
     void PrintRuler()
     {
         region().Sync();
-        region().Print(' ' + std::string(std::max(0, region().GetWidth() - 1), '-'), FG_BLUE);
+        int width = (isConsole() ? region().GetWidth() : k_textWidth);
+        region().Print(' ' + std::string(std::max(0, width - 1), '-'), FG_BLUE);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -762,10 +784,38 @@ namespace gui
         }
     }
 
+    // the characters of the row as text in the ANSI code page
+    std::string toText(const PrintBuffer& row)
+    {
+        std::wstring text;
+        for (int x = 0; x < row.w; ++x) text += row.buffer[x].Char.UnicodeChar;
+        text.erase(text.find_last_not_of(L' ') + 1);
+
+        int size = WideCharToMultiByte(CP_ACP, 0, text.data(), int(text.size()), nullptr, 0, nullptr, nullptr);
+        std::string result(size, '\0');
+        WideCharToMultiByte(CP_ACP, 0, text.data(), int(text.size()), result.data(), size, nullptr, nullptr);
+        return result;
+    }
+
     void CommitFile(const FileView& file, const Stream& stream, const std::string& output)
     {
         region().Sync();
         region().Erase();
+
+        if (!isConsole())
+        {
+            // the output is redirected: plain text, the values are not cut
+            PrintBuffer header(k_textWidth, 1);
+            drawFileHeader(header, 0, file);
+            console::WriteLine(toText(header), FG_GREY);
+
+            for (const Property& property : getProperties(stream, &output))
+            {
+                std::string dots(9 - property.label.length(), '.');
+                console::WriteLine(' ' + property.label + dots + ": " + property.value, FG_GREY);
+            }
+            return;
+        }
 
         // one row at a time, so all of them get to the history,
         // even if the window is not tall enough to show them at once

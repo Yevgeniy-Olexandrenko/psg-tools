@@ -181,8 +181,8 @@ int main(int argc, char* argv[])
         }
     }
 
-    PrintWellcome();
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
+    PrintWellcome();
 
     // the console gets its state back however the work ends
     int result = 0;

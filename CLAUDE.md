@@ -52,7 +52,10 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
 - `LiveRegion`: the bottom part of the console that is redrawn every frame. Everything above the cursor is scrollback history; the cursor stays at the top of the region. `Commit` turns the top rows into history, and `Print` adds a line above the region. Resize handling and its ConPTY workarounds are documented in its comments; check `--ui-test` in both Windows Terminal and `conhost.exe` after changing it.
 - `ConsoleGUI`: lays out the current file (header, properties, register dump, progress) for the window size. `CommitFile` leaves the header and properties in the history.
 - `KeyboardInput`: key state built from console input events (`ReadConsoleInput`), so keys work in any console host and only while it has focus.
-- `gui::Shutdown` restores the input mode, title and cursor, and drops unread keys. Ctrl+C sets the termination flag, which the player and the converter check, including during decoding through `IsAbortRequested`.
+- `gui::Shutdown` restores the input mode, title and cursor, and drops unread keys. It also runs on abnormal exits: `exit()` from a library, `abort`/`std::terminate` in any thread, and crashes. Ctrl+C sets the termination flag, which the player and the converter check, including during decoding through `IsAbortRequested`.
+- Colors set no background: `console::MapAttributes` takes the console's own background and default text color, so themes and non-black consoles work.
+- When stdout is redirected, there is no live region, and the history (banner, file headers with full properties, errors) goes out as plain text.
+- ConPTY is detected by the console window class (`PseudoConsoleWindow`), not by the buffer size.
 
 ### Core data model (`psg_audio/sources/stream/`)
 

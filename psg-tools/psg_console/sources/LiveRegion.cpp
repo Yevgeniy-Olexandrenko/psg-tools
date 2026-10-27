@@ -15,13 +15,6 @@ namespace
     }
 
     const CHAR_INFO k_blank = MakeBlank();
-
-    // Under ConPTY (Windows Terminal) the console buffer is exactly as tall as
-    // the window, while classic conhost keeps a long buffer with scrollback.
-    bool IsWindowSizedBuffer(const console::Geometry& geometry)
-    {
-        return (geometry.bufferHeight == geometry.height);
-    }
 }
 
 LiveRegion::LiveRegion()
@@ -33,6 +26,8 @@ LiveRegion::LiveRegion()
     , m_shown(0)
     , m_reserved(0)
 {
+    // takes the console colors before anything is drawn
+    console::MapAttributes(k_blank.Attributes);
     Sync();
 }
 
@@ -44,10 +39,11 @@ bool LiveRegion::Sync()
 
     // on resize the console reflows the text, and the first row of the region,
     // which may span several rows now, still starts at the cursor, unless the
-    // region got taller than the window: then its top went out of the buffer
-    // and all visible rows belong to the region
+    // region got taller than the window under ConPTY: then its top went out of
+    // the buffer and all visible rows belong to the region; the long buffer
+    // of classic conhost always keeps the top of the region
     int top = geometry.cursorY;
-    if (m_shown > 0)
+    if (m_shown > 0 && console::IsPseudoConsole())
     {
         int count = m_width;
         while (count > 1 && m_screen[count - 1].Char.UnicodeChar == L' ') --count;
@@ -91,11 +87,24 @@ void LiveRegion::Commit(int rows)
     rows = std::clamp(rows, 0, m_content);
     if (rows == 0 || !console::GetGeometry(geometry)) return;
 
-    console::SetCursorRow(geometry.cursorY + rows);
+    // below the last row of the buffer the cursor can only get with new lines,
+    // which scroll the history up
+    int target = (geometry.cursorY + rows);
+    int last = (geometry.bufferHeight - 1);
+    if (target > last)
+    {
+        console::SetCursorRow(last);
+        console::WriteNewLines(target - last);
+    }
+    else
+    {
+        console::SetCursorRow(target);
+    }
+
     m_screen.erase(m_screen.begin(), m_screen.begin() + size_t(m_width) * rows);
     m_content -= rows;
     m_shown -= rows;
-    m_reserved -= rows;
+    m_reserved = std::max(0, m_reserved - rows);
 }
 
 void LiveRegion::Erase()
@@ -113,7 +122,7 @@ void LiveRegion::Erase()
 void LiveRegion::Print(const std::string& text, WORD attributes)
 {
     // the message takes the place of the region, which then is shown again
-    // right below it, so nothing blinks
+    // right below it at once
     std::vector<CHAR_INFO> shown(m_screen);
     int height = m_content;
 
@@ -153,7 +162,7 @@ void LiveRegion::Present(const CHAR_INFO* cells, int height)
     // drop on resize, while the console would keep them, and then both would
     // place the text differently
     int fill = height;
-    if (IsWindowSizedBuffer(geometry))
+    if (console::IsPseudoConsole())
     {
         fill = std::max(height, geometry.windowBottom - top + 1);
     }
@@ -166,6 +175,10 @@ void LiveRegion::Present(const CHAR_INFO* cells, int height)
     for (int y = height; y < fill; ++y)
     {
         m_frame[width * y].Char.UnicodeChar = wchar_t(0x2800);
+    }
+    for (CHAR_INFO& cell : m_frame)
+    {
+        cell.Attributes = console::MapAttributes(cell.Attributes);
     }
 
     // all the changed rows are written at once, otherwise the terminal may show
