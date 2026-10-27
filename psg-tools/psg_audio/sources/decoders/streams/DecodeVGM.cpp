@@ -97,6 +97,18 @@ bool DecodeVGM::Open(Stream& stream)
                     stream.schip.first.model = model;
                     stream.schip.clockValue = clockRate;
                     if (twoChips) stream.schip.second.model = model;
+
+                    // ZX Spectrum like pan configuration (left, center, right),
+                    // otherwise the outputs of all channels are mixed together
+                    if (header.ay8910Flags & 0x80)
+                    {
+                        stream.schip.output = Chip::Output::Stereo;
+                        stream.schip.stereo = Chip::Stereo::ABC;
+                    }
+                    else
+                    {
+                        stream.schip.output = Chip::Output::Mono;
+                    }
                 }
 
                 else if (m_simulator->type() == ChipSim::Type::RP2A03)
