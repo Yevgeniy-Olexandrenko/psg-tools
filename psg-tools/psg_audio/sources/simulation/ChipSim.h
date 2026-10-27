@@ -9,7 +9,8 @@ public:
 
 	ChipSim(Type type) 
 		: m_type(type)
-		, m_clockRatio(1.f) 
+		, m_srcClock(1)
+		, m_dstClock(1)
 	{}
 
 	Type type() const 
@@ -19,7 +20,8 @@ public:
 
 	virtual void ConfigureClock(int srcClock, int dstClock)
 	{
-		m_clockRatio = float(dstClock) / float(srcClock);
+		m_srcClock = srcClock;
+		m_dstClock = dstClock;
 	}
 
 public:
@@ -29,10 +31,14 @@ public:
 	virtual void Convert(Frame& frame) = 0;
 
 protected:
-	uint16_t ConvertPeriod(uint16_t period) const
+	// converts period by clock ratio and divides it by the given divider,
+	// integer math gives exact rounding, done once for both operations
+	uint16_t ConvertPeriod(uint32_t period, uint32_t divider = 1) const
 	{
-		float converted = (period * m_clockRatio);
-		return uint16_t(converted + 0.5f);
+		uint64_t num = uint64_t(period) * m_dstClock;
+		uint64_t den = uint64_t(m_srcClock) * divider;
+		uint64_t converted = (num + den / 2) / den;
+		return uint16_t(converted > 0xFFFF ? 0xFFFF : converted);
 	}
 
 	void EnableTone(uint8_t& mixer, int chan) const
@@ -46,6 +52,7 @@ protected:
 	}
 
 protected:
-	Type  m_type;
-	float m_clockRatio;
+	Type     m_type;
+	uint32_t m_srcClock;
+	uint32_t m_dstClock;
 };

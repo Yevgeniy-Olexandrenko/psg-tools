@@ -109,7 +109,10 @@ Frame& Frame::operator+=(const Frame& other)
             dst.SetChanges();
         }
 
-        // case when the chip data is simply updating
+        // case when the chip data is simply updating: only the data of
+        // the other frame is taken, the changes are recomputed against
+        // this frame's data, except for the envelope shape register,
+        // which is taken only when it was written in the other frame
         else for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
         {
             dst.Update(reg, src.Read(reg));

@@ -139,7 +139,7 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
     {
-        uint16_t period = ConvertPeriod(state.noise_period) >> 5;
+        uint16_t period = ConvertPeriod(state.noise_period, 32);
         if (period > 0x1F) period = 0x1F;
 
         frame[0].Update(Register::Period::N, period);
@@ -214,7 +214,7 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
     // Noise -> Chip 1 Noise in Channel B
     if (state.noise_enable)
     {
-        uint16_t period = ConvertPeriod(state.noise_period) >> 5;
+        uint16_t period = ConvertPeriod(state.noise_period, 32);
         uint8_t  volume = ConvertVolume(state.noise_volume);
         if (period > 0x1F) period = 0x1F;
 
@@ -283,7 +283,7 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
         frame[0].Update(Register::N_AndMask, m_noiseAndMask);
         frame[0].Update(Register::N_OrMask,  0x00);
 
-        uint16_t period = ConvertPeriod(state.noise_period) >> 5;
+        uint16_t period = ConvertPeriod(state.noise_period, 32);
         frame[0].Update(Register::Period::N, period);
         DistributeNoiseBetweenChannels(state, frame, mixer);
     }
@@ -297,7 +297,7 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
 template<Register::Value shape_reg, Register::Period peiod_reg>
 void SimRP2A03::EnableTriangleEnvelopeOnChannelB(const State& state, Frame& frame)
 {
-    uint16_t period = ConvertPeriod(state.triangle_period) >> 3;
+    uint16_t period = ConvertPeriod(state.triangle_period, 8);
     uint8_t  volume = (frame[0].Read(Register::B_Volume) | frame[0].emask());
 
     if (frame[0].GetData(shape_reg) != 0x0A)
