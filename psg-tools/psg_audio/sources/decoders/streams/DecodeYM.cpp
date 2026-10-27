@@ -81,6 +81,7 @@ bool DecodeYM::Open(Stream& stream)
         if (!SkipString(m_data, offset, author)) return false;
         if (!SkipString(m_data, offset, comment)) return false;
 
+        m_version = id[2];
         m_offset = offset;
         m_frames = GetU32(ym5->numOfFrames);
         m_loop   = GetU32(ym5->loopFrame);
@@ -99,6 +100,7 @@ bool DecodeYM::Open(Stream& stream)
 
     if (id == "YM2!" || id == "YM3!" || id == "YM3b")
     {
+        m_version = id[2];
         m_offset = id.size();
         m_frames = (m_data.size() - id.size()) / 14;
         m_loop   = 0;
@@ -128,10 +130,36 @@ bool DecodeYM::Decode(Frame& frame)
     const uint8_t* dataPtr = (m_data.data() + m_offset) + (m_frame * frameSize);
     m_frame++;
 
+    uint8_t regs[14];
+    for (uint8_t& value : regs)
+    {
+        value = *dataPtr;
+        dataPtr += valueSize;
+    }
+
+    // digidrums are not supported: on the frame that starts a digidrum
+    // the volume register holds the sample number, so mute the voice
+    const auto MuteDigidrum = [&](uint8_t effect)
+    {
+        if (int voice = (effect >> 4 & 0x03))
+        {
+            regs[Register::A_Volume + voice - 1] = 0;
+        }
+    };
+    if (m_version == '5')
+    {
+        MuteDigidrum(regs[Register::B_Coarse]);
+    }
+    else if (m_version == '6')
+    {
+        // effect type 1 is digidrum
+        if ((regs[Register::A_Coarse] >> 6) == 1) MuteDigidrum(regs[Register::A_Coarse]);
+        if ((regs[Register::B_Coarse] >> 6) == 1) MuteDigidrum(regs[Register::B_Coarse]);
+    }
+
     for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
     {
-        frame[0].Update(reg, *dataPtr);
-        dataPtr += valueSize;
+        frame[0].Update(reg, regs[reg]);
     }
 
     return true;

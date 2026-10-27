@@ -16,7 +16,8 @@ bool DecodePSG::Open(Stream& stream)
         if (m_input && header.m_sig == PSGSignature)
         {
             stream.info.type = "PSG stream";
-            stream.play.frameRate = (header.m_fps ? header.m_fps : 50);
+            // frame rate byte is defined since version 10
+            stream.play.frameRate = (header.m_ver >= 10 && header.m_fps ? header.m_fps : 50);
 
             m_skip = 0;
             return true;
@@ -40,6 +41,12 @@ bool DecodePSG::Decode(Frame& frame)
         {
             if (m_input.peek() == EOF ) break;
             if (m_input.peek() == 0xFF) break; 
+            if (m_input.peek() == 0xFD)
+            {
+                // end of music, ignore the rest of the file
+                m_input.seekg(0, m_input.end);
+                break;
+            }
             if (m_input.peek() == 0xFE)
             {
                 // skip 0xFE command byte
@@ -48,6 +55,13 @@ bool DecodePSG::Decode(Frame& frame)
                 // peek next byte if available
                 if (m_input.peek() == EOF) return false;
                 v2 = uint8_t(m_input.peek());
+
+                // zero frames to skip, continue the current frame
+                if (!v2)
+                {
+                    m_input.ignore(1);
+                    continue;
+                }
 
                 // setup number of frames to skip
                 m_skip = (v2 * 4 - 1);

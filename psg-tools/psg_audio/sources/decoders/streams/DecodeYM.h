@@ -26,6 +26,7 @@ public:
 
 private:
     std::vector<uint8_t> m_data;
+    char     m_version;
     size_t   m_offset;
     bool     m_interleaved;
     size_t   m_frames;

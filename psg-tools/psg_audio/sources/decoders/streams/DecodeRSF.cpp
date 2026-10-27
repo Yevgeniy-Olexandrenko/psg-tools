@@ -48,6 +48,14 @@ bool DecodeRSF::Decode(Frame& frame)
         uint8_t val;
         m_input.get((char&)val);
 
+        // skip commands with zero frames to skip do nothing
+        while (val == 0xFE && m_input.peek() == 0)
+        {
+            m_input.ignore(1);
+            if (m_input.peek() == EOF) return false;
+            m_input.get((char&)val);
+        }
+
         if (val == 0xFF) return true;
         else 
         if (val == 0xFE)
