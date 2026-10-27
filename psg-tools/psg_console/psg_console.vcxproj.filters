@@ -24,6 +24,15 @@
     <ClCompile Include="sources\PSGTools.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="sources\Console.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\LiveRegion.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\UITest.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\ConsoleGUI.h">
@@ -39,6 +48,15 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="sources\PrintBuffer.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\Console.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\LiveRegion.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\UITest.h">
       <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>

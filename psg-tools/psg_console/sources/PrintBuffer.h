@@ -52,6 +52,7 @@ public:
 	PrintBuffer(int w, int h);
 	~PrintBuffer();
 
+	void resize(int w, int h);
 	void clear();
 	void render();
 

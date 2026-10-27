@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "PrintBuffer.h"
 
 PrintBuffer::PrintBuffer(int w, int h)
@@ -18,9 +20,24 @@ PrintBuffer::~PrintBuffer()
     }
 }
 
+void PrintBuffer::resize(int w, int h)
+{
+    if (w * h != this->w * this->h)
+    {
+        delete[] buffer;
+        buffer = new CHAR_INFO[w * h];
+    }
+    this->w = w;
+    this->h = h;
+    clear();
+}
+
 void PrintBuffer::clear()
 {
-    memset(buffer, 0, sizeof(CHAR_INFO) * w * h);
+    CHAR_INFO blank;
+    blank.Char.UnicodeChar = L' ';
+    blank.Attributes = FG_GREY;
+    std::fill(buffer, buffer + w * h, blank);
 }
 
 void PrintBuffer::render()
@@ -60,58 +77,31 @@ PrintBuffer& PrintBuffer::color(SHORT color)
 
 PrintBuffer& PrintBuffer::draw(std::wstring s)
 {
-    if (x < w && y < h)
-    {
-        int index = y * w;
-        int count = std::min(int(s.size()), w - x);
-
-        for (int i = 0; i < count; ++i)
-        {
-            buffer[index + x].Char.UnicodeChar = s[i];
-            buffer[index + x].Attributes = col;
-            x++;
-        }
-    }
+    for (wchar_t c : s) draw(c);
     return *this;
 }
 
 PrintBuffer& PrintBuffer::draw(std::string s)
 {
-    if (x < w && y < h)
-    {
-        int index = y * w;
-        int count = std::min(int(s.size()), w - x);
-
-        for (int i = 0; i < count; ++i)
-        {
-            buffer[index + x].Char.AsciiChar = s[i];
-            buffer[index + x].Attributes = col;
-            x++;
-        }
-    }
+    for (char c : s) draw(c);
     return *this;
 }
 
 PrintBuffer& PrintBuffer::draw(wchar_t c)
 {
-    if (x < w && y < h)
+    // characters outside of the buffer are skipped, but still advance
+    // the position, so text that starts off the left edge stays in place
+    if (x >= 0 && x < w && y >= 0 && y < h)
     {
-        int index = y * w + x;
-        buffer[index].Char.UnicodeChar = c;
-        buffer[index].Attributes = col;
-        x++;
+        CHAR_INFO& cell = buffer[y * w + x];
+        cell.Char.UnicodeChar = c;
+        cell.Attributes = col;
     }
+    x++;
     return *this;
 }
 
 PrintBuffer& PrintBuffer::draw(char c)
 {
-    if (x < w && y < h)
-    {
-        int index = y * w + x;
-        buffer[index].Char.AsciiChar = c;
-        buffer[index].Attributes = col;
-        x++;
-    }
-    return *this;
+    return draw(wchar_t((unsigned char)c));
 }

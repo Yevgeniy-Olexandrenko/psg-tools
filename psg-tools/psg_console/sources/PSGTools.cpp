@@ -7,6 +7,7 @@
 #include "FilelistPlayer.h"
 #include "FilelistConverter.h"
 #include "ConsoleGUI.h"
+#include "UITest.h"
 
 static Termination m_termination = false;
 
@@ -91,6 +92,11 @@ void InitProgramArguments(argparse::ArgumentParser& program)
     program.add_argument("--chip-output")
         .help("destination chip output type (and stereo type)")
         .nargs(1, 2);
+
+    program.add_argument("--ui-test")
+        .help("check console UI rendering, without playback")
+        .default_value(false)
+        .implicit_value(true);
 }
 
 int main(int argc, char* argv[])
@@ -104,6 +110,13 @@ int main(int argc, char* argv[])
         std::cerr << err.what() << std::endl;
         std::cerr << program;
         std::exit(1);
+    }
+
+    if (program.get<bool>("ui-test"))
+    {
+        SetConsoleCtrlHandler(CtrlHandler, TRUE);
+        RunUITest(m_termination);
+        return 0;
     }
 
     // parse list of input files

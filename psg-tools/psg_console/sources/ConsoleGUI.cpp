@@ -3,6 +3,7 @@
 #include <array>
 
 #include "ConsoleGUI.h"
+#include "Console.h"
 #include "PrintBuffer.h"
 
 namespace gui
@@ -12,65 +13,12 @@ namespace gui
 	PrintBuffer   m_framesBuffer(k_consoleWidth, 16);
     KeyboardInput m_keyboardInput;
 
-    bool SetConsoleSize(SHORT x, SHORT y)
-    {
-        HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (handle == INVALID_HANDLE_VALUE) return false;
-
-        // If either dimension is greater than the largest console window we can have,
-        // there is no point in attempting the change.
-        COORD largestSize = GetLargestConsoleWindowSize(handle);
-        if (x > largestSize.X) return false;
-        if (y > largestSize.Y) return false;
-
-        CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
-        if (!GetConsoleScreenBufferInfo(handle, &bufferInfo)) return false;
-
-        SMALL_RECT& winInfo = bufferInfo.srWindow;
-        COORD windowSize =
-        {
-            winInfo.Right - winInfo.Left + 1,
-            winInfo.Bottom - winInfo.Top + 1
-        };
-
-        if (windowSize.X > x || windowSize.Y > y)
-        {
-            // window size needs to be adjusted before the buffer size can be reduced.
-            SMALL_RECT info =
-            {
-                0,
-                0,
-                x < windowSize.X ? x - 1 : windowSize.X - 1,
-                y < windowSize.Y ? y - 1 : windowSize.Y - 1
-            };
-
-            if (!SetConsoleWindowInfo(handle, TRUE, &info)) return false;
-        }
-
-        COORD size = { x, y };
-        if (!SetConsoleScreenBufferSize(handle, size)) return false;
-
-        SMALL_RECT info = { 0, 0, x - 1, y - 1 };
-        if (!SetConsoleWindowInfo(handle, TRUE, &info)) return false;
-
-        return true;
-    }
-
     void Init(const std::wstring& title)
     {
-        // disable console window resize
-        HWND consoleWindow = GetConsoleWindow();
-        SetWindowLong(consoleWindow, GWL_STYLE, GetWindowLong(consoleWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
-
-        // disable edit mode in console
-        DWORD mode;
-        HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
-        GetConsoleMode(handle, &mode);
-        SetConsoleMode(handle, mode & ~ENABLE_QUICK_EDIT_MODE);
-
-        // set console buffer and window size
+        // the console window size is never changed: under ConPTY (Windows Terminal)
+        // that only resizes conhost's own buffer and desyncs it from the terminal
+        console::DisableQuickEdit();
         SetConsoleTitle(title.c_str());
-        SetConsoleSize(k_consoleWidth, k_consoleHeight);
     }
 
 	void Update()
