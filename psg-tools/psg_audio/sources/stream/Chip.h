@@ -8,7 +8,7 @@ struct Chip
 {
 public:
     enum class Model  { Unknown, AY8910, YM2149, AY8930, Compatible };
-    enum class Clock  { Unknown, F1000000, F1750000, F1773400, F2000000 };
+    enum class Clock  { Unknown, F1000000, F1750000, F1773400, F1789773, F2000000 };
     enum class Output { Unknown, Mono, Stereo };
     enum class Stereo { Unknown, ABC, ACB, BAC, BCA, CAB, CBA };
 

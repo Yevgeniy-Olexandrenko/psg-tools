@@ -345,7 +345,7 @@ void Stream::ConfigureDestinationChip()
     }
 
     // configure clock rate, output type and stereo type of destination chip
-    if (!dchip.clockKnown ) dchip.clock  = (schip.clockKnown  ? schip.clock  : Chip::Clock::F1750000);
+    if (!dchip.clockKnown ) dchip.clock  = (schip.clockKnown  ? schip.clock  : Chip::Clock::F1773400);
     if (!dchip.outputKnown) dchip.output = (schip.outputKnown ? schip.output : Chip::Output::Stereo);
     if (!dchip.stereoKnown) dchip.stereo = (schip.stereoKnown ? schip.stereo : Chip::Stereo::ABC);
 

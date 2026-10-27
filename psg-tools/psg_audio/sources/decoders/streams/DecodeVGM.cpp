@@ -39,6 +39,18 @@ bool DecodeVGM::Open(Stream& stream)
     Header header;
     if (ReadFile(stream.file.string().c_str(), (uint8_t*)(&header), sizeof(header)))
     {
+        uint32_t dataOffset = 0x40;
+        if (header.version >= 0x150 && header.vgmDataOffset)
+        {
+            dataOffset = header.vgmDataOffset + 0x34;
+        }
+
+        // header fields located at or after the data start must be treated as 0
+        if (dataOffset < sizeof(header))
+        {
+            memset((uint8_t*)(&header) + dataOffset, 0, sizeof(header) - dataOffset);
+        }
+
         if (header.sn76489Clock) m_simulator.reset(new SimSN76489());
         else if (header.version >= 0x151 && header.ay8910Clock) m_simulator.reset(new SimAY8910());
         else if (header.version >= 0x161 && header.nesApuClock) m_simulator.reset(new SimRP2A03());
@@ -50,11 +62,6 @@ bool DecodeVGM::Open(Stream& stream)
 
             if (ReadFile(stream.file.string().c_str(), m_data, fileSize))
             {
-                uint32_t dataOffset = 0x40;
-                if (header.version >= 0x150 && header.vgmDataOffset)
-                {
-                    dataOffset = header.vgmDataOffset + 0x34;
-                }
                 m_dataPtr = m_data + dataOffset;
 
                 int clockRate = 0;
@@ -97,11 +104,11 @@ bool DecodeVGM::Open(Stream& stream)
                     clockRate = (header.nesApuClock & 0x3FFFFFFF);
                     if (clockRate / 1000 == 1662) frameRate = 50;
 
-                    // setup chip clock rate
+                    // setup chip clock rate (ZX Spectrum clock used by default)
                     if (stream.dchip.clockKnown)
                         stream.schip.clock = stream.dchip.clock;
                     else
-                        stream.schip.clockValue = clockRate;
+                        stream.schip.clock = Chip::Clock::F1773400;
 
                     // setup first chip (YM2149 used by default)
                     if (stream.dchip.first.model != Chip::Model::Compatible)
@@ -128,6 +135,12 @@ bool DecodeVGM::Open(Stream& stream)
                         stream.schip.second.model = stream.schip.first.model;
                     }
                     static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType);
+                }
+
+                // use the recording rate when it is known
+                if (header.version >= 0x101 && header.rate)
+                {
+                    frameRate = header.rate;
                 }
 
                 stream.info.type = "VGM stream";

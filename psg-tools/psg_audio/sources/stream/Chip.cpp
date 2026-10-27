@@ -1,9 +1,18 @@
 #include <sstream>
+#include <iterator>
 #include "Chip.h"
 
 namespace
 {
-    const int k_clocks[] = { 0, 1000000, 1750000, 1773400, 2000000 };
+    const int k_clocks[] =
+    {
+        0,       // unknown
+        1000000, // Amstrad CPC, Oric
+        1750000, // Pentagon and other ZX Spectrum clones
+        1773400, // ZX Spectrum 128/+2/+3
+        1789773, // MSX (3.579545 MHz / 2), also NES CPU clock
+        2000000, // Atari ST
+    };
 }
 
 Chip::Chip()
@@ -138,7 +147,7 @@ void Chip::SetClockValue(const int& val)
     };
     
     int f = 0;
-    for (int i = 1; i < 5; ++i)
+    for (int i = 1; i < int(std::size(k_clocks)); ++i)
     {
         if (dist(i) < dist(f)) f = i;
     }
