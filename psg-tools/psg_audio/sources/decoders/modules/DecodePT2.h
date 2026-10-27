@@ -35,12 +35,12 @@ class DecodePT2 : public ModuleDecoder
         uint8_t note;
         uint8_t slideToNote;
 
-        int8_t toneSliding;
-        int8_t toneDelta;
-        int8_t glissType;
-        int8_t glissade;
-        int8_t additionToNoise;
-        int8_t noteSkipCounter;
+        int16_t toneSliding;
+        int16_t toneDelta;
+        int8_t  glissType;
+        int8_t  glissade;
+        int8_t  additionToNoise;
+        int8_t  noteSkipCounter;
 
         bool envelopeEnabled;
         bool enabled;
