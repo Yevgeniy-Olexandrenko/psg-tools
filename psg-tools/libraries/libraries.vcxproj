@@ -21,16 +21,11 @@
   <ItemGroup>
     <ClInclude Include="sources\argparse\argparse.hpp" />
     <ClInclude Include="sources\glob\glob.hpp" />
-    <ClInclude Include="sources\lha\lh5_decode.h" />
+    <ClInclude Include="sources\lha\lh5.h" />
+    <ClInclude Include="sources\lha\lzh.h" />
     <ClInclude Include="sources\magic_enum\magic_enum.hpp" />
     <ClInclude Include="sources\magic_enum\magic_enum_format.hpp" />
     <ClInclude Include="sources\magic_enum\magic_enum_fuse.hpp" />
-    <ClInclude Include="sources\rtf_filter\ccontrolword.h" />
-    <ClInclude Include="sources\rtf_filter\rtf_filter.h" />
-    <ClInclude Include="sources\terminal\terminal.hpp" />
-    <ClInclude Include="sources\terminal\terminal_color.hpp" />
-    <ClInclude Include="sources\terminal\terminal_cursor.hpp" />
-    <ClInclude Include="sources\terminal\terminal_size.hpp" />
     <ClInclude Include="sources\zlib\crc32.h" />
     <ClInclude Include="sources\zlib\deflate.h" />
     <ClInclude Include="sources\zlib\inffast.h" />
@@ -54,9 +49,8 @@
     <None Include="sources\magic_enum\README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sources\lha\lh5_decode.cpp" />
-    <ClCompile Include="sources\rtf_filter\ccontrolword.cpp" />
-    <ClCompile Include="sources\rtf_filter\rtf_filter.cpp" />
+    <ClCompile Include="sources\lha\lh5.cpp" />
+    <ClCompile Include="sources\lha\lzh.cpp" />
     <ClCompile Include="sources\zlib\adler32.c" />
     <ClCompile Include="sources\zlib\compress.c" />
     <ClCompile Include="sources\zlib\crc32.c" />
