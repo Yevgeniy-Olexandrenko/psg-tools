@@ -158,7 +158,7 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 		const auto ParseNote = [](const std::string& str, int offset) -> int
 		{
 			int note = 0;
-			switch (str[offset++] | str[offset++] << 8)
+			switch (str[offset] | str[offset + 1] << 8)
 			{
 			case 'C' | '-' << 8: note = 0x1; break;
 			case 'C' | '#' << 8: note = 0x2; break;
@@ -174,7 +174,7 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 			case 'B' | '-' << 8: note = 0xC; break;
 			case 'R' | '-' << 8: note =  -1; break;
 			}
-			if (note > 0) note += (str[offset] - '1') * 12;
+			if (note > 0) note += (str[offset + 2] - '1') * 12;
 			return note;
 		};
 
@@ -210,7 +210,7 @@ void VT2::ParsePattern(std::string& line, std::istream& stream)
 
 int VT2::GetTonePeriod(int note)
 {
-	int version = modules.back().version[2];
+	int version = modules.back().version[2] - '0';
 	switch (modules.back().noteTable)
 	{
 	case  0: return (version <= 3)
@@ -220,9 +220,10 @@ int VT2::GetTonePeriod(int note)
 	case  2: return (version <= 3)
 		? NoteTable_ASM_34r[note]
 		: NoteTable_ASM_34_35[note];
-	default: return (version <= 3)
+	case  3: return (version <= 3)
 		? NoteTable_REAL_34r[note]
 		: NoteTable_REAL_34_35[note];
+	default: return NoteTable_NATURAL[note];
 	}
 }
 
@@ -485,6 +486,8 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		break;
 
 	case 0x3: // tone portamento
+		// ignored on note off, and on empty note before PT v3.6
+		if (pln.chan[c].note < 0 || (pln.chan[c].note == 0 && m_version < 6)) break;
 		cha.simpleGliss = false;
 		cha.toneSlideDelay = pln.chan[c].cmdDelay;
 		cha.toneSlideCount = cha.toneSlideDelay;
@@ -526,6 +529,7 @@ void DecodeVT2::ProcessPattern(int m, int c, uint8_t& shape)
 		break;
 
 	case 0xB: // set speed
+		if (!pln.chan[c].cmdParam) break;
 		mod.m_delay = pln.chan[c].cmdParam;
 		if (m_isTS)
 		{
@@ -580,7 +584,8 @@ void DecodeVT2::ProcessInstrument(int m, int c, uint16_t& tperiod, uint8_t& mixe
 			}
 		}
 
-		if (cha.volumeSliding > -15 && cha.volumeSliding < +15)
+		if ((sampleLine.volumeAdd > 0 && cha.volumeSliding < +15) ||
+			(sampleLine.volumeAdd < 0 && cha.volumeSliding > -15))
 		{
 			cha.volumeSliding += sampleLine.volumeAdd;
 		}
@@ -631,8 +636,9 @@ int DecodeVT2::GetTonePeriod(int m, int note)
 	case  2: return (m_version <= 3)
 		? NoteTable_ASM_34r[note]
 		: NoteTable_ASM_34_35[note];
-	default: return (m_version <= 3)
+	case  3: return (m_version <= 3)
 		? NoteTable_REAL_34r[note]
 		: NoteTable_REAL_34_35[note];
+	default: return NoteTable_NATURAL[note];
 	}
 }
