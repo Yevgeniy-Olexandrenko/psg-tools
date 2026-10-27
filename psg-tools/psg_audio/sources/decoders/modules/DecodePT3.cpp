@@ -78,8 +78,9 @@ void DecodePT3::Init()
     m_version = ('0' <= ver && ver <= '9') ? ver - '0' : 6;
 
     m_module[0].TS = m_module[1].TS = 0x20;
+    // byte 0x62 holds the TS pattern offset only since PT v3.7
     int TS = m_module[0].m_hdr->musicName[0x62];
-    m_isTS = (TS != 0x20);
+    m_isTS = (TS != 0x20 && '7' <= ver && ver <= '9');
     if (m_isTS) m_module[1].TS = TS;
     else if (m_size > 400 && !memcmp(m_data + m_size - 4, "02TS", 4)) 
     { 

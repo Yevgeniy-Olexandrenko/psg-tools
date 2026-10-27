@@ -75,6 +75,7 @@ private:
     uint8_t  m_linesCounter;
     uint16_t m_positionsPointer;
     uint8_t  m_lastPosition;
+    uint32_t m_size;
 
     Channel m_chA;
     Channel m_chB;

@@ -1,8 +1,5 @@
 #include "DecodeSQT.h"
 
-#pragma warning( disable : 4311)
-#pragma warning( disable : 4302)
-
 namespace
 {
 	const uint16_t SQT_Table[] =
@@ -58,6 +55,7 @@ bool DecodeSQT::Open(Stream& stream)
                     fileStream.read((char*)m_data, fileSize);
 
                     // workaround to check if initialization was successful
+                    m_size = fileSize;
                     m_positionsPointer = 0;
                     Init();
 
@@ -68,7 +66,7 @@ bool DecodeSQT::Open(Stream& stream)
                         // seek for the number of last position
                         uint16_t positionPointer = m_positionsPointer;
                         while (m_data[positionPointer]) positionPointer += 7;
-                        m_lastPosition = (positionPointer - m_positionsPointer) / 7;
+                        m_lastPosition = (positionPointer - m_positionsPointer) / 7 - 1;
 
                         stream.info.type = "SQ-Tracker module";
                         stream.schip.clock = Chip::Clock::F1773400;
@@ -166,19 +164,18 @@ bool DecodeSQT::PreInit()
 {
     Header* header = (Header*)m_data;
 
-    uint32_t j2;
     uint16_t* pwrd;
 
     int i = header->samplesPointer - 10;
     if (i < 0) return false;
 
     int i2 = header->positionsPointer - i;
-    if (i2 < 0) return false;
+    if (i2 < 0 || i2 >= int(m_size)) return false;
 
     int i1 = 0;
     while (m_data[i2] != 0)
     {
-        if (i2 > 65536 - 8) return false;
+        if (i2 > int(m_size) - 8) return false;
 
         if (i1 < (m_data[i2] & 0x7f)) i1 = m_data[i2] & 0x7f;
         i2 += 2;
@@ -188,7 +185,6 @@ bool DecodeSQT::PreInit()
         i2 += 3;
     }
 
-    j2 = (uint32_t)(&m_data[65535]);
     pwrd = (uint16_t*)(&header->samplesPointer);
 
     i1 = (header->patternsPointer - i + i1 * 2) / 2;
@@ -196,7 +192,7 @@ bool DecodeSQT::PreInit()
 
     for (i2 = 1; i2 <= i1; i2++)
     {
-        if ((uint32_t)(pwrd) >= j2) return false;
+        if ((uint8_t*)(pwrd + 1) > m_data + m_size) return false;
         if (*pwrd < i) return false;
 
         *pwrd -= i;

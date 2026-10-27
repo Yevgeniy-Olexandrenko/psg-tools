@@ -1,6 +1,39 @@
 #include "DecodeASC.h"
 #include "SharedTables.h"
 
+namespace
+{
+    // checks the header layout of ASC1 (loop = 1) or ASC0 (loop = 0)
+    bool CheckLayout(const std::vector<uint8_t>& data, int loop)
+    {
+        const auto ReadWord = [&](size_t offset) -> int
+        {
+            return (offset + 1 < data.size() ? data[offset] | data[offset + 1] << 8 : -1);
+        };
+
+        int patterns  = ReadWord(1 + loop);
+        int samples   = ReadWord(3 + loop);
+        int ornaments = ReadWord(5 + loop);
+        int positions = data[7 + loop];
+
+        // patterns follow the positions list, optionally with the title
+        int tableOffset = (patterns - positions - loop);
+        if (tableOffset != 8 && tableOffset != 71) return false;
+        if (patterns >= int(data.size())) return false;
+
+        // first sample and ornament start right after their pointer tables
+        if (ReadWord(samples) != 0x40 || ReadWord(ornaments) != 0x40) return false;
+
+        // first pattern starts right after the pattern pointer table
+        int maxPattern = 0;
+        for (int i = 0; i < positions; ++i)
+        {
+            maxPattern = std::max<int>(maxPattern, data[8 + loop + i]);
+        }
+        return (ReadWord(patterns) == (maxPattern + 1) * 6);
+    }
+}
+
 bool DecodeASC::Open(Stream& stream)
 {
     bool isDetected = false;
@@ -14,28 +47,35 @@ bool DecodeASC::Open(Stream& stream)
             fileStream.seekg(0, fileStream.end);
             uint32_t fileSize = (uint32_t)fileStream.tellg();
 
-            if (fileSize >= 9)
+            if (fileSize >= 9 && fileSize < 0xFFFF)
             {
-                Header header;
+                std::vector<uint8_t> data(fileSize);
                 fileStream.seekg(0, fileStream.beg);
-                fileStream.read((char*)(&header), std::min((uint32_t)sizeof(Header), fileSize));
+                fileStream.read((char*)data.data(), fileSize);
 
-                bool isHeaderOK = true;
-                isHeaderOK &= (header.patternsPointers < fileSize);
-                isHeaderOK &= (header.samplesPointers < fileSize);
-                isHeaderOK &= (header.ornamentsPointers < fileSize);
+                // ASC1 has the looping position byte after the delay, ASC0 has not
+                bool isASC1 = CheckLayout(data, 1);
+                bool isASC0 = !isASC1 && CheckLayout(data, 0);
 
-                if (isHeaderOK)
+                if (isASC1 || isASC0)
                 {
-                    m_data = new uint8_t[fileSize];
-                    fileStream.seekg(0, fileStream.beg);
-                    fileStream.read((char*)m_data, fileSize);
+                    if (isASC0)
+                    {
+                        // convert ASC0 to ASC1: insert looping position
+                        // and shift the pointers that follow it
+                        data.insert(data.begin() + 1, 0);
+                        for (int i = 2; i <= 6; i += 2) (uint16_t&)data[i] += 1;
+                    }
+
+                    m_data = new uint8_t[data.size()];
+                    memcpy(m_data, data.data(), data.size());
 
                     Init();
                     isDetected = true;
 
-                    auto titleId = (uint8_t*)(&header.positions[header.numberOfPositions]);
-                    if (!memcmp(titleId, "ASM COMPILATION OF ", 19))
+                    auto& header = *(Header*)m_data;
+                    auto titleId = &m_data[offsetof(Header, positions) + header.numberOfPositions];
+                    if (header.patternsPointers - header.numberOfPositions == 72 && !memcmp(titleId, "ASM COMPILATION OF ", 19))
                     {
                         auto artistId = (titleId + 19 + 20);
                         if (!memcmp(artistId, " BY ", 4))
