@@ -69,16 +69,8 @@ FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, FilelistTraversal& fi
     , m_enables{ true, true, true, true, true }
     , m_pause(false)
     , m_step(1.f)
-    , m_sPrint(false)
-    , m_sHeight(0)
-    , m_dHeight(0)
     , m_hideStream(false)
 {}
-
-FilelistPlayer::~FilelistPlayer()
-{
-    terminal::cursor::show(true);
-}
 
 void FilelistPlayer::Play()
 {
@@ -95,9 +87,6 @@ void FilelistPlayer::Play()
         if (action == Action::GoToNextFile) available = m_filelist.GetNextFile(path);
         if (!available) break;
 
-        m_sPrint = true;
-        m_sHeight = m_dHeight = 0;
-        
         auto tpBefore = std::chrono::steady_clock::now();
         if (bgDecoder.IsReady(path))
         {
@@ -111,7 +100,8 @@ void FilelistPlayer::Play()
             if (!FileDecoder::Decode(path, *stream))
             {
                 stream.reset();
-                std::cout << "Could not decode file: " << path << std::endl;
+                gui::EraseFile();
+                gui::Print("Could not decode file: \"" + path.string() + '"');
             }
         }
 
@@ -136,10 +126,6 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
 {
     auto action{ Action::Nothing };
 
-    m_sPrint = true;
-    m_sHeight += m_dHeight;
-    m_dHeight = 0;
-
     if (m_player.Init(stream))
     {
         m_step = 1.f;
@@ -147,15 +133,20 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
         m_player.Play();
 
         FrameId frameId = -1;
+        auto drawTime = std::chrono::steady_clock::now();
         while (action == Action::Nothing)
         {
             m_output.GetEnables() = m_enables;
             gui::Update();
 
-            if (m_sPrint || m_player.GetFrameId() != frameId)
+            // redraw every new frame, and from time to time while the playback
+            // is paused, to show changes of settings and the window size
+            auto now = std::chrono::steady_clock::now();
+            if (m_player.GetFrameId() != frameId || now - drawTime >= std::chrono::milliseconds(40))
             {
                 frameId = m_player.GetFrameId();
-                OnFramePlaying(stream, frameId);
+                drawTime = now;
+                gui::DrawPlayback(GetFileView(stream), stream, frameId, m_output, !m_hideStream);
             }
 
             if (m_termination)
@@ -176,12 +167,13 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
         }
 
         m_player.Stop();
-        gui::Clear(m_dHeight);
+        gui::CommitFile(GetFileView(stream), stream, m_output.toString());
     }
     else
     {
         action = Action::GoToNextFile;
-        std::cout << "Could not init player with module" << std::endl;
+        gui::EraseFile();
+        gui::Print("Could not init player with module");
     }
     return action;
 }
@@ -280,7 +272,6 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
             : m_favorites.InsertFile(stream.file))
         {
             m_favorites.ExportPlaylist();
-            m_sPrint = true;
         }
     }
 
@@ -289,62 +280,29 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
         if (gui::GetKeyState(key).pressed)
         {
             m_enables[key - '1'] ^= true;
-            m_sPrint = true;
         }
     }
 
     if (gui::GetKeyState('H').pressed)
     {
         m_hideStream ^= true;
-        gui::Clear(m_dHeight);
-        m_dHeight = 0;
     }
 
     return Action::Nothing;
 }
 
-void FilelistPlayer::OnFrameDecoded(const Stream& stream, FrameId frameId)
+gui::FileView FilelistPlayer::GetFileView(const Stream& stream) const
 {
-    terminal::cursor::move_up(int(m_dHeight));
-    m_dHeight = 0;
-
-    if (m_sPrint)
+    return
     {
-        gui::Clear(m_sHeight);
-        m_sHeight = 0;
-
-        auto index = m_filelist.GetCurrFileIndex();
-        auto amount = m_filelist.GetNumberOfFiles();
-        auto favorite = m_favorites.ContainsFile(stream.file);
-
-        m_sHeight += gui::PrintInputFile(stream.file, index, amount, favorite);
-        m_sHeight += gui::PrintBriefStreamInfo(stream);
-        m_sPrint = false;
-    }
-
-    m_dHeight += gui::PrintDecodingProgress(stream);
+        stream.file,
+        m_filelist.GetCurrFileIndex(),
+        int(m_filelist.GetNumberOfFiles()),
+        m_favorites.ContainsFile(stream.file)
+    };
 }
 
-void FilelistPlayer::OnFramePlaying(const Stream& stream, FrameId frameId)
+void FilelistPlayer::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
-    terminal::cursor::move_up(int(m_dHeight));
-    m_dHeight = 0;
-
-    if (m_sPrint)
-    {
-        gui::Clear(m_sHeight);
-        m_sHeight = 0;
-
-        auto index = m_filelist.GetCurrFileIndex();
-        auto amount = m_filelist.GetNumberOfFiles();
-        auto favorite = m_favorites.ContainsFile(stream.file);
-
-        m_sHeight += gui::PrintInputFile(stream.file, index, amount, favorite);
-        m_sHeight += gui::PrintFullStreamInfo(stream, m_output.toString());
-        m_sPrint = false;
-    }
-
-    if (!m_hideStream)
-    m_dHeight += gui::PrintStreamFrames(stream, frameId, m_output);
-    m_dHeight += gui::PrintPlaybackProgress(stream, frameId);
+    gui::DrawDecoding(GetFileView(stream), stream);
 }

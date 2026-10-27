@@ -62,8 +62,8 @@ void FilelistConverter::Convert()
 
 void FilelistConverter::ExportPlaylist()
 {
-    std::cout << "output: " << m_outputPath.string() << std::endl;
-    std::cout << std::endl;
+    gui::Print("output: " + m_outputPath.string());
+    gui::Print("");
 
     m_filelist.ExportPlaylist(m_outputPath);
 }
@@ -73,67 +73,36 @@ void FilelistConverter::ConvertFile()
     Stream stream;
     stream.dchip = m_chip;
 
-    m_sHeight = 0;
-    m_dHeight = 0;
-    m_sPrint = true;
-
     if (Decode(m_inputPath, stream))
     {
-        m_sPrint = true;
-        m_sHeight += m_dHeight;
-        m_dHeight = 0;
-
         if (Encode(m_outputPath, stream))
         {
-            gui::Clear(m_dHeight);
+            gui::CommitFile(GetFileView(), stream, m_outputPath.string());
         }
         else
         {
-            std::cout << "Could not encode file: " << m_outputPath << std::endl;
+            gui::EraseFile();
+            gui::Print("Could not encode file: \"" + m_outputPath.string() + '"');
         }
     }
     else
     {
-        std::cout << "Could not decode file: " << m_inputPath << std::endl;
+        gui::EraseFile();
+        gui::Print("Could not decode file: \"" + m_inputPath.string() + '"');
     }
+}
+
+gui::FileView FilelistConverter::GetFileView() const
+{
+    return { m_inputPath, m_filelist.GetCurrFileIndex(), int(m_filelist.GetNumberOfFiles()), false };
 }
 
 void FilelistConverter::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
-    terminal::cursor::move_up(int(m_dHeight));
-    m_dHeight = 0;
-
-    if (m_sPrint)
-    {
-        gui::Clear(m_sHeight);
-        m_sHeight = 0;
-
-        auto index = m_filelist.GetCurrFileIndex();
-        auto amount = m_filelist.GetNumberOfFiles();
-
-        m_sHeight += gui::PrintInputFile(m_inputPath, index, amount, false);
-        m_sHeight += gui::PrintBriefStreamInfo(stream);
-        m_sPrint = false;
-    }
-    m_dHeight += gui::PrintDecodingProgress(stream);
+    gui::DrawDecoding(GetFileView(), stream);
 }
 
 void FilelistConverter::OnFrameEncoded(const Stream& stream, FrameId frameId)
 {
-    terminal::cursor::move_up(int(m_dHeight));
-    m_dHeight = 0;
-
-    if (m_sPrint)
-    {
-        gui::Clear(m_sHeight);
-        m_sHeight = 0;
-
-        auto index = m_filelist.GetCurrFileIndex();
-        auto amount = m_filelist.GetNumberOfFiles();
-
-        m_sHeight += gui::PrintInputFile(m_inputPath, index, amount, false);
-        m_sHeight += gui::PrintFullStreamInfo(stream, m_outputPath.string());
-        m_sPrint = false;
-    }
-    m_dHeight += gui::PrintEncodingProgress(stream, frameId);
+    gui::DrawEncoding(GetFileView(), stream, frameId, m_outputPath.string());
 }

@@ -65,6 +65,7 @@ public:
 	PrintBuffer& draw(std::string s);
 	PrintBuffer& draw(wchar_t c);
 	PrintBuffer& draw(char c);
+	PrintBuffer& paste(const PrintBuffer& other, int x, int y);
 
 public:
 	SHORT x, y, w, h;

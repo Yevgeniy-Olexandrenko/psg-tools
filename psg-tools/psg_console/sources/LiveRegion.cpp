@@ -148,9 +148,10 @@ void LiveRegion::Present(const CHAR_INFO* cells, int height)
     }
 
     // Under ConPTY the rows from the region down to the bottom of the window
-    // get a no-break space: it looks blank, but the terminal does not take
-    // the rows for empty ones, which it would drop on resize, while the console
-    // would keep them, and then both would place the text differently
+    // get a blank Braille pattern: it looks like a space, but it is not one,
+    // so the terminal does not take the rows for empty ones, which it would
+    // drop on resize, while the console would keep them, and then both would
+    // place the text differently
     int fill = height;
     if (IsWindowSizedBuffer(geometry))
     {
@@ -164,22 +165,17 @@ void LiveRegion::Present(const CHAR_INFO* cells, int height)
     std::copy(cells, cells + width * height, m_frame.begin());
     for (int y = height; y < fill; ++y)
     {
-        m_frame[width * y].Char.UnicodeChar = L' ';
+        m_frame[width * y].Char.UnicodeChar = wchar_t(0x2800);
     }
 
-    for (int y = 0; y < rows;)
+    // all the changed rows are written at once, otherwise the terminal may show
+    // a part of them from the previous frame and a part from the new one
+    int first = 0, last = (rows - 1);
+    while (first <= last && IsRowShown(&m_frame[width * first], first)) ++first;
+    while (last >= first && IsRowShown(&m_frame[width * last], last)) --last;
+    if (first <= last)
     {
-        if (IsRowShown(&m_frame[width * y], y))
-        {
-            ++y;
-            continue;
-        }
-
-        // write a run of changed rows at once
-        int end = (y + 1);
-        while (end < rows && !IsRowShown(&m_frame[width * end], end)) ++end;
-        console::WriteCells(&m_frame[width * y], m_width, end - y, top + y);
-        y = end;
+        console::WriteCells(&m_frame[width * first], m_width, last - first + 1, top + first);
     }
 
     m_frame.resize(width * fill);

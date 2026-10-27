@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PSGAudio.h"
+#include "ConsoleGUI.h"
 #include "filelist/FilelistTraversal.h"
 
 using Termination = std::atomic<bool>;
@@ -11,17 +12,16 @@ class FilelistPlayer : public FileDecoder
 
 public:
     FilelistPlayer(Chip& chip, Output& output, FilelistTraversal& filelist, Filelist& favorites, Termination& termination);
-    ~FilelistPlayer();
 
     void Play();
 
 private:
     Action PlayStream(const Stream& stream);
     Action HandleUserInput(const Stream& stream);
-    
+    gui::FileView GetFileView(const Stream& stream) const;
+
 protected:
     void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
-    void OnFramePlaying(const Stream& stream, FrameId frameId);
 
 
 private:
@@ -35,9 +35,5 @@ private:
     Output::Enables m_enables;
     bool  m_pause;
     float m_step;
-
-    bool m_sPrint;
-    size_t m_sHeight;
-    size_t m_dHeight;
-    bool m_hideStream;
+    bool  m_hideStream;
 };

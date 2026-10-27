@@ -1,17 +1,46 @@
-﻿#include <iomanip>
+﻿#include <algorithm>
+#include <chrono>
+#include <iomanip>
 #include <sstream>
-#include <array>
+#include <vector>
 
 #include "ConsoleGUI.h"
 #include "Console.h"
-#include "PrintBuffer.h"
+#include "LiveRegion.h"
 
 namespace gui
 {
-    using namespace terminal;
+    // the header row and 15 frames around the playing one
+    const int k_maxFramesRows = 16;
 
-	PrintBuffer   m_framesBuffer(k_consoleWidth, 16);
+    // decoding and encoding report every single frame, which is way more
+    // often than the console needs to be redrawn
+    const auto k_progressInterval = std::chrono::milliseconds(20);
+
+    struct Property
+    {
+        std::string label;
+        std::string value;
+        SHORT color;
+    };
+
+    struct FramesLayout
+    {
+        int rows;     // zero if there is no room for the frames
+        int chips;    // chips shown side by side
+        bool stacked; // the second chip is shown below the first one
+        bool meters;  // output level meters at both sides
+        int width;    // width of the registers dump
+    };
+
+    PrintBuffer   m_framesBuffer(0, 0);
     KeyboardInput m_keyboardInput;
+
+    LiveRegion& region()
+    {
+        static LiveRegion s_region;
+        return s_region;
+    }
 
     void Init(const std::wstring& title)
     {
@@ -19,36 +48,36 @@ namespace gui
         // that only resizes conhost's own buffer and desyncs it from the terminal
         console::DisableQuickEdit();
         SetConsoleTitle(title.c_str());
+        region();
+    }
+
+    void Shutdown()
+    {
+        region().Erase();
+        console::ShowCursor(true);
     }
 
 	void Update()
 	{
-        cursor::show(false);
 		m_keyboardInput.Update();
-	}
-
-    void Clear(size_t height)
-    {
-        Clear(-int(height), height);
-    }
-
-    void Clear(int offset, size_t height)
-	{
-        if (offset < 0) cursor::move_up(-offset);
-        else cursor::move_down(offset);
-
-        for (size_t i = 0; i < height; ++i)
-        {
-            cursor::erase_line();
-            cursor::move_down(1);
-        }
-        cursor::move_up(int(height));
 	}
 
 	const KeyState& GetKeyState(int key)
 	{
 		return m_keyboardInput.GetKeyState(key);
 	}
+
+    void Print(const std::string& text, WORD color)
+    {
+        region().Sync();
+        region().Print(text, color);
+    }
+
+    void PrintRuler()
+    {
+        region().Sync();
+        region().Print(' ' + std::string(std::max(0, region().GetWidth() - 1), '-'), FG_BLUE);
+    }
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -59,113 +88,138 @@ namespace gui
         str.erase(std::find_if(str.rbegin(), str.rend(), [](int c) { return !std::isspace(c); }).base(), str.end());
     };
 
-    bool limit(std::string& str, size_t add = 0)
+    // cuts out the middle of the string to make it fit the given length
+    template<typename String> void limit(String& str, int length)
     {
-        size_t len = str.length();
-        size_t max = terminal_width() - 2;
-        if (len + add > max)
+        int size = int(str.length());
+        if (size > length)
         {
-            size_t reduce = (len + add - max + 3 + 2) / 2;
-            str = str.substr(0, len / 2 - reduce) + " ~ " + str.substr(len / 2 + reduce, len);
-            return true;
-        }
-        return false;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-
-	size_t PrintInputFile(const std::filesystem::path& path, int index, int amount, bool isFavorite)
-	{
-        cursor::show(false);
-        std::string numberStr = std::to_string(index + 1);
-        std::string totalStr  = std::to_string(amount);
-        std::string fileName  = path.stem().string();
-        std::string fileExt   = path.extension().string();
-
-        size_t numLen = (numberStr.length() + 1 + totalStr.length());
-        size_t strLen = (numLen + fileName.length() + fileExt.length());
-        if (limit(fileName, 7 + numLen + fileExt.length()))
-            strLen = (numLen + fileName.length() + fileExt.length());
-        size_t delLen = (terminal_width() - 2 - 7 - strLen);
-
-        std::cout << ' ' << color::bright_blue << std::string(delLen, '-');
-        std::cout << color::bright_cyan << "[ ";
-        std::cout << color::bright_yellow << numberStr << color::bright_cyan << '/' << color::bright_yellow << totalStr;
-        std::cout << ' ' << (isFavorite ? color::bright_magenta : color::bright_white) << fileName;
-        std::cout << color::bright_grey << fileExt;
-        std::cout << color::bright_cyan << " ]";
-        std::cout << color::bright_blue << "--";
-        std::cout << color::reset << std::endl;
-        return 1;
-	}
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    void printPropertyLabel(const std::string& label)
-    {
-        std::cout << ' ' << color::bright_yellow << label;
-        std::cout << color::bright_grey << std::string(9 - label.length(), '.');
-        std::cout << color::bright_magenta << ": ";
-    };
-
-    size_t printModuleProperty(const std::string& label, const Stream& stream, Stream::Property property)
-    {
-        std::string str = stream.ToString(property);
-        trim(str);
-
-        if (!str.empty())
-        {
-            limit(str, 9);
-            printPropertyLabel(label);
-            if (property == Stream::Property::Title)
-                std::cout << color::bright_green;
+            if (length < 5)
+            {
+                str = str.substr(0, std::max(0, length));
+            }
             else
-                std::cout << color::bright_white;
-            std::cout << str << color::reset << std::endl;
-            return 1;
+            {
+                String separator(3, ' ');
+                separator[1] = '~';
+
+                int head = (length - 3) / 2;
+                int tail = (length - 3 - head);
+                str = str.substr(0, head) + separator + str.substr(size - tail);
+            }
         }
-        return 0;
-    };
-
-    size_t printOutputProperty(const std::string& label, const std::string& output)
-    {
-        std::string str = output;
-        trim(str);
-
-        if (!str.empty())
-        {
-            printPropertyLabel(label);
-            std::cout << color::bright_cyan;
-            std::cout << str << color::reset << std::endl;
-            return 1;
-        }
-        return 0;
-    };
-
-    size_t PrintBriefStreamInfo(const Stream& stream)
-    {
-        size_t height = 0;
-        height += printModuleProperty("Title", stream, Stream::Property::Title);
-        height += printModuleProperty("Artist", stream, Stream::Property::Artist);
-        height += printModuleProperty("Comment", stream, Stream::Property::Comment);
-        height += printModuleProperty("Type", stream, Stream::Property::Type);
-        height += printModuleProperty("Chip", stream, Stream::Property::Chip);
-        return height;
     }
 
-	size_t PrintFullStreamInfo(const Stream& stream, const std::string& output)
-	{
-        size_t height = 0;
-        height += printModuleProperty("Title", stream, Stream::Property::Title);
-        height += printModuleProperty("Artist", stream, Stream::Property::Artist);
-        height += printModuleProperty("Comment", stream, Stream::Property::Comment);
-        height += printModuleProperty("Type", stream, Stream::Property::Type);
-        height += printModuleProperty("Chip", stream, Stream::Property::Chip);
-        height += printModuleProperty("Frames", stream, Stream::Property::Frames);
-        height += printModuleProperty("Duration", stream, Stream::Property::Duration);
-        height += printOutputProperty("Output", output);
-        return height;
-	}
+    bool isTimeToDraw(const FileView& file)
+    {
+        static std::filesystem::path s_path;
+        static auto s_time = std::chrono::steady_clock::time_point();
+
+        auto now = std::chrono::steady_clock::now();
+        if (file.path == s_path && now - s_time < k_progressInterval) return false;
+
+        s_path = file.path;
+        s_time = now;
+        return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    void drawFileHeader(PrintBuffer& canvas, int y, const FileView& file)
+    {
+        std::string number = std::to_string(file.index + 1);
+        std::string amount = std::to_string(file.amount);
+        std::wstring name = file.path.stem().wstring();
+        std::wstring ext = file.path.extension().wstring();
+
+        // " ---[ 1/10 name.ext ]--" stretched to the canvas width
+        int fixed = int(9 + number.length() + amount.length() + ext.length());
+        limit(name, canvas.w - fixed - 2);
+        int dashes = std::max(0, canvas.w - fixed - int(name.length()));
+
+        canvas.position(0, y).draw(' ');
+        canvas.color(FG_BLUE).draw(std::string(dashes, '-'));
+        canvas.color(FG_CYAN).draw("[ ");
+        canvas.color(FG_YELLOW).draw(number);
+        canvas.color(FG_CYAN).draw('/');
+        canvas.color(FG_YELLOW).draw(amount);
+        canvas.draw(' ');
+        canvas.color(file.favorite ? FG_MAGENTA : FG_WHITE).draw(name);
+        canvas.color(FG_DARK_GREY).draw(ext);
+        canvas.color(FG_CYAN).draw(" ]");
+        canvas.color(FG_BLUE).draw("--");
+    }
+
+    void addProperty(std::vector<Property>& properties, const std::string& label, std::string value, SHORT color)
+    {
+        trim(value);
+        if (!value.empty())
+        {
+            properties.push_back({ label, value, color });
+        }
+    }
+
+    // the brief properties are known while the stream is decoding
+    std::vector<Property> getProperties(const Stream& stream, const std::string* output)
+    {
+        std::vector<Property> properties;
+        addProperty(properties, "Title", stream.ToString(Stream::Property::Title), FG_GREEN);
+        addProperty(properties, "Artist", stream.ToString(Stream::Property::Artist), FG_WHITE);
+        addProperty(properties, "Comment", stream.ToString(Stream::Property::Comment), FG_WHITE);
+        addProperty(properties, "Type", stream.ToString(Stream::Property::Type), FG_WHITE);
+        addProperty(properties, "Chip", stream.ToString(Stream::Property::Chip), FG_WHITE);
+        if (output)
+        {
+            addProperty(properties, "Frames", stream.ToString(Stream::Property::Frames), FG_WHITE);
+            addProperty(properties, "Duration", stream.ToString(Stream::Property::Duration), FG_WHITE);
+            addProperty(properties, "Output", *output, FG_CYAN);
+        }
+        return properties;
+    }
+
+    void drawProperty(PrintBuffer& canvas, int y, const Property& property)
+    {
+        std::string value = property.value;
+        limit(value, canvas.w - 12);
+
+        canvas.position(1, y).color(FG_YELLOW).draw(property.label);
+        canvas.color(FG_DARK_GREY).draw(std::string(9 - property.label.length(), '.'));
+        canvas.color(FG_MAGENTA).draw(": ");
+        canvas.color(property.color).draw(value);
+    }
+
+    // " --[ / value ]-----" with the dashes on the left growing with the position
+    void drawProgress(PrintBuffer& canvas, int y, float position, int spinner, const std::string& value)
+    {
+        static const char k_spinner[] = R"(_\|/)";
+        int range = std::max(0, canvas.w - int(value.length()) - 11);
+        int left = int(std::clamp(position, 0.f, 1.f) * range + 0.5f);
+
+        canvas.position(0, y).draw(' ');
+        canvas.color(FG_BLUE).draw(std::string(2 + left, '-'));
+        canvas.color(FG_CYAN).draw("[ ");
+        canvas.color(FG_MAGENTA).draw(k_spinner[spinner & 3]).draw(' ');
+        canvas.color(FG_WHITE).draw(value);
+        canvas.color(FG_CYAN).draw(" ]");
+        canvas.color(FG_BLUE).draw(std::string(2 + range - left, '-'));
+    }
+
+    // the header, the properties that fit the window and the progress bar
+    template<typename DrawProgress>
+    void drawFileView(const FileView& file, const std::vector<Property>& properties, DrawProgress drawProgress)
+    {
+        region().Sync();
+        int rows = std::clamp(region().GetMaxHeight() - 2, 0, int(properties.size()));
+
+        PrintBuffer& canvas = region().Begin(2 + rows);
+        drawFileHeader(canvas, 0, file);
+        for (int i = 0; i < rows; ++i)
+        {
+            drawProperty(canvas, 1 + i, properties[i]);
+        }
+        drawProgress(canvas, canvas.h - 1);
+        region().Render();
+    }
 
 	////////////////////////////////////////////////////////////////////////////
 
@@ -239,7 +293,7 @@ namespace gui
             ),
             enables[4] && (
                 enableN[Frame::Channel::A] ||
-                enableN[Frame::Channel::B] || 
+                enableN[Frame::Channel::B] ||
                 enableN[Frame::Channel::C]
             ),
             false
@@ -251,10 +305,10 @@ namespace gui
             enables[0] && enableT[Frame::Channel::A],
             enables[4] && enableN[Frame::Channel::A],
             enables[3] && enableE[Frame::Channel::A] && periodE,
-           
+
         };
         Coloring coloringB
-        { 
+        {
             playing,
             enables[1],
             enables[1] && enableT[Frame::Channel::B],
@@ -262,7 +316,7 @@ namespace gui
             enables[3] && enableE[Frame::Channel::B] && periodE,
         };
         Coloring coloringC
-        { 
+        {
             playing,
             enables[2],
             enables[2] && enableT[Frame::Channel::C],
@@ -270,7 +324,7 @@ namespace gui
             enables[3] && enableE[Frame::Channel::C] && periodE,
         };
         Coloring coloringE
-        { 
+        {
             playing,
             enables[3],
             false,
@@ -411,7 +465,7 @@ namespace gui
             ),
             false
         };
-       
+
         uint16_t color = (playing ? BG_DARK_MAGENTA | FG_CYAN : FG_CYAN);
         m_framesBuffer.color(color).draw('|');
         printRegisterValue(chip, frame, Register::Mixer, coloringM);
@@ -494,27 +548,50 @@ namespace gui
             printRegistersHeaderForMode(k_headerForComMode);
     }
 
-	size_t PrintStreamFrames(const Stream& stream, int frameId, const Output& output)
-	{
-        int height = int(m_framesBuffer.h);
-        int width  = int(m_framesBuffer.w - 2);
-        int range1 = (height - 2) / 2;
-        int range2 = (height - 2) - range1;
+    // Chooses how the frames fit the width: the chips side by side, the second
+    // chip below the first one, only the first chip, or no frames at all
+    FramesLayout getFramesLayout(const Stream& stream, int width, int rows)
+    {
+        FramesLayout layout{};
+        int registers = int(stream.IsExpandedModeUsed() ? k_headerForExpMode.length() : k_headerForComMode.length());
         bool isTwoChips = stream.IsSecondChipUsed();
-        bool isExpMode  = stream.IsExpandedModeUsed();
+        int space = (width - 1);
 
-        // prepare console for drawing
-        if (frameId == 0) { m_framesBuffer.clear(); cursor::show(false); }
-        for (int i = 0; i < height; ++i) std::cout << std::endl;
-        terminal::cursor::move_up(height);
+        if (rows >= 3)
+        {
+            if (isTwoChips && space >= 6 + 2 * registers)
+            {
+                layout.chips = 2;
+            }
+            else if (space >= 6 + registers)
+            {
+                layout.chips = 1;
+                layout.stacked = (isTwoChips && rows >= 6);
+            }
+        }
+
+        if (layout.chips)
+        {
+            layout.width = (6 + layout.chips * registers);
+            layout.meters = (space >= layout.width + 4);
+            layout.rows = (layout.stacked ? rows / 2 * 2 : rows);
+        }
+        return layout;
+    }
+
+    bool isSameLayout(const FramesLayout& a, const FramesLayout& b)
+    {
+        return (a.rows == b.rows && a.chips == b.chips && a.stacked == b.stacked && a.meters == b.meters && a.width == b.width);
+    }
+
+    void printFramesBlock(const Stream& stream, int frameId, const Output& output, int x, int y, int rows, int chip, int chips)
+    {
+        bool isExpMode = stream.IsExpandedModeUsed();
+        int range = (rows - 2) / 2;
 
         // print header
-        int regs_w = int(isExpMode ? k_headerForExpMode.length() : k_headerForComMode.length());
-        int dump_w = 6 + (isTwoChips ? 2 * regs_w : regs_w);
-        int offset = 1 + (width - dump_w) / 2;
-        m_framesBuffer.position(offset, 0).color(FG_DARK_CYAN).draw("FRAME").move(1, 0);
-        printRegistersHeader(isExpMode);
-        if (isTwoChips) printRegistersHeader(isExpMode);
+        m_framesBuffer.position(x, y).color(FG_DARK_CYAN).draw("FRAME").move(1, 0);
+        for (int i = 0; i < chips; ++i) printRegistersHeader(isExpMode);
 
         // prepare fake frame
         static Frame fakeFrame;
@@ -526,14 +603,14 @@ namespace gui
         }
 
         // print frames
-        for (int i = int(frameId - range1), y = 1; i <= int(frameId + range2); ++i, ++y)
+        for (int i = frameId - range, row = y + 1; row < y + rows; ++i, ++row)
         {
             bool highlight = (i == frameId);
             bool useFakeFrame = (i < 0 || i >= int(stream.play.framesCount));
             const Frame& frame = useFakeFrame ? fakeFrame : stream.play.GetFrame(i);
 
             // print frame number
-            m_framesBuffer.position(offset, y);
+            m_framesBuffer.position(x, row);
             m_framesBuffer.color(highlight ? BG_DARK_MAGENTA | FG_WHITE : FG_DARK_GREY);
             if (useFakeFrame)
                 m_framesBuffer.draw(std::string(5, '.'));
@@ -546,26 +623,28 @@ namespace gui
             m_framesBuffer.draw(' ');
 
             // print frame registers
-            printRegistersValues(0, frame, highlight, output.GetEnables());
-            if (isTwoChips) printRegistersValues(1, frame, highlight, output.GetEnables());
+            for (int c = chip; c < chip + chips; ++c)
+            {
+                printRegistersValues(c, frame, highlight, output.GetEnables());
+            }
         }
+    }
 
-        // print levels
-        float levelL, levelR;
-        output.GetLevels(levelL, levelR);
+    void printLevels(const Output& output, int offset, int dumpWidth)
+    {
+        int height = m_framesBuffer.h;
+        int width  = m_framesBuffer.w;
+
+        // the trails of the meters move away from the registers dump
         for (int y = 0; y < height; ++y)
         {
-            for (int x = 1; x <= offset - 3; ++x)
-            {
-                int i = (y * m_framesBuffer.w + x);
-                m_framesBuffer.buffer[i] = m_framesBuffer.buffer[i + 1];
-            }
-            for (int x = width; x >= offset + dump_w + 2; --x)
-            {
-                int i = (y * m_framesBuffer.w + x);
-                m_framesBuffer.buffer[i] = m_framesBuffer.buffer[i - 1];
-            }
+            CHAR_INFO* row = (m_framesBuffer.buffer + y * width);
+            for (int x = 1; x <= offset - 3; ++x) row[x] = row[x + 1];
+            for (int x = width - 1; x >= offset + dumpWidth + 2; --x) row[x] = row[x - 1];
         }
+
+        float levelL, levelR;
+        output.GetLevels(levelL, levelR);
 
         int half_h = (height / 2);
         int last_y = (half_h - 1);
@@ -576,61 +655,85 @@ namespace gui
 
             SHORT colorU = (y == last_y ? FG_RED : (y == 0 ? FG_CYAN : FG_GREY));
             SHORT colorD = (y == last_y ? FG_DARK_RED : (y == 0 ? FG_DARK_CYAN : FG_DARK_GREY));
-            
+
             m_framesBuffer.position(offset - 2, last_y - y).color(colorU).draw(charL);
             m_framesBuffer.position(offset - 2, half_h + y).color(colorD).draw(charL);
 
-            m_framesBuffer.position(offset + dump_w + 1, last_y - y).color(colorU).draw(charR);
-            m_framesBuffer.position(offset + dump_w + 1, half_h + y).color(colorD).draw(charR);
+            m_framesBuffer.position(offset + dumpWidth + 1, last_y - y).color(colorU).draw(charR);
+            m_framesBuffer.position(offset + dumpWidth + 1, half_h + y).color(colorD).draw(charR);
+        }
+    }
+
+    void printFrames(const Stream& stream, int frameId, const Output& output, const FramesLayout& layout, int width)
+    {
+        // the buffer keeps the trails of the level meters between the frames
+        static FramesLayout s_layout{};
+        if (frameId == 0 || width != m_framesBuffer.w || !isSameLayout(layout, s_layout))
+        {
+            m_framesBuffer.resize(width, layout.rows);
+            s_layout = layout;
         }
 
-        m_framesBuffer.render();
-        cursor::move_down(height);
-        return height;
-	}
-
-	////////////////////////////////////////////////////////////////////////////
-
-    size_t PrintProgress(int index, size_t count, int spinner, const std::string& value)
-    {
-        static int s_spin = -1;
-        int spin = (spinner & 3);
-
-        if (spin != s_spin)
+        int offset = 1 + (width - 1 - layout.width) / 2;
+        if (layout.stacked)
         {
-            static const char c_spinner[] = R"(_\|/)";
-            s_spin = spin;
-
-            auto range = size_t(terminal_width() - 1 - 2 - 2 - 2 - value.length() - 2 - 2 - 1);
-            auto size1 = size_t(float(index * range) / count + 0.5f);
-            auto size2 = size_t(range - size1);
-
-            std::cout << ' ' << color::bright_blue << std::string(2 + size1, '-');
-            std::cout << color::bright_cyan << "[ ";
-            std::cout << color::bright_magenta << c_spinner[spin] << ' ';
-            std::cout << color::bright_white << value;
-            std::cout << color::bright_cyan << " ]";
-            std::cout << color::bright_blue << std::string(size2 + 2, '-');
-            std::cout << color::reset << std::endl;
+            int rows = (layout.rows / 2);
+            printFramesBlock(stream, frameId, output, offset, 0, rows, 0, 1);
+            printFramesBlock(stream, frameId, output, offset, rows, rows, 1, 1);
         }
         else
         {
-            cursor::move_down(1);
+            printFramesBlock(stream, frameId, output, offset, 0, layout.rows, 0, layout.chips);
         }
-        return 1;
+
+        if (layout.meters)
+        {
+            printLevels(output, offset, layout.width);
+        }
     }
 
-    size_t PrintDecodingProgress(const Stream& stream)
+	////////////////////////////////////////////////////////////////////////////
+
+    void DrawDecoding(const FileView& file, const Stream& stream)
     {
-        const auto t = std::chrono::system_clock::now();
-        auto ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
-        return PrintProgress(1, 2, ms / 64, "Decoding");
+        if (isTimeToDraw(file))
+        {
+            drawFileView(file, getProperties(stream, nullptr), [](PrintBuffer& canvas, int y)
+            {
+                const auto t = std::chrono::system_clock::now();
+                auto ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+                drawProgress(canvas, y, 0.5f, ms / 64, "Decoding");
+            });
+        }
     }
 
-	size_t PrintPlaybackProgress(const Stream& stream, int frameId)
-	{
+    void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames)
+    {
+        region().Sync();
+        std::string outputName = output.toString();
+        std::vector<Property> properties = getProperties(stream, &outputName);
+
+        // the frames get the rows left from the header, the properties and the progress bar
+        int maxHeight = region().GetMaxHeight();
+        int propertiesRows = std::clamp(maxHeight - 2, 0, int(properties.size()));
+        int framesRows = (showFrames ? std::min(k_maxFramesRows, maxHeight - 2 - propertiesRows) : 0);
+        FramesLayout layout = getFramesLayout(stream, region().GetWidth(), framesRows);
+
+        PrintBuffer& canvas = region().Begin(2 + propertiesRows + layout.rows);
+        drawFileHeader(canvas, 0, file);
+        for (int i = 0; i < propertiesRows; ++i)
+        {
+            drawProperty(canvas, 1 + i, properties[i]);
+        }
+
+        if (layout.rows)
+        {
+            printFrames(stream, frameId, output, layout, canvas.w);
+            canvas.paste(m_framesBuffer, 0, 1 + propertiesRows);
+        }
+
         int hh, mm, ss, ms;
-        size_t playbackFrames  = stream.play.framesCount;
+        size_t playbackFrames = stream.play.framesCount;
         size_t remainingFrames = (playbackFrames - frameId);
         stream.ComputeDuration(remainingFrames, hh, mm, ss, ms);
 
@@ -638,12 +741,49 @@ namespace gui
         if (hh < 10) sstream << '0'; sstream << hh << ':';
         if (mm < 10) sstream << '0'; sstream << mm << ':';
         if (ss < 10) sstream << '0'; sstream << ss;
-        return PrintProgress(frameId, playbackFrames, (1000 - ms) / 64, sstream.str());
-	}
+        float position = (playbackFrames ? float(frameId) / playbackFrames : 0.f);
+        drawProgress(canvas, canvas.h - 1, position, (1000 - ms) / 64, sstream.str());
 
-    size_t PrintEncodingProgress(const Stream& stream, int frameId)
+        region().Render();
+    }
+
+    void DrawEncoding(const FileView& file, const Stream& stream, int frameId, const std::string& output)
     {
-        size_t frames = stream.framesCount;
-        return PrintProgress(frameId, frames, frameId / 256, "Encoding");
+        if (isTimeToDraw(file))
+        {
+            drawFileView(file, getProperties(stream, &output), [&](PrintBuffer& canvas, int y)
+            {
+                size_t frames = stream.framesCount;
+                float position = (frames ? float(frameId) / frames : 0.f);
+                drawProgress(canvas, y, position, frameId / 256, "Encoding");
+            });
+        }
+    }
+
+    void CommitFile(const FileView& file, const Stream& stream, const std::string& output)
+    {
+        region().Sync();
+        region().Erase();
+
+        // one row at a time, so all of them get to the history,
+        // even if the window is not tall enough to show them at once
+        auto commitRow = [](auto draw)
+        {
+            PrintBuffer& canvas = region().Begin(1);
+            draw(canvas);
+            region().Render();
+            region().Commit(1);
+        };
+
+        commitRow([&](PrintBuffer& canvas) { drawFileHeader(canvas, 0, file); });
+        for (const Property& property : getProperties(stream, &output))
+        {
+            commitRow([&](PrintBuffer& canvas) { drawProperty(canvas, 0, property); });
+        }
+    }
+
+    void EraseFile()
+    {
+        region().Erase();
     }
 }

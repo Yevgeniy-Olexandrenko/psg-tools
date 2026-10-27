@@ -35,14 +35,21 @@ Run from the repo root (the VS debugger also uses the repo root as its working d
 ./psg-tools-x64.exe sample.pt3 -p 3                   # stream to AYM Streamer on COM port index 3
 ```
 
-Other options: `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`. With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
+Other options: `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
 
 ## Architecture
 
 Three projects in the solution:
-- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5_decode` (packed YM/VTX), argparse, glob, magic_enum, terminal, rtf_filter.
+- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5_decode` (packed YM/VTX), argparse, glob, magic_enum, terminal (no longer used by the console UI), rtf_filter.
 - **psg_audio** (static lib): all format, processing and playback logic.
 - **psg_console** (exe): CLI parsing in `PSGTools.cpp`, interactive TUI player (`FilelistPlayer`, `ConsoleGUI`), batch converter (`FilelistConverter`).
+
+### Console output (`psg_console/sources/`)
+
+All output goes through the classic Win32 Console API, with no VT sequences, so it stays compatible with Windows 7. Under ConPTY (Windows Terminal), conhost translates these calls. The code never changes the console window size and lays everything out for the current size.
+- `Console`: thin wrappers over the API (geometry, cell writes, line output).
+- `LiveRegion`: the bottom part of the console that is redrawn every frame. Everything above the cursor is scrollback history; the cursor stays at the top of the region. `Commit` turns the top rows into history, and `Print` adds a line above the region. Resize handling and its ConPTY workarounds are documented in its comments; check `--ui-test` in both Windows Terminal and `conhost.exe` after changing it.
+- `ConsoleGUI`: lays out the current file (header, properties, register dump, progress) for the window size. `CommitFile` leaves the header and properties in the history.
 
 ### Core data model (`psg_audio/sources/stream/`)
 

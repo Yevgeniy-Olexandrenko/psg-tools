@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PSGAudio.h"
+#include "ConsoleGUI.h"
 #include "filelist/FilelistTraversal.h"
 
 using Termination = std::atomic<bool>;
@@ -15,6 +16,7 @@ public:
 protected:
     void ExportPlaylist();
     void ConvertFile();
+    gui::FileView GetFileView() const;
 
     void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
     void OnFrameEncoded(const Stream& stream, FrameId frameId) override;
@@ -27,8 +29,4 @@ private:
 
     Filelist::Path m_inputPath;
     Filelist::Path m_outputPath;
-
-    bool m_sPrint;
-    size_t m_sHeight;
-    size_t m_dHeight;
 };

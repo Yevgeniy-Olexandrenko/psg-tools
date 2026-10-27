@@ -105,3 +105,19 @@ PrintBuffer& PrintBuffer::draw(char c)
 {
     return draw(wchar_t((unsigned char)c));
 }
+
+PrintBuffer& PrintBuffer::paste(const PrintBuffer& other, int x, int y)
+{
+    for (int row = 0; row < other.h; ++row)
+    {
+        for (int col = 0; col < other.w; ++col)
+        {
+            int tx = (x + col), ty = (y + row);
+            if (tx >= 0 && tx < w && ty >= 0 && ty < h)
+            {
+                buffer[ty * w + tx] = other.buffer[row * other.w + col];
+            }
+        }
+    }
+    return *this;
+}

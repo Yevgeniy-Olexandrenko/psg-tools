@@ -1,28 +1,41 @@
 #pragma once
 
-#include "terminal/terminal.hpp"
+#include <filesystem>
+#include <string>
+
 #include "KeyboardInput.h"
+#include "PrintBuffer.h"
 #include "stream/Stream.h"
 #include "player/Output.h"
 
 namespace gui
 {
-	const int k_consoleWidth  = 108;
-	const int k_consoleHeight = 40;
+	// The file shown in the live region at the bottom of the console
+	struct FileView
+	{
+		std::filesystem::path path;
+		int index;
+		int amount;
+		bool favorite;
+	};
 
 	void Init(const std::wstring& title);
+	void Shutdown();
 	void Update();
-
-	void Clear(size_t height);
-	void Clear(int offset, size_t height);
 	const KeyState& GetKeyState(int key);
 
-	size_t PrintInputFile(const std::filesystem::path& path, int index, int amount, bool isFavorite);
-	size_t PrintBriefStreamInfo(const Stream& stream);
-	size_t PrintFullStreamInfo(const Stream& stream, const std::string& output);
-	size_t PrintStreamFrames(const Stream& stream, int frameId, const Output& output);
-	size_t PrintProgress(int index, size_t count, int spinner, const std::string& value);
-	size_t PrintDecodingProgress(const Stream& stream);
-	size_t PrintPlaybackProgress(const Stream& stream, int frameId);
-	size_t PrintEncodingProgress(const Stream& stream, int frameId);
+	// Lines printed into the scrollback history, above the live region
+	void Print(const std::string& text, WORD color = FG_GREY);
+	void PrintRuler();
+
+	// The live region is redrawn by each call, its layout adapts to the
+	// current size of the console window
+	void DrawDecoding(const FileView& file, const Stream& stream);
+	void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames);
+	void DrawEncoding(const FileView& file, const Stream& stream, int frameId, const std::string& output);
+
+	// Removes the live region and leaves the header and all the properties of
+	// the file in the history, no matter how many of them fit the window
+	void CommitFile(const FileView& file, const Stream& stream, const std::string& output);
+	void EraseFile();
 }

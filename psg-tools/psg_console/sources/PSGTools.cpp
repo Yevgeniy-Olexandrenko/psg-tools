@@ -21,38 +21,31 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 void PrintWellcome()
 {
     gui::Init(L"PSG Tools");
-
-    using namespace terminal;
-    std::cout << ' ' << color::bright_blue << std::string(gui::k_consoleWidth - 2, '-') << std::endl;
-    std::cout << ' ' << color::bright_red << "PSG Tools v1.0" << std::endl;
-    std::cout << ' ' << color::bright_red << "by Yevgeniy Olexandrenko" << std::endl;
-    std::cout << ' ' << color::bright_blue << std::string(gui::k_consoleWidth - 2, '-') << std::endl;
-    std::cout << color::reset;
+    gui::PrintRuler();
+    gui::Print(" PSG Tools v1.0", FG_RED);
+    gui::Print(" by Yevgeniy Olexandrenko", FG_RED);
+    gui::PrintRuler();
 }
 
 #if _DEBUG
 void PrintOutputDebugInfo(const std::string& debugInfo)
 {
-    using namespace terminal;
     if (!debugInfo.empty())
     {
         std::string line;
         std::stringstream ss(debugInfo);
-        while (getline(ss, line)) std::cout << ' ' << color::cyan << line << std::endl;
-        std::cout << ' ' << color::bright_blue << std::string(gui::k_consoleWidth - 2, '-') << std::endl;
-        std::cout << color::reset;
+        while (getline(ss, line)) gui::Print(' ' + line, FG_DARK_CYAN);
+        gui::PrintRuler();
     }
 }
 #endif
 
 void PrintPlayerControls()
 {
-    using namespace terminal;
-    std::cout << " SPACE\t- Pause/Resume current song playback" << std::endl;
-    std::cout << " DOWN\t- Go to next song in playlist" << std::endl;
-    std::cout << " UP\t- Go to previous song in playlist" << std::endl;
-    std::cout << " F\t- Add/Remove current song to/from favorites" << std::endl;
-    std::cout << color::reset;
+    gui::Print(" SPACE\t- Pause/Resume current song playback");
+    gui::Print(" DOWN\t- Go to next song in playlist");
+    gui::Print(" UP\t- Go to previous song in playlist");
+    gui::Print(" F\t- Add/Remove current song to/from favorites");
 }
 
 void InitProgramArguments(argparse::ArgumentParser& program)
@@ -221,5 +214,7 @@ int main(int argc, char* argv[])
             player.Play();
         }
     }
+
+    gui::Shutdown();
     return 0;
 }
