@@ -41,7 +41,7 @@ Other options: `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `Y
 ## Architecture
 
 Three projects in the solution:
-- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5_decode` (packed YM/VTX), argparse, glob, magic_enum, terminal (no longer used by the console UI), rtf_filter.
+- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5` + `lha/lzh` (LH5 compressor/decompressor and LZH container for YM/VTX, from ar002), argparse, glob, magic_enum.
 - **psg_audio** (static lib): all format, processing and playback logic.
 - **psg_console** (exe): CLI parsing in `PSGTools.cpp`, interactive TUI player (`FilelistPlayer`, `ConsoleGUI`), batch converter (`FilelistConverter`).
 
@@ -75,7 +75,7 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
 
 ### Adding or enabling a format
 
-Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Several classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`, `EncodeVGM`, `EncodeVTX`, `EncodeYM`, `EncodeWAV`. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
+Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Several classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`, `EncodeVGM`, `EncodeWAV`. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
 
 AYM is the project's own compressed streaming format (`EncodeAYM`, with selectable compression profiles and LZ78). It is under active development. `documents/output_file_formats.md` has the RSF spec and a feature/compression comparison of the output formats.
 

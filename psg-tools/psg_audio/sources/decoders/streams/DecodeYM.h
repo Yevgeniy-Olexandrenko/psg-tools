@@ -5,20 +5,6 @@
 class DecodeYM : public Decoder
 {
     #pragma pack(push, 1)
-    struct HeaderLZH
-    {
-        uint8_t  hdrSize;
-        uint8_t  chkSum;
-        uint8_t  method[5];
-        uint32_t compSize;
-        uint32_t unCompSize;
-        uint32_t dosDateTime;
-        uint16_t attr;
-        uint8_t  fileNameLen;
-    };
-    #pragma pack(pop)
-
-    #pragma pack(push, 1)
     struct HeaderYM5
     {
         uint8_t id[4];
@@ -39,7 +25,7 @@ public:
     void Close(Stream& stream) override;
 
 private:
-    uint8_t* m_data;
+    std::vector<uint8_t> m_data;
     size_t   m_offset;
     bool     m_interleaved;
     size_t   m_frames;

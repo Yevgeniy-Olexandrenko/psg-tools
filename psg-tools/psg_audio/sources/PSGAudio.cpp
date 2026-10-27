@@ -37,7 +37,7 @@
 #include "debug/DebugOutput.h"
 
 const std::string FileDecoder::FileTypes{ "asc|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
-const std::string FileEncoder::FileTypes{ "psg|rsf" };
+const std::string FileEncoder::FileTypes{ "psg|rsf|vtx|ym" };
 
 static DebugOutput<DBG_DECODING> dbg;
 
@@ -109,6 +109,8 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Encoder>(new EncodePSG()),
 		std::shared_ptr<Encoder>(new EncodeRSF()),
 		std::shared_ptr<Encoder>(new EncodeAYM()),
+		std::shared_ptr<Encoder>(new EncodeVTX()),
+		std::shared_ptr<Encoder>(new EncodeYM()),
 	};
 
 	std::shared_ptr<FrameProcessor> processors[]

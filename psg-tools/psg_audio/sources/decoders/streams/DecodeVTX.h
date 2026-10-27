@@ -34,7 +34,7 @@ public:
 	void Close  (Stream& stream) override;
 
 private:
-	uint8_t* m_data;
+	std::vector<uint8_t> m_data;
 	uint32_t m_frames;
 	FrameId  m_loop;
 	FrameId  m_frame;

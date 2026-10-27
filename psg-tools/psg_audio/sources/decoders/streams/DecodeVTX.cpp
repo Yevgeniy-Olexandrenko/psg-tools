@@ -1,5 +1,5 @@
 #include "DecodeVTX.h"
-#include "lha/lh5_decode.h"
+#include "lha/lh5.h"
 
 namespace
 {
@@ -73,19 +73,16 @@ bool DecodeVTX::Open(Stream& stream)
 
 				// unpack frames data
 				uint32_t packedSize = fileSize - (uint32_t)fileStream.tellg();
-				uint8_t* packedData = new uint8_t[packedSize];
+				std::vector<uint8_t> packedData(packedSize);
 
-				if (fileStream.read((char*)packedData, packedSize))
+				if (fileStream.read((char*)packedData.data(), packedSize))
 				{
-					uint32_t depackedSize = hdr.dataSize;
-					m_data = new uint8_t[depackedSize];
+					m_data.clear();
+					m_data.reserve(hdr.dataSize);
 
-					if (lh5_decode(packedData, m_data, depackedSize, packedSize))
-						isDetected = true;
-					else
-						delete[] m_data;
+					if (lh5::Decompress(packedData.data(), packedSize, m_data) == lh5::Result::Ok)
+						isDetected = (m_data.size() == hdr.dataSize && hdr.dataSize >= 14);
 				}
-				delete[] packedData;
 
 				// prepare information on frames
 				m_frames = (hdr.dataSize / 14);
@@ -100,7 +97,8 @@ bool DecodeVTX::Open(Stream& stream)
 
 bool DecodeVTX::Decode(Frame& frame)
 {
-	uint8_t* dataPtr = (m_data + m_frame);
+	if (m_frame >= m_frames) return false;
+	const uint8_t* dataPtr = (m_data.data() + m_frame);
 	m_frame++;
 
 	for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
@@ -109,11 +107,11 @@ bool DecodeVTX::Decode(Frame& frame)
 		dataPtr += m_frames;
 	}
 
-	return (m_frame < m_frames);
+	return true;
 }
 
 void DecodeVTX::Close(Stream& stream)
 {
 	stream.Finalize(m_loop);
-	delete[] m_data;
+	m_data.clear();
 }
