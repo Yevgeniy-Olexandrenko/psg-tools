@@ -70,10 +70,11 @@ void EncodeRSF::Close(const Stream& stream)
 
 void EncodeRSF::WriteSkip()
 {
-    if (m_skip)
+    // one 0xFE command skips up to 255 frames
+    for (; m_skip > 1; m_skip -= std::min(m_skip, uint16_t(255)))
     {
-        if (m_skip == 1) m_output << uint8_t(0xFF);
-        else m_output << uint8_t(0xFE) << uint8_t(m_skip);
-        m_skip = 0;
+        m_output << uint8_t(0xFE) << uint8_t(std::min(m_skip, uint16_t(255)));
     }
+    if (m_skip == 1) m_output << uint8_t(0xFF);
+    m_skip = 0;
 }

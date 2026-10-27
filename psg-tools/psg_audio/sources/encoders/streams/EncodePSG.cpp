@@ -71,8 +71,11 @@ void EncodePSG::WriteFrameBeginOrSkip()
 {
     if (m_skip)
     {
-        // TODO: what if blocks >= 256 (1024 frames) ???
-        if (int blocks = m_skip / 4) m_output << uint8_t(0xFE) << uint8_t(blocks);
+        // one 0xFE command skips up to 255 blocks of 4 frames
+        for (int blocks = m_skip / 4; blocks > 0; blocks -= 255)
+        {
+            m_output << uint8_t(0xFE) << uint8_t(std::min(blocks, 255));
+        }
         if (int frames = m_skip % 4) m_output << std::string(frames, uint8_t(0xFF));
         m_skip = 0;
     }
