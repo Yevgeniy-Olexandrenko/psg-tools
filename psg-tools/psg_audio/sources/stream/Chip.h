@@ -47,7 +47,7 @@ public:
     ReadOnlyProperty<bool> outputKnown;
     ReadOnlyProperty<bool> stereoKnown;
 
-    const Model& model(int index) const;
+    Model model(int index) const;
     bool hasExpMode(int index) const;
     std::string toString() const;
 

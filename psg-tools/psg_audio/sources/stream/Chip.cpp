@@ -53,7 +53,7 @@ Chip::S::S()
 {
 }
 
-const Chip::Model& Chip::model(int index) const
+Chip::Model Chip::model(int index) const
 {
     return (index ? second.model : first.model);
 }
