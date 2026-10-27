@@ -38,7 +38,7 @@ void FilelistConverter::Convert()
         if (!outputType.empty())
         {
             std::for_each(outputType.begin(), outputType.end(), ::tolower);
-            while (m_filelist.GetNextFile(m_inputPath))
+            while (!m_termination && m_filelist.GetNextFile(m_inputPath))
             {
                 std::string inputName = m_inputPath.stem().string();
                 std::string outputName = m_output.stem().string();
@@ -88,7 +88,7 @@ void FilelistConverter::ConvertFile()
     else
     {
         gui::EraseFile();
-        gui::Print("Could not decode file: \"" + m_inputPath.string() + '"');
+        if (!m_termination) gui::Print("Could not decode file: \"" + m_inputPath.string() + '"');
     }
 }
 

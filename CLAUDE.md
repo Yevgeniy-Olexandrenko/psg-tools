@@ -22,6 +22,7 @@ Visual Studio 2022 (toolset v143) solution: `psg-tools/psg-tools.sln`. Configura
 - The executable is written to the **repo root**: `psg-tools-x64.exe` / `psg-tools-x86.exe` for Release, `psg-tools-x64d.exe` / `psg-tools-x86d.exe` for Debug. The Release executables are committed, so a Release build changes tracked files.
 - Every `.vcxproj` lists its source files explicitly. A new `.cpp`/`.h` must be added to the project's `.vcxproj` (and to `.vcxproj.filters` so it shows up in the right VS folder), or it won't build.
 - Include roots are `psg-tools/libraries/sources` and the project's own `sources/`, so includes look like `"stream/Stream.h"` or `"argparse/argparse.hpp"`.
+- The executables must run on Windows 7. That is why all projects link the static CRT (`/MT`, `/MTd`), which means no redistributable is needed, and define `_WIN32_WINNT=0x0601`, so newer APIs do not compile. Keep the v143 toolset: newer MSVC runtimes drop Windows 7. Keep sources ASCII-only, using escapes such as `wchar_t(0x2800)`, because MSVC reads them as cp1252.
 
 ## Running
 
@@ -50,6 +51,8 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
 - `Console`: thin wrappers over the API (geometry, cell writes, line output).
 - `LiveRegion`: the bottom part of the console that is redrawn every frame. Everything above the cursor is scrollback history; the cursor stays at the top of the region. `Commit` turns the top rows into history, and `Print` adds a line above the region. Resize handling and its ConPTY workarounds are documented in its comments; check `--ui-test` in both Windows Terminal and `conhost.exe` after changing it.
 - `ConsoleGUI`: lays out the current file (header, properties, register dump, progress) for the window size. `CommitFile` leaves the header and properties in the history.
+- `KeyboardInput`: key state built from console input events (`ReadConsoleInput`), so keys work in any console host and only while it has focus.
+- `gui::Shutdown` restores the input mode, title and cursor, and drops unread keys. Ctrl+C sets the termination flag, which the player and the converter check, including during decoding through `IsAbortRequested`.
 
 ### Core data model (`psg_audio/sources/stream/`)
 

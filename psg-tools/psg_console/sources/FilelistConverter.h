@@ -20,6 +20,7 @@ protected:
 
     void OnFrameDecoded(const Stream& stream, FrameId frameId) override;
     void OnFrameEncoded(const Stream& stream, FrameId frameId) override;
+    bool IsAbortRequested() const override { return m_termination; }
 
 private:
     Chip m_chip;

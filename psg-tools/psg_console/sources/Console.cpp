@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iterator>
 
 #include "Console.h"
 
@@ -127,14 +128,52 @@ namespace console
         WriteText(handle, "\n");
     }
 
-    void DisableQuickEdit()
+    DWORD s_inputMode = 0;
+    bool s_isInputModeSaved = false;
+
+    void SetupInput()
     {
         // quick edit mode can only be changed together with ENABLE_EXTENDED_FLAGS
         HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
-        DWORD mode;
-        if (GetConsoleMode(handle, &mode))
+        if (!s_isInputModeSaved && GetConsoleMode(handle, &s_inputMode))
         {
-            SetConsoleMode(handle, (mode | ENABLE_EXTENDED_FLAGS) & ~ENABLE_QUICK_EDIT_MODE);
+            s_isInputModeSaved = true;
+            SetConsoleMode(handle, (s_inputMode | ENABLE_EXTENDED_FLAGS) & ~ENABLE_QUICK_EDIT_MODE);
+        }
+    }
+
+    void RestoreInput()
+    {
+        HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
+        if (s_isInputModeSaved)
+        {
+            FlushConsoleInputBuffer(handle);
+            SetConsoleMode(handle, s_inputMode | ENABLE_EXTENDED_FLAGS);
+            s_isInputModeSaved = false;
+        }
+    }
+
+    std::wstring s_title;
+    bool s_isTitleSaved = false;
+
+    void SetTitle(const std::wstring& title)
+    {
+        if (!s_isTitleSaved)
+        {
+            wchar_t buffer[1024]{};
+            GetConsoleTitleW(buffer, DWORD(std::size(buffer)));
+            s_title = buffer;
+            s_isTitleSaved = true;
+        }
+        SetConsoleTitleW(title.c_str());
+    }
+
+    void RestoreTitle()
+    {
+        if (s_isTitleSaved)
+        {
+            SetConsoleTitleW(s_title.c_str());
+            s_isTitleSaved = false;
         }
     }
 }

@@ -45,5 +45,14 @@ namespace console
 	// line. Long text is wrapped by the console.
 	void WriteLine(const std::string& text, WORD attributes);
 
-	void DisableQuickEdit();
+	// Turns off the quick edit mode, which would freeze the output while the
+	// user selects text. RestoreInput() brings back the original input mode
+	// and drops the keys nobody has read, so they do not get to the shell.
+	void SetupInput();
+	void RestoreInput();
+
+	// Sets the console title, the first call saves the original one for
+	// RestoreTitle().
+	void SetTitle(const std::wstring& title);
+	void RestoreTitle();
 }

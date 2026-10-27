@@ -184,37 +184,48 @@ int main(int argc, char* argv[])
     PrintWellcome();
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    if (!filelist.IsEmpty())
+    // the console gets its state back however the work ends
+    int result = 0;
+    try
     {
-        if (!output.empty())
+        if (!filelist.IsEmpty())
         {
-            FilelistConverter converter(chip, filelist, output, m_termination);
-            converter.Convert();
-        }
-        else
-        {
-            // setup output device
-            std::shared_ptr<Output> output;
-            if (comPortIndex >= 0)
-                output.reset(new Streamer(comPortIndex));
-            else
-                output.reset(new Emulator());
-
-            // setup and start playback
-            if (isRandomShuffle) filelist.RandomShuffle();
-            FilelistPlayer player(chip, *output, filelist, favorites, m_termination);
-#if _DEBUG
-            if (comPortIndex >= 0)
+            if (!output.empty())
             {
-                const std::string debugInfo = static_cast<Streamer&>(*output).GetDebugInfo();
-                PrintOutputDebugInfo(debugInfo);
+                FilelistConverter converter(chip, filelist, output, m_termination);
+                converter.Convert();
             }
+            else
+            {
+                // setup output device
+                std::shared_ptr<Output> output;
+                if (comPortIndex >= 0)
+                    output.reset(new Streamer(comPortIndex));
+                else
+                    output.reset(new Emulator());
+
+                // setup and start playback
+                if (isRandomShuffle) filelist.RandomShuffle();
+                FilelistPlayer player(chip, *output, filelist, favorites, m_termination);
+#if _DEBUG
+                if (comPortIndex >= 0)
+                {
+                    const std::string debugInfo = static_cast<Streamer&>(*output).GetDebugInfo();
+                    PrintOutputDebugInfo(debugInfo);
+                }
 #endif
-            PrintPlayerControls();
-            player.Play();
+                PrintPlayerControls();
+                player.Play();
+            }
         }
+    }
+    catch (const std::exception& e)
+    {
+        gui::EraseFile();
+        gui::Print(std::string("Error: ") + e.what(), FG_RED);
+        result = 1;
     }
 
     gui::Shutdown();
-    return 0;
+    return result;
 }

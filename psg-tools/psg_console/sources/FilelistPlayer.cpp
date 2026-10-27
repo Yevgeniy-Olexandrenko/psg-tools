@@ -77,7 +77,7 @@ void FilelistPlayer::Play()
     auto action{ Action::GoToNextFile };
     BackgroundDecoder bgDecoder(m_chip);
 
-    while (action != Action::Termination)
+    while (action != Action::Termination && !m_termination)
     {
         Filelist::Path path;
         std::shared_ptr<Stream> stream;
@@ -101,7 +101,7 @@ void FilelistPlayer::Play()
             {
                 stream.reset();
                 gui::EraseFile();
-                gui::Print("Could not decode file: \"" + path.string() + '"');
+                if (!m_termination) gui::Print("Could not decode file: \"" + path.string() + '"');
             }
         }
 

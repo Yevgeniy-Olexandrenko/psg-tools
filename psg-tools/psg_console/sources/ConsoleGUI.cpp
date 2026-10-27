@@ -46,8 +46,8 @@ namespace gui
     {
         // the console window size is never changed: under ConPTY (Windows Terminal)
         // that only resizes conhost's own buffer and desyncs it from the terminal
-        console::DisableQuickEdit();
-        SetConsoleTitle(title.c_str());
+        console::SetupInput();
+        console::SetTitle(title);
         region();
     }
 
@@ -55,6 +55,8 @@ namespace gui
     {
         region().Erase();
         console::ShowCursor(true);
+        console::RestoreInput();
+        console::RestoreTitle();
     }
 
 	void Update()
