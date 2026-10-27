@@ -45,8 +45,8 @@ XX1, XX2, R00, R05, R07 - sequence of values depending on the mask XX1, XX2
 Register mask:
 
 ```
-XX1 – HI value of register mask (bit7 - R07, bit0 - R00)
-XX2 – LO value of register mask (bit5 - R0D, bit0 - R08, bit7,6 - UNUSED)
+XX1 – HI value of register mask (bit5 - R0D, bit0 - R08, bit7,6 - UNUSED)
+XX2 – LO value of register mask (bit7 - R07, bit0 - R00)
 ```
 
 If register mask bit contains 1, register value should follow the register mask. Example:
