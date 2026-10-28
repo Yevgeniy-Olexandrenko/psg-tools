@@ -18,6 +18,7 @@ namespace
 KeyboardInput::KeyboardInput()
     : m_keys{}
     , m_down{}
+    , m_wheel(0)
 {
 }
 
@@ -28,6 +29,7 @@ void KeyboardInput::Update()
         key.pressed = false;
         key.released = false;
     }
+    m_wheel = 0;
 
     HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
     auto now = Clock::now();
@@ -46,6 +48,14 @@ void KeyboardInput::Update()
             {
                 // the key-ups go to the window that took the focus
                 for (int vk = 0; vk < 256; ++vk) Release(vk);
+                continue;
+            }
+
+            if (records[i].EventType == MOUSE_EVENT && (records[i].Event.MouseEvent.dwEventFlags & MOUSE_WHEELED))
+            {
+                // the high word is the distance: 120 a notch in conhost, other values in terminals
+                short delta = short(HIWORD(records[i].Event.MouseEvent.dwButtonState));
+                m_wheel += (delta > 0 ? 1 : -1);
                 continue;
             }
 

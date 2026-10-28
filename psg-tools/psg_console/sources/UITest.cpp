@@ -5,8 +5,9 @@
 #include <thread>
 
 #include "UITest.h"
-#include "LiveRegion.h"
 #include "Console.h"
+#include "KeyboardInput.h"
+#include "Screen.h"
 
 namespace
 {
@@ -114,54 +115,60 @@ namespace
 
 void RunUITest(std::atomic<bool>& termination)
 {
-    SetConsoleTitleW(L"PSG Tools UI test");
+    console::SetupInput();
+    console::SetTitle(L"PSG Tools UI test");
 
-    LiveRegion region;
+    Screen screen;
+    KeyboardInput keyboard;
     int resizes = 0;
 
-    std::string ruler(std::max(0, region.GetWidth() - 1), '-');
-    region.Print(' ' + ruler, FG_BLUE);
-    region.Print(" PSG Tools UI test", FG_RED);
-    region.Print(" Draws a fake playlist without playback. Resize the window while it runs.");
-    region.Print(' ' + ruler, FG_BLUE);
+    auto ruler = [](PrintBuffer& canvas, int y)
+    {
+        canvas.position(0, y).color(FG_BLUE).draw(' ' + std::string(std::max(0, canvas.w - 1), '-'));
+    };
+    screen.Print(ruler);
+    screen.Print(" PSG Tools UI test", FG_RED);
+    screen.Print(" Draws a fake playlist without playback. Resize the window and scroll the history while it runs.");
+    screen.Print(ruler);
 
     auto next = std::chrono::steady_clock::now();
     for (int index = 0; index < k_trackCount && !termination; ++index)
     {
         const Track& track = k_tracks[index];
+        std::string number = std::to_string(index + 1) + '/' + std::to_string(k_trackCount);
         if (index == 2)
         {
-            region.Print("Could not decode file: \"chiptunes\\Broken\\missing.pt3\"", FG_RED);
+            screen.Print("Could not decode file: \"chiptunes\\Broken\\missing.pt3\"", FG_RED);
         }
 
-        int infoRows = 0;
+        const std::pair<std::string, std::string> info[k_maxInfoRows] =
+        {
+            { "Title", track.title },
+            { "Artist", track.artist },
+            { "Type", "Fake module" },
+            { "Frames", std::to_string(k_trackFrames) + " @ " + std::to_string(k_frameRate) + " Hz" },
+            { "Output", "Nothing, this is a UI test" },
+        };
+
         for (int frame = 0; frame < k_trackFrames && !termination; ++frame)
         {
-            if (region.Sync()) ++resizes;
+            keyboard.Update();
+            screen.Update(keyboard);
+            if (screen.Sync()) ++resizes;
             if (index == 1 && frame == k_trackFrames / 2)
             {
-                region.Print(" [test] A long line printed into the history while the live region is on "
-                    "screen. It has to be wrapped by the console, and the region has to stay right below it.", FG_CYAN);
+                screen.Print(" [test] A long line printed into the history while the live view is on "
+                    "screen. It is cut at the edge of a narrow window, and the view has to stay right below it.", FG_CYAN);
             }
 
             // layout: header, properties, register dump, progress
-            int maxHeight = region.GetMaxHeight();
-            infoRows = std::clamp(maxHeight - 2, 0, k_maxInfoRows);
+            int maxHeight = screen.GetMaxHeight();
+            int infoRows = std::clamp(maxHeight - 2, 0, k_maxInfoRows);
             int dumpRows = std::min(k_maxDumpRows, maxHeight - 2 - infoRows);
             if (dumpRows < 3) dumpRows = 0;
 
-            PrintBuffer& canvas = region.Begin(2 + infoRows + dumpRows);
-            std::string number = std::to_string(index + 1) + '/' + std::to_string(k_trackCount);
+            PrintBuffer& canvas = screen.Begin(2 + infoRows + dumpRows);
             DrawBar(canvas, 0, number + ' ' + track.file, FG_WHITE, 1.f);
-
-            const std::pair<std::string, std::string> info[k_maxInfoRows] =
-            {
-                { "Title", track.title },
-                { "Artist", track.artist },
-                { "Type", "Fake module" },
-                { "Frames", std::to_string(k_trackFrames) + " @ " + std::to_string(k_frameRate) + " Hz" },
-                { "Output", "Nothing, this is a UI test" },
-            };
             for (int i = 0; i < infoRows; ++i)
             {
                 DrawProperty(canvas, 1 + i, info[i].first, info[i].second);
@@ -173,21 +180,26 @@ void RunUITest(std::atomic<bool>& termination)
 
             static const char k_spinner[] = R"(_\|/)";
             std::string progress = std::string(1, k_spinner[(frame / 8) & 3]) + ' ' + FormatTime(k_trackFrames - frame)
-                + " | " + std::to_string(region.GetWidth() + 1) + 'x' + std::to_string(maxHeight)
+                + " | " + std::to_string(screen.GetWidth()) + 'x' + std::to_string(maxHeight)
                 + " | resizes " + std::to_string(resizes);
             DrawBar(canvas, canvas.h - 1, progress, FG_WHITE, float(frame) / k_trackFrames);
-            region.Render();
+            screen.Render();
 
             next += std::chrono::milliseconds(1000 / k_frameRate);
             std::this_thread::sleep_until(next);
         }
 
-        // the header and the properties of the track stay in the history
-        region.Commit(1 + infoRows);
-        region.Erase();
+        // the header and all the properties of the track stay in the history
+        screen.Erase();
+        screen.Print([number, track](PrintBuffer& canvas, int y) { DrawBar(canvas, y, number + ' ' + track.file, FG_WHITE, 1.f); });
+        for (const auto& property : info)
+        {
+            screen.Print([property](PrintBuffer& canvas, int y) { DrawProperty(canvas, y, property.first, property.second); });
+        }
     }
 
-    region.Erase();
-    region.Print(termination ? " UI test interrupted" : " UI test finished", termination ? FG_YELLOW : FG_GREEN);
-    console::ShowCursor(true);
+    screen.Print(termination ? " UI test interrupted" : " UI test finished", termination ? FG_YELLOW : FG_GREEN);
+    screen.Close();
+    console::RestoreInput();
+    console::RestoreTitle();
 }

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cwchar>
 #include <iterator>
 
 #include "Console.h"
@@ -15,6 +14,9 @@ namespace console
         const WORD k_plainText = (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
         const WORD k_backgroundMask = (BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY);
 
+        // ENABLE_VIRTUAL_TERMINAL_PROCESSING, which Windows 7 does not know
+        const DWORD k_virtualTerminal = 0x0004;
+
         HANDLE GetOutput()
         {
             return GetStdHandle(STD_OUTPUT_HANDLE);
@@ -26,46 +28,25 @@ namespace console
             return (handle != INVALID_HANDLE_VALUE && GetConsoleScreenBufferInfo(handle, &info));
         }
 
+        void WriteText(HANDLE handle, const std::wstring& text)
+        {
+            DWORD written;
+            WriteConsoleW(handle, text.data(), DWORD(text.size()), &written, nullptr);
+        }
+
         void WriteText(HANDLE handle, const std::string& text)
         {
             int size = MultiByteToWideChar(CP_ACP, 0, text.data(), int(text.size()), nullptr, 0);
             std::wstring wide(size, L'\0');
             MultiByteToWideChar(CP_ACP, 0, text.data(), int(text.size()), wide.data(), size);
-
-            DWORD written;
-            WriteConsoleW(handle, wide.data(), DWORD(wide.size()), &written, nullptr);
+            WriteText(handle, wide);
         }
     }
 
-    bool GetGeometry(Geometry& geometry)
+    bool IsConsole()
     {
         CONSOLE_SCREEN_BUFFER_INFO info;
-        if (!GetInfo(info)) return false;
-
-        const SMALL_RECT& window = info.srWindow;
-        int windowWidth = (window.Right - window.Left + 1);
-
-        // the last column stays empty: a full-width row is treated as wrapped
-        // and gets joined with the next row when the terminal reflows its text
-        geometry.width = std::max(0, std::min(windowWidth, int(info.dwSize.X)) - 1);
-        geometry.height = (window.Bottom - window.Top + 1);
-        geometry.windowTop = window.Top;
-        geometry.windowBottom = window.Bottom;
-        geometry.bufferHeight = info.dwSize.Y;
-        geometry.cursorY = info.dwCursorPosition.Y;
-        return true;
-    }
-
-    bool IsPseudoConsole()
-    {
-        static int s_isPseudoConsole = -1;
-        if (s_isPseudoConsole < 0)
-        {
-            wchar_t name[64]{};
-            HWND window = GetConsoleWindow();
-            s_isPseudoConsole = (window && GetClassNameW(window, name, int(std::size(name))) && !wcscmp(name, L"PseudoConsoleWindow"));
-        }
-        return (s_isPseudoConsole > 0);
+        return GetInfo(info);
     }
 
     WORD MapAttributes(WORD attributes)
@@ -86,23 +67,66 @@ namespace console
         return attributes;
     }
 
-    void ShowCursor(bool show)
+    HANDLE CreateScreen()
     {
-        HANDLE handle = GetOutput();
-        CONSOLE_CURSOR_INFO cursor;
-        if (GetConsoleCursorInfo(handle, &cursor) && bool(cursor.bVisible) != show)
+        HANDLE screen = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CONSOLE_TEXTMODE_BUFFER, nullptr);
+        if (screen == INVALID_HANDLE_VALUE) return nullptr;
+
+        CONSOLE_CURSOR_INFO cursor = { 1, FALSE };
+        SetConsoleCursorInfo(screen, &cursor);
+        SetConsoleTextAttribute(screen, MapAttributes(k_plainText));
+        if (!SetConsoleActiveScreenBuffer(screen))
         {
-            cursor.bVisible = show;
-            SetConsoleCursorInfo(handle, &cursor);
+            CloseHandle(screen);
+            return nullptr;
         }
+
+        // Under ConPTY a buffer of its own is drawn on the main screen of the
+        // terminal, which reflows it on resize and pushes the rows into its
+        // scrollback. Where the console takes VT sequences (Windows 10 and
+        // later), the buffer also asks the terminal for its alternate screen.
+        // It is still a buffer of its own: if the process gets killed, the
+        // console closes it, and the terminal gets its main screen back.
+        DWORD mode = 0;
+        if (GetConsoleMode(screen, &mode) && SetConsoleMode(screen, mode | k_virtualTerminal))
+        {
+            WriteText(screen, std::wstring(L"\x1b[?1049h"));
+        }
+        return screen;
     }
 
-    void SetCursorRow(int y)
+    void CloseScreen(HANDLE screen)
     {
-        SetConsoleCursorPosition(GetOutput(), { 0, SHORT(y) });
+        DWORD mode = 0;
+        if (GetConsoleMode(screen, &mode) && (mode & k_virtualTerminal))
+        {
+            WriteText(screen, std::wstring(L"\x1b[?1049l"));
+        }
+        SetConsoleActiveScreenBuffer(GetOutput());
+        CloseHandle(screen);
     }
 
-    void WriteCells(const CHAR_INFO* cells, int width, int rows, int y)
+    COORD FitScreen(HANDLE screen)
+    {
+        CONSOLE_SCREEN_BUFFER_INFO info;
+        if (!GetConsoleScreenBufferInfo(screen, &info)) return { 0, 0 };
+
+        // the window is moved to the top left corner first, so the buffer can
+        // be cut down to it; under ConPTY both already match the terminal
+        const SMALL_RECT& window = info.srWindow;
+        SHORT w = SHORT(window.Right - window.Left + 1);
+        SHORT h = SHORT(window.Bottom - window.Top + 1);
+        if (info.dwSize.X != w || info.dwSize.Y != h || window.Left != 0 || window.Top != 0)
+        {
+            SMALL_RECT origin = { 0, 0, SHORT(w - 1), SHORT(h - 1) };
+            SetConsoleWindowInfo(screen, TRUE, &origin);
+            SetConsoleScreenBufferSize(screen, { w, h });
+        }
+        return { w, h };
+    }
+
+    void WriteCells(HANDLE screen, const CHAR_INFO* cells, int width, int rows, int y)
     {
         if (width <= 0) return;
         int chunk = std::max(1, k_maxCellsPerWrite / width);
@@ -111,41 +135,14 @@ namespace console
         {
             int count = std::min(chunk, rows - row);
             SMALL_RECT rect = { 0, SHORT(y + row), SHORT(width - 1), SHORT(y + row + count - 1) };
-            WriteConsoleOutputW(GetOutput(), cells + row * width, { SHORT(width), SHORT(count) }, { 0, 0 }, &rect);
+            WriteConsoleOutputW(screen, cells + row * width, { SHORT(width), SHORT(count) }, { 0, 0 }, &rect);
         }
     }
 
-    bool IsTextAt(int y, const CHAR_INFO* cells, int count)
-    {
-        DWORD read = 0;
-        std::wstring text(count, L' ');
-        ReadConsoleOutputCharacterW(GetOutput(), text.data(), DWORD(count), { 0, SHORT(y) }, &read);
-        if (int(read) != count) return false;
-
-        for (int i = 0; i < count; ++i)
-        {
-            if (text[i] != cells[i].Char.UnicodeChar) return false;
-        }
-        return true;
-    }
-
-    void ClearRows(int y, int rows)
+    int GetWidth()
     {
         CONSOLE_SCREEN_BUFFER_INFO info;
-        if (rows <= 0 || !GetInfo(info)) return;
-
-        HANDLE handle = GetOutput();
-        DWORD count = (DWORD(info.dwSize.X) * rows), written;
-        FillConsoleOutputCharacterW(handle, L' ', count, { 0, SHORT(y) }, &written);
-        FillConsoleOutputAttribute(handle, info.wAttributes, count, { 0, SHORT(y) }, &written);
-    }
-
-    int WriteNewLines(int count)
-    {
-        WriteText(GetOutput(), std::string(count, '\n'));
-
-        CONSOLE_SCREEN_BUFFER_INFO info;
-        return (GetInfo(info) ? info.dwCursorPosition.Y : 0);
+        return (GetInfo(info) ? std::min(info.srWindow.Right - info.srWindow.Left + 1, int(info.dwSize.X)) : 0);
     }
 
     void WriteLine(const std::string& text, WORD attributes)
@@ -168,7 +165,7 @@ namespace console
         SetConsoleTextAttribute(handle, MapAttributes(attributes));
         WriteText(handle, text);
         SetConsoleTextAttribute(handle, info.wAttributes);
-        WriteText(handle, "\n");
+        WriteText(handle, std::wstring(L"\n"));
     }
 
     void WriteRow(const CHAR_INFO* cells, int count)
@@ -186,14 +183,12 @@ namespace console
             {
                 text += cells[end++].Char.UnicodeChar;
             }
-
-            DWORD written;
             SetConsoleTextAttribute(handle, MapAttributes(cells[start].Attributes));
-            WriteConsoleW(handle, text.data(), DWORD(text.size()), &written, nullptr);
+            WriteText(handle, text);
             start = end;
         }
         SetConsoleTextAttribute(handle, info.wAttributes);
-        WriteText(handle, "\n");
+        WriteText(handle, std::wstring(L"\n"));
     }
 
     DWORD s_inputMode = 0;
@@ -201,12 +196,14 @@ namespace console
 
     void SetupInput()
     {
-        // quick edit mode can only be changed together with ENABLE_EXTENDED_FLAGS
+        // quick edit mode can only be changed together with ENABLE_EXTENDED_FLAGS;
+        // with the mouse input the terminal sends the wheel to the program
+        // instead of turning it into the arrow keys on its alternate screen
         HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
         if (!s_isInputModeSaved && GetConsoleMode(handle, &s_inputMode))
         {
             s_isInputModeSaved = true;
-            SetConsoleMode(handle, (s_inputMode | ENABLE_EXTENDED_FLAGS) & ~ENABLE_QUICK_EDIT_MODE);
+            SetConsoleMode(handle, (s_inputMode | ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT) & ~ENABLE_QUICK_EDIT_MODE);
         }
     }
 

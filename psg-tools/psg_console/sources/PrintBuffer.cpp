@@ -40,21 +40,6 @@ void PrintBuffer::clear()
     std::fill(buffer, buffer + w * h, blank);
 }
 
-void PrintBuffer::render()
-{
-    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (handle == INVALID_HANDLE_VALUE) return;
-
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(handle, &csbi);
-
-    SHORT cx = csbi.dwCursorPosition.X;
-    SHORT cy = csbi.dwCursorPosition.Y;
-
-    SMALL_RECT rect = { cx, cy, cx + w - 1, cy + h - 1 };
-    WriteConsoleOutput(handle, buffer, { w, h }, { 0,0 }, &rect);
-}
-
 PrintBuffer& PrintBuffer::position(int x, int y)
 {
     this->x = x;

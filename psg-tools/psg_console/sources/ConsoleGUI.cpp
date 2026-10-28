@@ -8,7 +8,7 @@
 
 #include "ConsoleGUI.h"
 #include "Console.h"
-#include "LiveRegion.h"
+#include "Screen.h"
 
 namespace gui
 {
@@ -18,9 +18,6 @@ namespace gui
     // decoding and encoding report every single frame, which is way more
     // often than the console needs to be redrawn
     const auto k_progressInterval = std::chrono::milliseconds(20);
-
-    // width of the text written when the output is redirected
-    const int k_textWidth = 79;
 
     struct Property
     {
@@ -41,16 +38,10 @@ namespace gui
     PrintBuffer   m_framesBuffer(0, 0);
     KeyboardInput m_keyboardInput;
 
-    LiveRegion& region()
+    Screen& screen()
     {
-        static LiveRegion s_region;
-        return s_region;
-    }
-
-    bool isConsole()
-    {
-        console::Geometry geometry;
-        return console::GetGeometry(geometry);
+        static Screen s_screen;
+        return s_screen;
     }
 
     void onExit() { Shutdown(); }
@@ -63,7 +54,7 @@ namespace gui
         // that only resizes conhost's own buffer and desyncs it from the terminal
         console::SetupInput();
         console::SetTitle(title);
-        region();
+        screen();
 
         // the console gets its state back even when the program ends abnormally:
         // on exit() from a library, on std::terminate() in any thread, on a crash
@@ -74,8 +65,8 @@ namespace gui
 
     void Shutdown()
     {
-        region().Erase();
-        console::ShowCursor(true);
+        // the history goes to the standard output buffer, even on an abnormal exit
+        screen().Close();
         console::RestoreInput();
         console::RestoreTitle();
     }
@@ -83,6 +74,7 @@ namespace gui
 	void Update()
 	{
 		m_keyboardInput.Update();
+		screen().Update(m_keyboardInput);
 	}
 
 	const KeyState& GetKeyState(int key)
@@ -92,15 +84,15 @@ namespace gui
 
     void Print(const std::string& text, WORD color)
     {
-        region().Sync();
-        region().Print(text, color);
+        screen().Print(text, color);
     }
 
     void PrintRuler()
     {
-        region().Sync();
-        int width = (isConsole() ? region().GetWidth() : k_textWidth);
-        region().Print(' ' + std::string(std::max(0, width - 1), '-'), FG_BLUE);
+        screen().Print([](PrintBuffer& canvas, int y)
+        {
+            canvas.position(0, y).color(FG_BLUE).draw(' ' + std::string(std::max(0, canvas.w - 1), '-'));
+        });
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -232,17 +224,17 @@ namespace gui
     template<typename DrawProgress>
     void drawFileView(const FileView& file, const std::vector<Property>& properties, DrawProgress drawProgress)
     {
-        region().Sync();
-        int rows = std::clamp(region().GetMaxHeight() - 2, 0, int(properties.size()));
+        screen().Sync();
+        int rows = std::clamp(screen().GetMaxHeight() - 2, 0, int(properties.size()));
 
-        PrintBuffer& canvas = region().Begin(2 + rows);
+        PrintBuffer& canvas = screen().Begin(2 + rows);
         drawFileHeader(canvas, 0, file);
         for (int i = 0; i < rows; ++i)
         {
             drawProperty(canvas, 1 + i, properties[i]);
         }
         drawProgress(canvas, canvas.h - 1);
-        region().Render();
+        screen().Render();
     }
 
 	////////////////////////////////////////////////////////////////////////////
@@ -733,17 +725,17 @@ namespace gui
 
     void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames)
     {
-        region().Sync();
+        screen().Sync();
         std::string outputName = output.toString();
         std::vector<Property> properties = getProperties(stream, &outputName);
 
         // the frames get the rows left from the header, the properties and the progress bar
-        int maxHeight = region().GetMaxHeight();
+        int maxHeight = screen().GetMaxHeight();
         int propertiesRows = std::clamp(maxHeight - 2, 0, int(properties.size()));
         int framesRows = (showFrames ? std::min(k_maxFramesRows, maxHeight - 2 - propertiesRows) : 0);
-        FramesLayout layout = getFramesLayout(stream, region().GetWidth(), framesRows);
+        FramesLayout layout = getFramesLayout(stream, screen().GetWidth(), framesRows);
 
-        PrintBuffer& canvas = region().Begin(2 + propertiesRows + layout.rows);
+        PrintBuffer& canvas = screen().Begin(2 + propertiesRows + layout.rows);
         drawFileHeader(canvas, 0, file);
         for (int i = 0; i < propertiesRows; ++i)
         {
@@ -768,7 +760,7 @@ namespace gui
         float position = (playbackFrames ? float(frameId) / playbackFrames : 0.f);
         drawProgress(canvas, canvas.h - 1, position, (1000 - ms) / 64, sstream.str());
 
-        region().Render();
+        screen().Render();
     }
 
     void DrawEncoding(const FileView& file, const Stream& stream, int frameId, const std::string& output)
@@ -784,58 +776,29 @@ namespace gui
         }
     }
 
-    // the characters of the row as text in the ANSI code page
-    std::string toText(const PrintBuffer& row)
-    {
-        std::wstring text;
-        for (int x = 0; x < row.w; ++x) text += row.buffer[x].Char.UnicodeChar;
-        text.erase(text.find_last_not_of(L' ') + 1);
-
-        int size = WideCharToMultiByte(CP_ACP, 0, text.data(), int(text.size()), nullptr, 0, nullptr, nullptr);
-        std::string result(size, '\0');
-        WideCharToMultiByte(CP_ACP, 0, text.data(), int(text.size()), result.data(), size, nullptr, nullptr);
-        return result;
-    }
-
     void CommitFile(const FileView& file, const Stream& stream, const std::string& output)
     {
-        region().WaitForSteadySize();
-        region().Erase();
+        screen().Erase();
+        screen().Print([file](PrintBuffer& canvas, int y) { drawFileHeader(canvas, y, file); });
 
-        if (!isConsole())
-        {
-            // the output is redirected: plain text, the values are not cut
-            PrintBuffer header(k_textWidth, 1);
-            drawFileHeader(header, 0, file);
-            console::WriteLine(toText(header), FG_GREY);
-
-            for (const Property& property : getProperties(stream, &output))
-            {
-                std::string dots(9 - property.label.length(), '.');
-                console::WriteLine(' ' + property.label + dots + ": " + property.value, FG_GREY);
-            }
-            return;
-        }
-
-        // one row at a time, so all of them get to the history,
-        // even if the window is not tall enough to show them at once
-        auto commitRow = [](auto draw)
-        {
-            PrintBuffer& canvas = region().Begin(1);
-            draw(canvas);
-            region().Render();
-            region().Commit(1);
-        };
-
-        commitRow([&](PrintBuffer& canvas) { drawFileHeader(canvas, 0, file); });
         for (const Property& property : getProperties(stream, &output))
         {
-            commitRow([&](PrintBuffer& canvas) { drawProperty(canvas, 0, property); });
+            if (screen().IsActive())
+            {
+                // the value is cut to the window width, which may change later
+                screen().Print([property](PrintBuffer& canvas, int y) { drawProperty(canvas, y, property); });
+            }
+            else
+            {
+                // the output is redirected: plain text, the values are not cut
+                std::string dots(9 - property.label.length(), '.');
+                screen().Print(' ' + property.label + dots + ": " + property.value);
+            }
         }
     }
 
     void EraseFile()
     {
-        region().Erase();
+        screen().Erase();
     }
 }

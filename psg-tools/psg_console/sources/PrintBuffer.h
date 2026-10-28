@@ -54,7 +54,6 @@ public:
 
 	void resize(int w, int h);
 	void clear();
-	void render();
 
 public:
 	PrintBuffer& position(int x, int y);
