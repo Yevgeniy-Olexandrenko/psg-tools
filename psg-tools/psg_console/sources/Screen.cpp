@@ -57,8 +57,10 @@ Screen::Screen()
     , m_width(0)
     , m_height(0)
     , m_scroll(0)
+    , m_total(0)
     , m_live(0, 0)
     , m_liveHeight(0)
+    , m_isLivePinned(true)
 {
     // takes the console colors before anything is drawn
     console::MapAttributes(k_blank.Attributes);
@@ -99,6 +101,12 @@ void Screen::Render()
     Present();
 }
 
+void Screen::SetLivePinned(bool pinned)
+{
+    m_isLivePinned = pinned;
+    Present();
+}
+
 void Screen::Erase()
 {
     m_liveHeight = 0;
@@ -131,9 +139,17 @@ void Screen::Update(const KeyboardInput& keyboard)
 {
     if (!IsActive()) return;
 
-    // a page is the history rows on screen, less the bar of a scrolled history
+    // a page is the history rows on screen, less the bar of a scrolled history;
+    // End goes to the end of the history
     int live = (m_live.w == m_width ? std::min(m_liveHeight, m_height) : 0);
-    int page = std::max(1, m_height - live - 1);
+    int page = std::max(1, (m_isLivePinned ? m_height - live : m_height) - 1);
+
+    if (keyboard.GetKeyState(VK_END).pressed && m_scroll > 0)
+    {
+        m_scroll = 0;
+        Present();
+        return;
+    }
 
     int rows = (3 * keyboard.GetWheel());
     if (keyboard.GetKeyState(VK_PRIOR).pressed) rows += page;
@@ -182,9 +198,7 @@ void Screen::DrawEntry(const Entry& entry, PrintBuffer& rows) const
 
 void Screen::Add(Entry entry)
 {
-    // the view of a scrolled history stays where it is
     m_history.push_back(std::move(entry));
-    if (m_scroll > 0) ++m_scroll;
     Present();
 }
 
@@ -205,14 +219,23 @@ void Screen::Present()
     const int width = m_width, height = m_height;
     if (width <= 0 || height <= 0) return;
 
-    // the live view is left out until it is drawn for the new width
+    // the live view is left out until it is drawn for the new width. A pinned
+    // one is at the bottom of the window, below the history, otherwise it is
+    // the last rows of the history and scrolls with it.
     int live = (m_live.w == width ? std::min(m_liveHeight, height) : 0);
-    int room = (height - live);
-    int total = int(m_history.size());
+    int history = int(m_history.size());
+    int room = (m_isLivePinned ? height - live : height);
+    int total = (m_isLivePinned ? history : history + live);
+
+    // the view of a scrolled history stays where it is while the rows are
+    // added below it or the live view changes its height; it never gets to
+    // the end by itself, so it does not start to follow the new rows
+    if (m_scroll > 0) m_scroll = std::max(1, m_scroll + total - m_total);
+    m_total = total;
     m_scroll = std::clamp(m_scroll, 0, std::max(0, total - room));
 
-    // the history fills the window from the top, its end is right above the
-    // live view; only the rows that are seen get drawn
+    // the history fills the window from the top; only the rows that are seen
+    // get drawn
     int shown = std::min(room, total);
     int first = (total - m_scroll - shown);
     m_frame.assign(size_t(width) * height, k_blank);
@@ -220,13 +243,21 @@ void Screen::Present()
     PrintBuffer row(width, 1);
     for (int y = 0; y < shown; ++y)
     {
+        CHAR_INFO* cells = &m_frame[size_t(y) * width];
+        int index = (first + y);
+        if (index >= history)
+        {
+            const CHAR_INFO* liveRow = (m_live.buffer + size_t(index - history) * width);
+            std::copy(liveRow, liveRow + width, cells);
+            continue;
+        }
         row.clear();
-        DrawEntry(m_history[first + y], row);
-        std::copy(row.buffer, row.buffer + width, m_frame.begin() + size_t(y) * width);
+        DrawEntry(m_history[index], row);
+        std::copy(row.buffer, row.buffer + width, cells);
     }
 
-    // a scrolled history tells how much of it is below, centered between the
-    // one column margins at both edges
+    // a scrolled history tells how much of it is below, in its last row on
+    // screen, centered between the one column margins at both edges
     if (m_scroll > 0 && shown > 0)
     {
         std::string label = "[ " + std::to_string(m_scroll) + (m_scroll == 1 ? " row" : " rows") + " below ]";
@@ -236,7 +267,7 @@ void Screen::Present()
         std::copy(row.buffer, row.buffer + width, m_frame.begin() + size_t(shown - 1) * width);
     }
 
-    if (live > 0)
+    if (m_isLivePinned && live > 0)
     {
         std::copy(m_live.buffer, m_live.buffer + size_t(width) * live, m_frame.begin() + size_t(shown) * width);
     }

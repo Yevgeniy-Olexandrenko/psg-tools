@@ -24,6 +24,15 @@ namespace gui
 	void Update();
 	const KeyState& GetKeyState(int key);
 
+	// Update() for the converter, which reports every frame and reads no keys:
+	// the history still scrolls while the files are being converted
+	void UpdateBusy();
+
+	// The player keeps the live view pinned to the bottom of the window. The
+	// converter goes from file to file quickly, so its live view is the end of
+	// the history, and a history scrolled up stays still.
+	void SetLivePinned(bool pinned);
+
 	// Lines added to the history, above the live view
 	void Print(const std::string& text, WORD color = FG_GREY);
 	void PrintRuler();

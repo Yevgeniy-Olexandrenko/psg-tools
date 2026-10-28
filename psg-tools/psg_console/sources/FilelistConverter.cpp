@@ -11,6 +11,7 @@ FilelistConverter::FilelistConverter(Chip& chip, FilelistTraversal& filelist, Fi
 
 void FilelistConverter::Convert()
 {
+    gui::SetLivePinned(false);
     m_outputPath = std::filesystem::absolute(m_output);
     m_outputPath.remove_filename();
 
@@ -99,10 +100,12 @@ gui::FileView FilelistConverter::GetFileView() const
 
 void FilelistConverter::OnFrameDecoded(const Stream& stream, FrameId frameId)
 {
+    gui::UpdateBusy();
     gui::DrawDecoding(GetFileView(), stream);
 }
 
 void FilelistConverter::OnFrameEncoded(const Stream& stream, FrameId frameId)
 {
+    gui::UpdateBusy();
     gui::DrawEncoding(GetFileView(), stream, frameId, m_outputPath.string());
 }

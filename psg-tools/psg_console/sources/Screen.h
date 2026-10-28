@@ -12,7 +12,7 @@
 // drawn into a screen buffer of the program's own and redrawn whole, so nothing
 // depends on how the console and the terminal reflow their text on resize.
 // The history is kept by the program and scrolled by it: the wheel, PgUp and
-// PgDn. Close() shows the standard output buffer again and prints the
+// PgDn, End goes to its end. Close() shows the standard output buffer again and prints the
 // history there as plain lines, so after the program ends it stays in the
 // console scrollback like the output of any other program.
 // When the output is redirected there is no screen, and the lines of the
@@ -41,6 +41,12 @@ public:
 	// view below it. Only rows that differ from what is shown are written.
 	void Render();
 
+	// A pinned live view (the default) stays at the bottom of the window while
+	// the history above it scrolls. Otherwise the live view is the end of the
+	// history: it is seen only when the history is scrolled to its end, and
+	// a history scrolled up stays where it is.
+	void SetLivePinned(bool pinned);
+
 	// Removes the live view, the history takes the whole window.
 	void Erase();
 
@@ -52,7 +58,7 @@ public:
 	// so headers and rulers always span the whole window.
 	void Print(const DrawRow& draw);
 
-	// Scrolls the history with the wheel and the keys.
+	// Scrolls the history with the wheel and PgUp/PgDn, End goes to its end.
 	void Update(const KeyboardInput& keyboard);
 
 	// Shows the standard output buffer again and prints the history there.
@@ -76,8 +82,10 @@ private:
 	int m_height;
 	std::vector<Entry> m_history; // one row each
 	int m_scroll; // rows the history is scrolled up from its end
+	int m_total;  // rows of the history as they were last shown
 	PrintBuffer m_live;
 	int m_liveHeight;  // rows of the live view, zero when it is erased
+	bool m_isLivePinned;
 	std::vector<CHAR_INFO> m_frame; // the whole screen being drawn
 	std::vector<CHAR_INFO> m_shown; // the whole screen as it is on the console
 };

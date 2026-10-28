@@ -79,6 +79,23 @@ namespace gui
 		screen().Update(m_keyboardInput);
 	}
 
+    void SetLivePinned(bool pinned)
+    {
+        screen().SetLivePinned(pinned);
+    }
+
+    void UpdateBusy()
+    {
+        // called for every frame decoded or encoded, the input is read only
+        // as often as the progress is drawn
+        static auto s_time = std::chrono::steady_clock::time_point();
+        auto now = std::chrono::steady_clock::now();
+        if (now - s_time < k_progressInterval) return;
+
+        s_time = now;
+        Update();
+    }
+
 	const KeyState& GetKeyState(int key)
 	{
 		return m_keyboardInput.GetKeyState(key);
