@@ -64,6 +64,10 @@ void InitProgramArguments(argparse::ArgumentParser& program)
         .metavar("INDEX")
         .scan<'i', int>();
 
+    program.add_argument("-w", "--wave")
+        .help("record playback to WAV file")
+        .metavar("PATH");
+
     program.add_argument("--shuffle")
         .help("random shuffle input playlist")
         .default_value(false)
@@ -129,6 +133,19 @@ int main(int argc, char* argv[])
     if (auto optional = program.present<int>("port"))
     {
         comPortIndex = optional.value();
+    }
+
+    // parse path of WAV file to record playback
+    std::filesystem::path wavePath;
+    if (auto optional = program.present("wave"))
+    {
+        wavePath = optional.value();
+    }
+
+    if (comPortIndex >= 0 && !wavePath.empty())
+    {
+        std::cerr << "Options --port and --wave can't be used together" << std::endl;
+        std::exit(1);
     }
 
     // parse random shuffle input playlist
@@ -201,6 +218,12 @@ int main(int argc, char* argv[])
                 std::shared_ptr<Output> output;
                 if (comPortIndex >= 0)
                     output.reset(new Streamer(comPortIndex));
+                else if (!wavePath.empty())
+                {
+                    if (wavePath.has_parent_path())
+                        std::filesystem::create_directories(wavePath.parent_path());
+                    output.reset(new WaveFile(wavePath));
+                }
                 else
                     output.reset(new Emulator());
 

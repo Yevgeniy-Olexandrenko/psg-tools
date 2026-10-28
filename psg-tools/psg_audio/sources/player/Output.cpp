@@ -171,7 +171,7 @@ void Output::GetLevels(float& L, float& R) const
 
 std::string Output::toString() const
 {
-    return (GetDeviceName() + " -> " + m_dchip.toString());
+    return (m_dchip.toString() + " -> " + GetDeviceName());
 }
 
 float Output::ComputeChannelLevel(int chip, int chan) const

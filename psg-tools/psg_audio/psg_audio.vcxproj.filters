@@ -55,6 +55,9 @@
     <Filter Include="Sources\utils">
       <UniqueIdentifier>{beb0e571-c26d-41de-ad0e-e6f57f1ef06d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\player\wavefile">
+      <UniqueIdentifier>{25caa067-006f-4b53-8c14-68236f5d3a48}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\PSGAudio.h">
@@ -249,6 +252,12 @@
     <ClInclude Include="sources\utils\Property.h">
       <Filter>Sources\utils</Filter>
     </ClInclude>
+    <ClInclude Include="sources\player\PCMOutput.h">
+      <Filter>Sources\player</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\player\wavefile\WaveFile.h">
+      <Filter>Sources\player\wavefile</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\PSGAudio.cpp">
@@ -409,6 +418,12 @@
     </ClCompile>
     <ClCompile Include="sources\stream\Register.cpp">
       <Filter>Sources\stream</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\PCMOutput.cpp">
+      <Filter>Sources\player</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\wavefile\WaveFile.cpp">
+      <Filter>Sources\player\wavefile</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

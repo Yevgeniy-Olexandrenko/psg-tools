@@ -34,6 +34,7 @@ Run from the repo root (the VS debugger also uses the repo root as its working d
 ./psg-tools-x64.exe sample.pt3 -o psg                 # bare type: writes sample.psg to the current directory
 ./psg-tools-x64.exe chiptunes/Davos -o list.m3u       # .m3u/.ayl output exports a playlist instead
 ./psg-tools-x64.exe sample.pt3 -p 3                   # stream to AYM Streamer on COM port index 3
+./psg-tools-x64.exe chiptunes/Mmcm -w rec.wav          # play silently, recording everything played to one WAV file
 ```
 
 Other options: `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
@@ -72,7 +73,7 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
 2. **Process**: `FrameProcessor` subclasses in `processing/` turn source-chip frames into destination-chip frames: `ChannelsOutputEnable`, `ChipClockRateConvert`, `ChannelsLayoutChange` (stereo layout), `AY8930EnvelopeFix`. Playback chains them in a `ProcessingChain` inside `Output::Init`. Encoding builds its own array in `FileEncoder::Encode`, without `ChannelsOutputEnable`.
 3. **Output**, one of:
    - **Encode**: `FileEncoder::Encode` selects an encoder by output extension (`Encoder::CheckFileExt` in `Open`).
-   - **Play**: `Player` runs a thread that steps frames into an `Output`. `Emulator` is the software output (`emulation/AY89XXPsg` plus `WaveAudio` over winmm, 44.1 kHz); `Streamer` writes register pairs to the serial port. `Output::Write` handles AY8930 bank switching through bit `0x10` of `Mode_Bank` (R13).
+   - **Play**: `Player` runs a thread that steps frames into an `Output`. `Emulator` is the software output (`emulation/AY89XXPsg` plus `WaveAudio` over winmm, 44.1 kHz); `Streamer` writes register pairs to the serial port; `WaveFile` (`-w`) renders each frame to a 16-bit stereo WAV as it plays. `Emulator` and `WaveFile` share the chip emulation through `PCMOutput`. The WAV file covers the whole player session, and its header sizes are updated about every second, so a killed process still leaves a playable file. `Output::Write` handles AY8930 bank switching through bit `0x10` of `Mode_Bank` (R13).
 
 ### Adding or enabling a format
 

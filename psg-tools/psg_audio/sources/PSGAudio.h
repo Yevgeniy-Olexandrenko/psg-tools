@@ -5,6 +5,7 @@
 #include "player/Player.h"
 #include "player/Emulator/Emulator.h"
 #include "player/Streamer/Streamer.h"
+#include "player/WaveFile/WaveFile.h"
 
 class FileDecoder
 {
