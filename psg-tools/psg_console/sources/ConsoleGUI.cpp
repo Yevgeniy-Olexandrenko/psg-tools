@@ -14,6 +14,8 @@ namespace gui
 {
     // the header row and 15 frames around the playing one
     const int k_maxFramesRows = 16;
+    // the header row and the frames before, at and after the playing one
+    const int k_minFramesRows = 4;
 
     // decoding and encoding report every single frame, which is way more
     // often than the console needs to be redrawn
@@ -565,7 +567,9 @@ namespace gui
     }
 
     // Chooses how the frames fit the width: the chips side by side, the second
-    // chip below the first one, only the first chip, or no frames at all
+    // chip below the first one, only the first chip, or no frames at all.
+    // A block of frames is shown only with the header and at least three
+    // frames: the previous, the playing and the next one.
     FramesLayout getFramesLayout(const Stream& stream, int width, int rows)
     {
         FramesLayout layout{};
@@ -573,7 +577,7 @@ namespace gui
         bool isTwoChips = stream.IsSecondChipUsed();
         int space = (width - 1);
 
-        if (rows >= 3)
+        if (rows >= k_minFramesRows)
         {
             if (isTwoChips && space >= 6 + 2 * registers)
             {
@@ -582,7 +586,7 @@ namespace gui
             else if (space >= 6 + registers)
             {
                 layout.chips = 1;
-                layout.stacked = (isTwoChips && rows >= 6);
+                layout.stacked = (isTwoChips && rows >= 2 * k_minFramesRows);
             }
         }
 

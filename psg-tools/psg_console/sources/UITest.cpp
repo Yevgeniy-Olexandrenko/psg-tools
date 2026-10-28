@@ -165,7 +165,7 @@ void RunUITest(std::atomic<bool>& termination)
             int maxHeight = screen.GetMaxHeight();
             int infoRows = std::clamp(maxHeight - 2, 0, k_maxInfoRows);
             int dumpRows = std::min(k_maxDumpRows, maxHeight - 2 - infoRows);
-            if (dumpRows < 3) dumpRows = 0;
+            if (dumpRows < 4) dumpRows = 0; // the header and three frames at least
 
             PrintBuffer& canvas = screen.Begin(2 + infoRows + dumpRows);
             DrawBar(canvas, 0, number + ' ' + track.file, FG_WHITE, 1.f);
