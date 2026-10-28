@@ -1,7 +1,9 @@
 #pragma once
 
+#include <optional>
 #include <filesystem>
 #include "stream/Stream.h"
+#include "encoders/Encoder.h"
 #include "player/Player.h"
 #include "player/Emulator/Emulator.h"
 #include "player/Streamer/Streamer.h"
@@ -22,8 +24,9 @@ class FileEncoder
 {
 public:
 	static const std::string FileTypes;
-	bool Encode(const std::filesystem::path& path, Stream& stream);
+	using Duration = std::optional<Encoder::Duration>;
+	bool Encode(const std::filesystem::path& path, Stream& stream, Duration duration = {});
 
 protected:
-	virtual void OnFrameEncoded(const Stream& stream, FrameId frameId) {}
+	virtual void OnFrameEncoded(const Stream& stream, FrameId frameId, size_t framesCount) {}
 };

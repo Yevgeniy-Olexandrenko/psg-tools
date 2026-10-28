@@ -1,10 +1,11 @@
 #include "FilelistConverter.h"
 #include "ConsoleGUI.h"
 
-FilelistConverter::FilelistConverter(Chip& chip, FilelistTraversal& filelist, Filelist::Path& output, Termination& termination)
+FilelistConverter::FilelistConverter(Chip& chip, FilelistTraversal& filelist, Filelist::Path& output, Duration duration, Termination& termination)
     : m_chip(chip)
     , m_filelist(filelist)
     , m_output(output)
+    , m_duration(duration)
     , m_termination(termination)
 {
 }
@@ -76,7 +77,7 @@ void FilelistConverter::ConvertFile()
 
     if (Decode(m_inputPath, stream))
     {
-        if (Encode(m_outputPath, stream))
+        if (Encode(m_outputPath, stream, m_duration))
         {
             gui::CommitFile(GetFileView(), stream, m_outputPath.string());
         }
@@ -104,8 +105,8 @@ void FilelistConverter::OnFrameDecoded(const Stream& stream, FrameId frameId)
     gui::DrawDecoding(GetFileView(), stream);
 }
 
-void FilelistConverter::OnFrameEncoded(const Stream& stream, FrameId frameId)
+void FilelistConverter::OnFrameEncoded(const Stream& stream, FrameId frameId, size_t framesCount)
 {
     gui::UpdateBusy();
-    gui::DrawEncoding(GetFileView(), stream, frameId, m_outputPath.string());
+    gui::DrawEncoding(GetFileView(), stream, frameId, framesCount, m_outputPath.string());
 }

@@ -37,7 +37,7 @@
 #include "debug/DebugOutput.h"
 
 const std::string FileDecoder::FileTypes{ "asc|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
-const std::string FileEncoder::FileTypes{ "psg|rsf|vtx|ym" };
+const std::string FileEncoder::FileTypes{ "psg|rsf|vtx|ym|wav" };
 
 static DebugOutput<DBG_DECODING> dbg;
 
@@ -102,7 +102,7 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 	return result;
 }
 
-bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
+bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream, Duration duration)
 {
 	std::shared_ptr<Encoder> encoders[]
 	{
@@ -111,6 +111,7 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 		std::shared_ptr<Encoder>(new EncodeAYM()),
 		std::shared_ptr<Encoder>(new EncodeVTX()),
 		std::shared_ptr<Encoder>(new EncodeYM()),
+		std::shared_ptr<Encoder>(new EncodeWAV()),
 	};
 
 	std::shared_ptr<FrameProcessor> processors[]
@@ -123,26 +124,42 @@ bool FileEncoder::Encode(const std::filesystem::path& path, Stream& stream)
 	stream.file = path;
 	for (auto encoder : encoders)
 	{
+		bool playback = (duration.value_or(encoder->GetDefaultDuration()) == Encoder::Duration::Playback);
+		size_t framesCount = (playback ? stream.play.framesCount : stream.framesCount);
+		encoder->SetFrames(framesCount, playback ? 0 : stream.loopFrameId);
+
 		if (encoder->Open(stream))
 		{
 			Frame dframe;
-			for (size_t i = 0; i < stream.framesCount; ++i)
+			for (size_t i = 0; i < framesCount; ++i)
 			{
 				auto frameId = FrameId(i);
-				const Frame& sframe = stream.GetFrame(frameId);
+				const Frame& sframe = (playback ? stream.play.GetFrame(frameId) : stream.GetFrame(frameId));
 
-				// frame processing
-				const Frame* pframe = &sframe;
-				for (auto processor : processors)
+				if (encoder->HasOwnProcessing())
 				{
-					pframe = &(*processor).Execute(*pframe);
+					// the encoder processes the frames by itself, the
+					// first frame sets all registers, like the player does
+					if (i == 0)
+						encoder->Encode(!Frame(sframe));
+					else
+						encoder->Encode(sframe);
 				}
-				dframe.ResetChanges();
-				dframe += *pframe;
+				else
+				{
+					// frame processing
+					const Frame* pframe = &sframe;
+					for (auto processor : processors)
+					{
+						pframe = &(*processor).Execute(*pframe);
+					}
+					dframe.ResetChanges();
+					dframe += *pframe;
 
-				// frame encoding
-				encoder->Encode(dframe);
-				OnFrameEncoded(stream, frameId);
+					// frame encoding
+					encoder->Encode(dframe);
+				}
+				OnFrameEncoded(stream, frameId, framesCount);
 			}
 			encoder->Close(stream);
 			return true;

@@ -78,6 +78,10 @@ void InitProgramArguments(argparse::ArgumentParser& program)
         .metavar("PATH")
         .default_value(std::string{ "favorites.m3u" });
 
+    program.add_argument("--duration")
+        .help("encoded duration: Original (with loop) or Playback (as played)")
+        .metavar("TYPE");
+
     program.add_argument("--chip-model")
         .help("destination chip model(s)")
         .nargs(1, 2);
@@ -198,6 +202,18 @@ int main(int argc, char* argv[])
         }
     }
 
+    // parse duration of encoded files
+    FileEncoder::Duration duration;
+    if (auto optional = program.present("duration"))
+    {
+        duration = magic_enum::enum_cast<Encoder::Duration>(optional.value());
+        if (!duration)
+        {
+            std::cerr << "Unknown duration type: " << optional.value() << std::endl;
+            std::exit(1);
+        }
+    }
+
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
     PrintWellcome();
 
@@ -209,7 +225,7 @@ int main(int argc, char* argv[])
         {
             if (!output.empty())
             {
-                FilelistConverter converter(chip, filelist, output, m_termination);
+                FilelistConverter converter(chip, filelist, output, duration, m_termination);
                 converter.Convert();
             }
             else

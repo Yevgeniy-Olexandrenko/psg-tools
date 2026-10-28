@@ -41,7 +41,7 @@ namespace gui
 	// current size of the console window
 	void DrawDecoding(const FileView& file, const Stream& stream);
 	void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames);
-	void DrawEncoding(const FileView& file, const Stream& stream, int frameId, const std::string& output);
+	void DrawEncoding(const FileView& file, const Stream& stream, int frameId, size_t framesCount, const std::string& output);
 
 	// Removes the live view and leaves the header and all the properties of
 	// the file in the history, no matter how many of them fit the window

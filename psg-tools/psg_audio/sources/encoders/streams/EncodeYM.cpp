@@ -53,7 +53,7 @@ void EncodeYM::Close(const Stream& stream)
 	PutU16(data, 0);          // number of digidrums
 	PutU32(data, uint32_t(stream.dchip.clockValue));
 	PutU16(data, uint16_t(stream.play.frameRate));
-	PutU32(data, uint32_t(stream.loopFrameId));
+	PutU32(data, uint32_t(m_loopFrameId));
 	PutU16(data, 0);          // size of additional data
 	PutStr(data, stream.info.title);
 	PutStr(data, stream.info.artist);

@@ -28,13 +28,34 @@ WaveFile::WaveFile(const std::filesystem::path& path)
 	, m_samplesPerFrame(0)
 	, m_samplesToRender(0)
 	, m_dataSize(0)
+	, m_tailSize(0)
 	, m_headerUpdateSize(0)
+	, m_loopStart(0)
+	, m_hasLoop(false)
 {
 }
 
 WaveFile::~WaveFile()
 {
 	DeviceClose();
+}
+
+void WaveFile::SetInfo(const Stream& stream)
+{
+	m_info.clear();
+	if (stream.info.titleKnown) m_info.emplace_back("INAM", stream.info.title);
+	if (stream.info.artistKnown) m_info.emplace_back("IART", stream.info.artist);
+	if (stream.info.commentKnown) m_info.emplace_back("ICMT", stream.info.comment);
+
+	// source form: the format the sound comes from
+	const std::string& type = stream.info.type;
+	if (!type.empty()) m_info.emplace_back("ISRF", type);
+}
+
+void WaveFile::SetLoopStart()
+{
+	m_loopStart = (m_dataSize / k_blockAlign);
+	m_hasLoop = true;
 }
 
 const std::string WaveFile::GetDeviceName() const
@@ -48,7 +69,10 @@ bool WaveFile::DeviceOpen()
 	if (m_output)
 	{
 		m_dataSize = 0;
+		m_tailSize = 0;
 		m_headerUpdateSize = k_headerUpdatePeriod;
+		m_loopStart = 0;
+		m_hasLoop = false;
 		WriteHeader();
 		return bool(m_output);
 	}
@@ -112,6 +136,8 @@ void WaveFile::DeviceClose()
 {
 	if (m_output.is_open())
 	{
+		WriteInfo();
+		WriteLoop();
 		UpdateHeader();
 		m_output.close();
 	}
@@ -136,11 +162,68 @@ void WaveFile::WriteHeader()
 	WriteLE<uint32_t>(m_output, m_dataSize);
 }
 
+void WaveFile::WriteInfo()
+{
+	// the LIST chunk goes after the data chunk, Windows
+	// Explorer does not show it in front of the data
+	std::vector<InfoItem> info(m_info);
+	info.emplace_back("ISFT", "PSG Tools");
+
+	uint32_t listSize = 4;
+	for (const auto& [id, text] : info)
+	{
+		listSize += 8 + uint32_t((text.size() + 2) & ~1);
+	}
+
+	m_output.write("LIST", 4);
+	WriteLE<uint32_t>(m_output, listSize);
+	m_output.write("INFO", 4);
+	for (const auto& [id, text] : info)
+	{
+		// each text is null-terminated and padded to an even size
+		auto size = uint32_t(text.size() + 1);
+		m_output.write(id.data(), 4);
+		WriteLE<uint32_t>(m_output, size);
+		m_output.write(text.data(), text.size());
+		m_output.write("\0\0", (size & 1) ? 2 : 1);
+	}
+
+	m_tailSize += (8 + listSize);
+}
+
+void WaveFile::WriteLoop()
+{
+	// the loop goes from its start to the last sample
+	uint32_t samples = (m_dataSize / k_blockAlign);
+	if (m_hasLoop && m_loopStart < samples)
+	{
+		m_output.write("smpl", 4);
+		WriteLE<uint32_t>(m_output, 36 + 24);
+		WriteLE<uint32_t>(m_output, 0); // manufacturer
+		WriteLE<uint32_t>(m_output, 0); // product
+		WriteLE<uint32_t>(m_output, 1000000000 / k_PCMSampleRate); // sample period, ns
+		WriteLE<uint32_t>(m_output, 60); // MIDI unity note
+		WriteLE<uint32_t>(m_output, 0); // MIDI pitch fraction
+		WriteLE<uint32_t>(m_output, 0); // SMPTE format
+		WriteLE<uint32_t>(m_output, 0); // SMPTE offset
+		WriteLE<uint32_t>(m_output, 1); // number of loops
+		WriteLE<uint32_t>(m_output, 0); // sampler data size
+
+		WriteLE<uint32_t>(m_output, 0); // cue point id
+		WriteLE<uint32_t>(m_output, 0); // type: forward
+		WriteLE<uint32_t>(m_output, m_loopStart);
+		WriteLE<uint32_t>(m_output, samples - 1); // last sample, inclusive
+		WriteLE<uint32_t>(m_output, 0); // fraction
+		WriteLE<uint32_t>(m_output, 0); // play count: infinite
+		m_tailSize += (8 + 36 + 24);
+	}
+}
+
 void WaveFile::UpdateHeader()
 {
 	auto position = m_output.tellp();
 	m_output.seekp(4);
-	WriteLE<uint32_t>(m_output, k_headerSize - 8 + m_dataSize);
+	WriteLE<uint32_t>(m_output, k_headerSize - 8 + m_dataSize + m_tailSize);
 	m_output.seekp(40);
 	WriteLE<uint32_t>(m_output, m_dataSize);
 	m_output.seekp(position);

@@ -56,7 +56,7 @@ void EncodeVTX::Close(const Stream& stream)
 			stereo = uint8_t(Chip::Stereo(stream.dchip.stereo));
 			if (!stereo) stereo = uint8_t(Chip::Stereo::ABC);
 		}
-		uint32_t loop = uint32_t(stream.loopFrameId);
+		uint32_t loop = uint32_t(m_loopFrameId);
 
 		m_output << (stream.dchip.first.model == Chip::Model::YM2149 ? "ym" : "ay");
 		m_output << stereo;

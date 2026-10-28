@@ -32,12 +32,13 @@ Run from the repo root (the VS debugger also uses the repo root as its working d
 ./psg-tools-x64.exe sample.pt3                        # play with the software emulator
 ./psg-tools-x64.exe chiptunes/Mmcm -o out/*.rsf       # convert; '*' is replaced by each input's stem
 ./psg-tools-x64.exe sample.pt3 -o psg                 # bare type: writes sample.psg to the current directory
+./psg-tools-x64.exe sample.pt3 -o wav                 # render to WAV, as long as the player plays it
 ./psg-tools-x64.exe chiptunes/Davos -o list.m3u       # .m3u/.ayl output exports a playlist instead
 ./psg-tools-x64.exe sample.pt3 -p 3                   # stream to AYM Streamer on COM port index 3
 ./psg-tools-x64.exe chiptunes/Mmcm -w rec.wav          # play silently, recording everything played to one WAV file
 ```
 
-Other options: `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
+Other options: `--duration Original|Playback` (which frames an encoder gets, see Pipeline), `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
 
 ## Architecture
 
@@ -72,12 +73,12 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
    - `decoders/streams/`: register-dump formats. `DecodeVGM` feeds non-AY chips' writes through the simulators in `simulation/` (`SimSN76489`, `SimRP2A03`, `SimAY8910`), which convert another chip's state into AY frames with clock-ratio period scaling.
 2. **Process**: `FrameProcessor` subclasses in `processing/` turn source-chip frames into destination-chip frames: `ChannelsOutputEnable`, `ChipClockRateConvert`, `ChannelsLayoutChange` (stereo layout), `AY8930EnvelopeFix`. Playback chains them in a `ProcessingChain` inside `Output::Init`. Encoding builds its own array in `FileEncoder::Encode`, without `ChannelsOutputEnable`.
 3. **Output**, one of:
-   - **Encode**: `FileEncoder::Encode` selects an encoder by output extension (`Encoder::CheckFileExt` in `Open`).
+   - **Encode**: `FileEncoder::Encode` selects an encoder by output extension (`Encoder::CheckFileExt` in `Open`). An encoder gets either the original frames with the stream's loop (`Duration::Original`, the default for the register-stream encoders) or the frames as the player plays them, with the extra loops or the cut silence and without a loop (`Duration::Playback`, the default for `EncodeWAV`); `--duration` overrides it, and encoders take the frame count and loop from `Encoder::m_framesCount`/`m_loopFrameId`, not from the stream. `EncodeWAV` has its own processing (`HasOwnProcessing`): it gets unprocessed frames and writes them through a `WaveFile` output, which processes them like the player does, so `FileEncoder` must not process them too. With `Original` and a loop, the WAV gets a `smpl` loop chunk. `WaveFile` writes `LIST/INFO` after the `data` chunk, because Windows Explorer does not read it in front of the data.
    - **Play**: `Player` runs a thread that steps frames into an `Output`. `Emulator` is the software output (`emulation/AY89XXPsg` plus `WaveAudio` over winmm, 44.1 kHz); `Streamer` writes register pairs to the serial port; `WaveFile` (`-w`) renders each frame to a 16-bit stereo WAV as it plays. `Emulator` and `WaveFile` share the chip emulation through `PCMOutput`. The WAV file covers the whole player session, and its header sizes are updated about every second, so a killed process still leaves a playable file. `Output::Write` handles AY8930 bank switching through bit `0x10` of `Mode_Bank` (R13).
 
 ### Adding or enabling a format
 
-Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Several classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`, `EncodeVGM`, `EncodeWAV`. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
+Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Several classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`, `EncodeVGM`. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
 
 AYM is the project's own compressed streaming format (`EncodeAYM`, with selectable compression profiles and LZ78). It is under active development. `documents/output_file_formats.md` has the RSF spec and a feature/compression comparison of the output formats.
 

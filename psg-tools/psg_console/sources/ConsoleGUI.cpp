@@ -784,14 +784,13 @@ namespace gui
         screen().Render();
     }
 
-    void DrawEncoding(const FileView& file, const Stream& stream, int frameId, const std::string& output)
+    void DrawEncoding(const FileView& file, const Stream& stream, int frameId, size_t framesCount, const std::string& output)
     {
         if (isTimeToDraw(file))
         {
             drawFileView(file, getProperties(stream, &output), [&](PrintBuffer& canvas, int y)
             {
-                size_t frames = stream.framesCount;
-                float position = (frames ? float(frameId) / frames : 0.f);
+                float position = (framesCount ? float(frameId) / framesCount : 0.f);
                 drawProgress(canvas, y, position, frameId / 256, "Encoding");
             });
         }

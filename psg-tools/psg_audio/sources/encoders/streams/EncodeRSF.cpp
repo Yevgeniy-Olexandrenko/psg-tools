@@ -21,8 +21,8 @@ bool EncodeRSF::Open(const Stream& stream)
             header.m_sigAndVer = RSFSignature;
             header.m_frameRate = stream.play.frameRate;
             header.m_dataOffset = uint16_t(dataOffset);
-            header.m_frameCount = uint32_t(stream.framesCount);
-            header.m_loopFrame = stream.loopFrameId;
+            header.m_frameCount = uint32_t(m_framesCount);
+            header.m_loopFrame = m_loopFrameId;
             header.m_chipFreq = stream.dchip.clockValue;
             m_output.write((char*)&header, sizeof(header));
 
