@@ -171,6 +171,31 @@ namespace console
         WriteText(handle, "\n");
     }
 
+    void WriteRow(const CHAR_INFO* cells, int count)
+    {
+        HANDLE handle = GetOutput();
+        CONSOLE_SCREEN_BUFFER_INFO info;
+        if (!GetInfo(info)) return;
+
+        while (count > 0 && cells[count - 1].Char.UnicodeChar == L' ') --count;
+        for (int start = 0; start < count;)
+        {
+            int end = start;
+            std::wstring text;
+            while (end < count && cells[end].Attributes == cells[start].Attributes)
+            {
+                text += cells[end++].Char.UnicodeChar;
+            }
+
+            DWORD written;
+            SetConsoleTextAttribute(handle, MapAttributes(cells[start].Attributes));
+            WriteConsoleW(handle, text.data(), DWORD(text.size()), &written, nullptr);
+            start = end;
+        }
+        SetConsoleTextAttribute(handle, info.wAttributes);
+        WriteText(handle, "\n");
+    }
+
     DWORD s_inputMode = 0;
     bool s_isInputModeSaved = false;
 

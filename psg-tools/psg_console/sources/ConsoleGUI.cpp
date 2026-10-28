@@ -799,7 +799,7 @@ namespace gui
 
     void CommitFile(const FileView& file, const Stream& stream, const std::string& output)
     {
-        region().Sync();
+        region().WaitForSteadySize();
         region().Erase();
 
         if (!isConsole())

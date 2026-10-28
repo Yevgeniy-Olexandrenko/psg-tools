@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <thread>
 
 #include "LiveRegion.h"
 #include "Console.h"
@@ -15,6 +16,31 @@ namespace
     }
 
     const CHAR_INFO k_blank = MakeBlank();
+
+    // When the window gets lower, the terminal moves its top rows to its own
+    // scrollback, while under ConPTY the console just drops them, and the app
+    // cannot clean that scrollback. So a few rows of the history are always
+    // kept above the region: then they are the ones that go there, not
+    // a snapshot of the top of the region. The long buffer of classic conhost
+    // keeps everything itself
+    int GetHistoryReserve(int windowHeight)
+    {
+        return (console::IsPseudoConsole() ? std::min(4, windowHeight / 4) : 0);
+    }
+
+    // The rows of the region also stop a few columns short of the right edge
+    // under ConPTY: when the window gets narrower, every row that no longer
+    // fits is wrapped onto two by the terminal and the console, which pushes
+    // the top of the region out of the window as well. With the spare columns
+    // a small step of the border does not wrap anything, and the next frame
+    // is drawn for the new width already
+    int GetColumnReserve(int width)
+    {
+        return (console::IsPseudoConsole() ? std::min(8, width / 8) : 0);
+    }
+
+    const auto k_steadyTime = std::chrono::milliseconds(300);
+    const auto k_steadyTimeout = std::chrono::seconds(2);
 }
 
 LiveRegion::LiveRegion()
@@ -35,35 +61,83 @@ bool LiveRegion::Sync()
 {
     console::Geometry geometry;
     if (!console::GetGeometry(geometry)) return false;
-    if (geometry.width == m_width && geometry.height == m_height) return false;
+    int width = (geometry.width - GetColumnReserve(geometry.width));
+    if (width == m_width && geometry.height == m_height) return false;
 
-    // on resize the console reflows the text, and the first row of the region,
-    // which may span several rows now, still starts at the cursor, unless the
-    // region got taller than the window under ConPTY: then its top went out of
-    // the buffer and all visible rows belong to the region; the long buffer
-    // of classic conhost always keeps the top of the region
-    int top = geometry.cursorY;
-    if (m_shown > 0 && console::IsPseudoConsole())
-    {
-        int count = m_width;
-        while (count > 1 && m_screen[count - 1].Char.UnicodeChar == L' ') --count;
-
-        if (!console::IsTextAt(top, m_screen.data(), count))
-        {
-            top = geometry.windowTop;
-            console::SetCursorRow(top);
-        }
-    }
+    int top = FindTop(geometry);
+    console::SetCursorRow(top);
     console::ClearRows(top, geometry.bufferHeight - top);
 
-    m_width = geometry.width;
+    if (m_width > 0) m_resizeTime = std::chrono::steady_clock::now();
+    m_width = width;
     m_height = geometry.height;
-    m_maxHeight = std::max(1, geometry.height);
+    m_maxHeight = std::max(1, geometry.height - GetHistoryReserve(geometry.height));
     m_screen.clear();
     m_content = 0;
     m_shown = 0;
     m_reserved = 0;
     return true;
+}
+
+int LiveRegion::FindTop(const console::Geometry& geometry) const
+{
+    // On resize the console reflows the text, and the region still starts at
+    // the cursor. The long buffer of classic conhost always keeps it so.
+    // Under ConPTY the console may put the cursor elsewhere, so the region is
+    // looked for in the window: it starts right below the last line of the
+    // history, and its first row is the one that was shown there
+    int cursor = geometry.cursorY;
+    if (!console::IsPseudoConsole()) return cursor;
+
+    int count = m_width;
+    while (count > 1 && m_content > 0 && m_screen[count - 1].Char.UnicodeChar == L' ') --count;
+    auto isRegionAt = [&](int y)
+    {
+        return (m_content > 0 && console::IsTextAt(y, m_screen.data(), count));
+    };
+    if (isRegionAt(cursor)) return cursor;
+
+    // the same line may be shown in the region too, so the lowest place where
+    // the region follows the line wins, or just the lowest one without a region
+    int lineRows = (int(m_lastLine.size()) + geometry.width) / (geometry.width + 1);
+    int afterLine = -1;
+    for (int y = geometry.windowBottom; y >= geometry.windowTop && !m_lastLine.empty(); --y)
+    {
+        if (console::IsTextAt(y, m_lastLine.data(), int(m_lastLine.size())))
+        {
+            int below = std::min(y + std::max(1, lineRows), geometry.bufferHeight - 1);
+            if (isRegionAt(below)) return below;
+            if (afterLine < 0) afterLine = below;
+        }
+    }
+    if (m_content == 0) return (afterLine >= 0 ? afterLine : cursor);
+
+    for (int y = geometry.windowBottom; y > geometry.windowTop; --y)
+    {
+        if (isRegionAt(y)) return y;
+    }
+
+    // the region got taller than the window and its top went out of the buffer:
+    // then all visible rows belong to the region
+    return (afterLine >= 0 ? afterLine : geometry.windowTop);
+}
+
+void LiveRegion::SetLastLine(const CHAR_INFO* cells, int count)
+{
+    while (count > 0 && cells[count - 1].Char.UnicodeChar == L' ') --count;
+    m_lastLine.assign(cells, cells + count);
+}
+
+void LiveRegion::WaitForSteadySize()
+{
+    auto start = std::chrono::steady_clock::now();
+    for (;;)
+    {
+        Sync();
+        auto now = std::chrono::steady_clock::now();
+        if (now - m_resizeTime >= k_steadyTime || now - start >= k_steadyTimeout) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
 }
 
 PrintBuffer& LiveRegion::Begin(int height)
@@ -83,28 +157,25 @@ void LiveRegion::Render()
 
 void LiveRegion::Commit(int rows)
 {
-    console::Geometry geometry;
     rows = std::clamp(rows, 0, m_content);
-    if (rows == 0 || !console::GetGeometry(geometry)) return;
+    if (rows == 0) return;
 
-    // below the last row of the buffer the cursor can only get with new lines,
-    // which scroll the history up
-    int target = (geometry.cursorY + rows);
-    int last = (geometry.bufferHeight - 1);
-    if (target > last)
-    {
-        console::SetCursorRow(last);
-        console::WriteNewLines(target - last);
-    }
-    else
-    {
-        console::SetCursorRow(target);
-    }
+    // the rows go to the history as lines of text, like everything else there:
+    // the console and the terminal reflow such lines alike on resize, while
+    // the cells written over the region may get joined with the rows below
+    // them once the window gets narrower and wider again
+    std::vector<CHAR_INFO> shown(m_screen);
+    int height = m_content;
 
-    m_screen.erase(m_screen.begin(), m_screen.begin() + size_t(m_width) * rows);
-    m_content -= rows;
-    m_shown -= rows;
-    m_reserved = std::max(0, m_reserved - rows);
+    Erase();
+    for (int y = 0; y < rows; ++y)
+    {
+        console::WriteRow(&shown[size_t(m_width) * y], m_width);
+    }
+    SetLastLine(&shown[size_t(m_width) * (rows - 1)], m_width);
+    m_reserved = 0;
+
+    if (height > rows) Present(&shown[size_t(m_width) * rows], height - rows);
 }
 
 void LiveRegion::Erase()
@@ -129,6 +200,12 @@ void LiveRegion::Print(const std::string& text, WORD attributes)
     Erase();
     console::WriteLine(text, attributes);
     m_reserved = 0;
+
+    std::vector<CHAR_INFO> line(text.size(), k_blank);
+    std::wstring wide(text.size(), L' ');
+    int size = MultiByteToWideChar(CP_ACP, 0, text.data(), int(text.size()), wide.data(), int(wide.size()));
+    for (int i = 0; i < size; ++i) line[i].Char.UnicodeChar = wide[i];
+    SetLastLine(line.data(), size);
 
     if (height > 0) Present(shown.data(), height);
 }

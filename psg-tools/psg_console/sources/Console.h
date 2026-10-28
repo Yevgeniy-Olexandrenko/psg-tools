@@ -56,6 +56,10 @@ namespace console
 	// to a file or a pipe, the text goes there as a plain line.
 	void WriteLine(const std::string& text, WORD attributes);
 
+	// Writes a row of cells as a line of text in their attributes, without
+	// the trailing spaces, and moves the cursor to the next line.
+	void WriteRow(const CHAR_INFO* cells, int count);
+
 	// Turns off the quick edit mode, which would freeze the output while the
 	// user selects text. RestoreInput() brings back the original input mode
 	// and drops the keys nobody has read, so they do not get to the shell.
