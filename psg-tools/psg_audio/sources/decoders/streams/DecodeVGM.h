@@ -98,7 +98,7 @@ private:
 
     int m_loop;
     int m_samplesPerFrame;
-    int m_processedSamples;
+    int m_waitSamples;
 
     std::shared_ptr<ChipSim> m_simulator;
 };

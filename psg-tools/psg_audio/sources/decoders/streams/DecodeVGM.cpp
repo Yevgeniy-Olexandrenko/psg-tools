@@ -1,5 +1,6 @@
 #include "DecodeVGM.h"
 #include <sstream>
+#include <algorithm>
 #include <zlib/zlib.h>
 #include "simulation/SimAY8910.h"
 #include "simulation/SimRP2A03.h"
@@ -160,7 +161,7 @@ bool DecodeVGM::Open(Stream& stream)
 
                 m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
                 m_samplesPerFrame = (44100 / frameRate);
-                m_processedSamples = 0;
+                m_waitSamples = 0;
 
                 if (header.loopSamples)
                 {
@@ -224,22 +225,20 @@ bool DecodeVGM::Open(Stream& stream)
 bool DecodeVGM::Decode(Frame& frame)
 {
     m_simulator->Convert(frame);
-    if (m_processedSamples >= m_samplesPerFrame)
+
+    // simulate exactly one frame: a wait crossing the frame
+    // boundary is split, its rest goes to the next frame
+    int frameSamples = m_samplesPerFrame;
+    while (frameSamples)
     {
-        m_simulator->Simulate(m_samplesPerFrame);
-    } 
-    else
-    while (m_processedSamples < m_samplesPerFrame)
-    {
-        if (int samples = DecodeBlock())
-        {
-            m_simulator->Simulate(samples);
-            m_processedSamples += samples;
-        }
-        else return false;
+        if (!m_waitSamples && !(m_waitSamples = DecodeBlock())) return false;
+
+        int samples = std::min(m_waitSamples, frameSamples);
+        m_simulator->Simulate(samples);
+        m_waitSamples -= samples;
+        frameSamples  -= samples;
     }
-    m_processedSamples -= m_samplesPerFrame;
-    dbg.print_message("%d\n", m_processedSamples);
+    dbg.print_message("%d\n", m_waitSamples);
     return true;
 }
 
