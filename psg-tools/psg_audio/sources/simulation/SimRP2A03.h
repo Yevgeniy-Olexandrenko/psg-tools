@@ -28,16 +28,18 @@ private:
     void ConvertToDoubleChip(const State& state, Frame& frame);
     void ConvertToAY8930Chip(const State& state, Frame& frame);
 
-    template<Register::Value shape_reg, Register::Period peiod_reg>
-    void EnableTriangleEnvelopeOnChannelB(const State& state, Frame& frame);
-    void DisableTriangleEnvelopeOnChannelB(Frame& frame);
-    void DistributeNoiseBetweenChannels(const State& state, Frame& frame, uint8_t& mixer);
+    template<Register::Value shape_reg, Register::Period period_reg>
+    void ConvertTriangle(const State& state, Frame& frame, uint8_t& mixer, uint8_t* volumes);
+    void DistributeNoiseBetweenChannels(const State& state, uint8_t& mixer, uint8_t* volumes);
+    void UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes);
 
     float   VolumeToLevel(uint8_t volume) const;
     uint8_t LevelToVolume(float   level ) const;
-    uint8_t ConvertVolume(uint8_t volume) const;
+    uint8_t PulseVolume  (uint8_t volume) const;
+    uint8_t NoiseVolume  (uint8_t volume) const;
 
 private:
     OutputType m_outputType;
     uint8_t m_noiseAndMask;
+    int m_triangleHold;
 };
