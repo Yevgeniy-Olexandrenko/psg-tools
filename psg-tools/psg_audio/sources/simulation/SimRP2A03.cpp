@@ -49,6 +49,13 @@ namespace
     // the upper frequency of hearing, Hz
     const double c_hearingLimit = 20000;
 
+    // levels of the square and of its octave for the NES duties 12.5, 25, 50 and 75%:
+    // (a^2 + b^2) / 4 = d * (1 - d), b = 0.707 * a for 25% and 75%, b = a for 12.5%
+    const float c_dutyGains[4][2] =
+    {
+        { 0.468f, 0.468f }, { 0.707f, 0.500f }, { 1.000f, 0.000f }, { 0.707f, 0.500f }
+    };
+
     // output levels of the YM2149 32 volumes, its 16 volumes are the odd ones
     const float c_ymLevels[] =
     {
@@ -219,28 +226,24 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
         const auto& pulse = state.pulse[i];
         if (pulse.enable)
         {
-            int chan = c_pulseChannels[i];
-            uint16_t period0 = ConvertPeriod(pulse.period + 1);
-            uint8_t  volume  = PulseVolume(pulse.volume);
-
-            // the 2nd chip imitates the duty: a detuned tone for 12.5%,
-            // an octave up for 25% and 75%, both chips at half the level
-            uint16_t period1 = period0;
-            if (pulse.duty == 0) period1 ^= 1;
-            if (pulse.duty == 1 || pulse.duty == 3) period1 >>= 1;
-
-            if (period1 != period0)
-            {
-                volume = LevelToVolume(0.5f * VolumeToLevel(volume));
-
-                EnableTone(mixer1, chan);
-                frame[1].Update(Register::t_period[chan], period1);
-                volumes1[chan] = volume;
-            }
+            // the 2nd chip imitates the duty by a square an octave up: it adds the even harmonics
+            // the square lacks, at any phase; 25% and 75% match exactly with the octave at -3 dB,
+            // 12.5% gets an octave of the same level; the levels keep the power of the pulse
+            const auto& gains = c_dutyGains[pulse.duty];
+            int   chan  = c_pulseChannels[i];
+            float level = PulseLevel(pulse.volume);
 
             EnableTone(mixer0, chan);
-            frame[0].Update(Register::t_period[chan], period0);
-            volumes0[chan] = volume;
+            frame[0].Update(Register::t_period[chan], ConvertPeriod(pulse.period + 1));
+            volumes0[chan] = LevelToVolume(gains[0] * level);
+
+            if (gains[1] > 0)
+            {
+                // the octave is rounded on its own, not as a half of the rounded period
+                EnableTone(mixer1, chan);
+                frame[1].Update(Register::t_period[chan], ConvertPeriod(pulse.period + 1, 2));
+                volumes1[chan] = LevelToVolume(gains[1] * level);
+            }
         }
     }
 
@@ -462,11 +465,16 @@ uint8_t SimRP2A03::LevelToVolume(float level) const
     return volume;
 }
 
-uint8_t SimRP2A03::PulseVolume(uint8_t volume) const
+float SimRP2A03::PulseLevel(uint8_t volume) const
 {
     // the pulse level of the NES mixer, relative to the triangle
     float level = (volume ? 95.88f / (8128.f / volume + 100.f) : 0.f);
-    return LevelToVolume(level * m_psgTriangleRms / c_nesTriangleRms);
+    return (level * m_psgTriangleRms / c_nesTriangleRms);
+}
+
+uint8_t SimRP2A03::PulseVolume(uint8_t volume) const
+{
+    return LevelToVolume(PulseLevel(volume));
 }
 
 uint8_t SimRP2A03::NoiseVolume(uint8_t volume, float gain) const

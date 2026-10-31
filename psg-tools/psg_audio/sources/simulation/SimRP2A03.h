@@ -38,6 +38,7 @@ private:
 
     float   VolumeToLevel(uint8_t volume) const;
     uint8_t LevelToVolume(float   level ) const;
+    float   PulseLevel   (uint8_t volume) const;
     uint8_t PulseVolume  (uint8_t volume) const;
     uint8_t NoiseVolume  (uint8_t volume, float gain = 1.f) const;
     uint8_t ShortNoiseVolume(const State& state) const;
