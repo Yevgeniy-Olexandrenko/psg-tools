@@ -115,7 +115,8 @@ bool DecodeVGM::Open(Stream& stream)
                 else if (m_simulator->type() == ChipSim::Type::RP2A03)
                 {
                     clockRate = (header.nesApuClock & 0x3FFFFFFF);
-                    if (clockRate / 1000 == 1662) frameRate = 50;
+                    // PAL (1662607 Hz) and Dendy (1773448 Hz) play at 50 Hz
+                    if (clockRate / 1000 == 1662 || clockRate / 1000 == 1773) frameRate = 50;
 
                     // setup chip clock rate (ZX Spectrum clock used by default)
                     if (stream.dchip.clockKnown)
