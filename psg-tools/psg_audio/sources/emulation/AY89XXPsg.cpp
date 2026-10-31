@@ -137,6 +137,12 @@ AY89XXPsg::AY89XXPsg(ChipType chipType, PSGType psgType, int clockRate, int samp
 	, m_dcFilterIndex(0)
 	, m_step(double(clockRate) / (sampleRate * 8 * DECIMATE_FACTOR))
 {
+	// the resampling and DC filter state starts silent, otherwise
+	// a reused heap block gives a burst or NaN in the output
+	memset(m_interpolator, 0, sizeof(m_interpolator));
+	memset(m_fir, 0, sizeof(m_fir));
+	memset(m_dcFilter, 0, sizeof(m_dcFilter));
+	memset(m_out, 0, sizeof(m_out));
 	Reset();
 }
 
