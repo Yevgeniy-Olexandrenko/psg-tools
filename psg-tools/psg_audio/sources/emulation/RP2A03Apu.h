@@ -41,8 +41,8 @@ class RP2A03Apu
 
     struct Triangle
     {
-        bool     control;
-        bool     halt;
+        bool     control;      // halts the length counter and keeps the reload flag
+        bool     reload;       // linear counter reload flag, set by $400B
         uint8_t  lin_reload;   // linear counter reload value
         uint16_t timer_period; // period for the wave frequency timer
         uint8_t  len_counter;  // length counter
@@ -66,6 +66,7 @@ class RP2A03Apu
 
     struct DMC
     {
+        bool     irq_enable;
         bool     irq;
         bool     loop;
         uint8_t  rate;
@@ -96,6 +97,18 @@ class RP2A03Apu
         bool     int_inhibit;
         bool     updated;
         uint16_t count;
+    };
+
+    // band-limited output: every step of the mixer output is added to the
+    // ring as a windowed sinc impulse, the samples integrate the impulses
+    static constexpr int BLIP_SIZE = 64;
+    struct Blip
+    {
+        double time;              // of the next CPU cycle, in output samples
+        double level;             // last mixer output
+        double sum;               // integrated output
+        double buffer[BLIP_SIZE]; // ring of impulses to integrate
+        int    index;             // of the next output sample in the ring
     };
 
 public:
@@ -131,6 +144,7 @@ public:
 
     void Write(uint16_t addr, uint8_t data);
     uint8_t Read(uint16_t addr);
+    void WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size);
 
     int32_t Output();
 
@@ -138,12 +152,17 @@ protected:
     void Process(uint32_t cpu_cycles);
 
 private:
-    void CalculateSweepPulse1();
-    void CalculateSweepPulse2();
+    void CalculateSweep(Pulse& pulse, bool onesComplement);
+    void ClockSweep(Pulse& pulse, bool onesComplement);
+    void UpdateEnvelopeOut(Envelope& envelope);
     void UpdateQuarterFrame();
     void UpdateHalfFrame();
     void UpdateNoise();
-    
+
+    uint8_t PulseOutput(const Pulse& pulse) const;
+    double Mix() const;
+    void AddDelta(double time, double delta);
+
     uint8_t CpuRead(uint16_t addr);
 
 protected:
@@ -154,12 +173,16 @@ protected:
     DMC      m_dmc{};
     FrameCnt m_frame{};
     uint32_t m_cpuCycles;
+    bool     m_oddCycle;
 
     uint32_t m_cpuClock;
     uint32_t m_cpuCyclesPerSample;
     const uint16_t* m_noisePeriods;
     const uint16_t* m_dmcPeriods;
+    const uint16_t* m_frameSteps;
 
-    uint32_t m_P12MixLut[31];
-    uint32_t m_TNDMixLut[203];
+    uint8_t  m_memory[0x8000]{}; // $8000-$FFFF, read by DMC
+
+    double   m_samplesPerCycle;
+    Blip     m_blip{};
 };
