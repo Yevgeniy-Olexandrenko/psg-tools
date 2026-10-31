@@ -1,7 +1,7 @@
 #include "SimRP2A03.h"
 #include "stream/Frame.h"
 #include "stream/Stream.h"
-#include <cassert>
+#include <cmath>
 
 struct SimRP2A03::State
 {
@@ -36,28 +36,42 @@ namespace
     // the PSG triangle has a fixed full scale level, the other channels are leveled to it:
     // AC RMS of the NES triangle through the NES mixer, and of the PSG envelope triangle
     const float c_nesTriangleRms = 0.0756f;
-    const float c_psgTriangleRms = 0.2712f;
+    const float c_ymTriangleRms  = 0.2712f;
+    const float c_ayTriangleRms  = 0.3044f;
 
     // frames the triangle level is held after it stops: less than
     // one envelope step at the longest period (0.3 s at 1.77 MHz)
     const int c_triangleHoldFrames = 15;
 
-    // output levels of the 32 volumes, the 16 level chips have the odd ones
-    const float c_volumeToLevel[] =
+    // the short mode noise repeats a sequence of 93 steps
+    const int c_shortNoiseSteps = 93;
+
+    // the upper frequency of hearing, Hz
+    const double c_hearingLimit = 20000;
+
+    // output levels of the YM2149 32 volumes, its 16 volumes are the odd ones
+    const float c_ymLevels[] =
     {
         0.000f, 0.000f, 0.005f, 0.008f, 0.011f, 0.014f, 0.017f, 0.020f,
         0.024f, 0.030f, 0.035f, 0.040f, 0.049f, 0.058f, 0.068f, 0.078f,
         0.093f, 0.111f, 0.130f, 0.148f, 0.177f, 0.212f, 0.246f, 0.281f,
         0.334f, 0.400f, 0.467f, 0.534f, 0.635f, 0.758f, 0.880f, 1.000f
     };
+
+    // output levels of the AY8910 16 volumes
+    const float c_ayLevels[] =
+    {
+        0.000f, 0.010f, 0.014f, 0.021f, 0.031f, 0.046f, 0.064f, 0.107f,
+        0.127f, 0.205f, 0.292f, 0.373f, 0.493f, 0.635f, 0.806f, 1.000f
+    };
 }
 
 SimRP2A03::SimRP2A03()
     : ChipSim(Type::RP2A03)
-    , m_outputType(OutputType::SingleChip)
     , m_noiseAndMask(0)
     , m_triangleHold(0)
 {
+    ConfigureOutput(OutputType::SingleChip, Chip::Model::YM2149);
 }
 
 void SimRP2A03::ConfigureClock(int srcClock, int dstClock)
@@ -70,9 +84,16 @@ void SimRP2A03::ConfigureClock(int srcClock, int dstClock)
     m_noiseAndMask = uint8_t(0x07 + extrapolation * 0x08 + 0.5f);
 }
 
-void SimRP2A03::ConfigureOutput(OutputType outputType)
+void SimRP2A03::ConfigureOutput(OutputType outputType, Chip::Model model)
 {
     m_outputType = outputType;
+
+    // AY8930 has the YM2149 DAC, in the expanded mode with all 32 volumes
+    bool ay8910 = (outputType != OutputType::AY8930Chip && model == Chip::Model::AY8910);
+    m_levels = (ay8910 ? c_ayLevels : c_ymLevels);
+    m_levelsCount = (outputType == OutputType::AY8930Chip ? 32 : 16);
+    m_levelsStep = (ay8910 || outputType == OutputType::AY8930Chip ? 1 : 2);
+    m_psgTriangleRms = (ay8910 ? c_ayTriangleRms : c_ymTriangleRms);
 }
 
 void SimRP2A03::Reset()
@@ -131,7 +152,6 @@ void SimRP2A03::Convert(Frame& frame)
     state.noise_volume = m_noise.envelope.out;
     state.noise_mode   = m_noise.mode;
     state.noise_enable = (m_noise.len_counter && m_noise.envelope.out);
-    assert(state.noise_mode == false);
 
     switch (m_outputType)
     {
@@ -166,8 +186,9 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
         ConvertTriangle<Register::E_Shape, Register::Period::E>(state, frame, mixer, volumes);
     }
 
-    // Noise -> automatically chosen channel: A, B, C or A + C
-    if (state.noise_enable)
+    // Noise -> automatically chosen channel: A, B, C or A + C;
+    // the short noise is not played, it only spoils the tones and the noise
+    if (state.noise_enable && !state.noise_mode)
     {
         // the NES noise shifts every period CPU clocks,
         // the PSG noise shifts every 16 * period chip clocks
@@ -229,8 +250,16 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
         ConvertTriangle<Register::E_Shape, Register::Period::E>(state, frame, mixer0, volumes0);
     }
 
+    // Short noise -> Chip 1 Square in Channel B
+    if (ShortNoiseAsTone(state))
+    {
+        EnableTone(mixer1, Frame::Channel::B);
+        frame[1].Update(Register::Period::B, ConvertPeriod(c_shortNoiseSteps * state.noise_period, 16));
+        volumes1[Frame::Channel::B] = ShortNoiseVolume(state);
+    }
+
     // Noise -> Chip 1 Noise in Channel B
-    if (state.noise_enable)
+    else if (state.noise_enable)
     {
         uint16_t period = ConvertPeriod(state.noise_period, 16);
         if (period > 0x1F) period = 0x1F;
@@ -282,13 +311,23 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
     // Noise -> automatically chosen channel: A, B, C or A + C
     if (state.noise_enable)
     {
-        frame[0].Update(Register::N_AndMask, m_noiseAndMask);
-        frame[0].Update(Register::N_OrMask,  0x00);
-
-        // the expanded mode noise toggles its output after a random count
-        // of periods set by the masks, so it has its own divider
-        uint16_t period = ConvertPeriod(state.noise_period, 32);
-        frame[0].Update(Register::Period::N, period);
+        // the expanded mode noise toggles its output after (LFSR & AND | OR) periods
+        if (ShortNoiseAsTone(state))
+        {
+            // the AND mask 0 makes it a square of half period OR * period * 8 clocks
+            uint8_t orMask, period;
+            ShortNoiseMasks(state, orMask, period);
+            frame[0].Update(Register::N_AndMask, 0x00);
+            frame[0].Update(Register::N_OrMask,  orMask);
+            frame[0].Update(Register::Period::N, period);
+        }
+        else
+        {
+            // a random count of periods set by the masks, so it has its own divider
+            frame[0].Update(Register::N_AndMask, m_noiseAndMask);
+            frame[0].Update(Register::N_OrMask,  0x00);
+            frame[0].Update(Register::Period::N, ConvertPeriod(state.noise_period, 32));
+        }
         DistributeNoiseBetweenChannels(state, mixer, volumes);
     }
 
@@ -323,9 +362,37 @@ void SimRP2A03::ConvertTriangle(const State& state, Frame& frame, uint8_t& mixer
     volumes[Frame::Channel::B] = frame[0].emask();
 }
 
+bool SimRP2A03::ShortNoiseAsTone(const State& state) const
+{
+    // the short noise is a buzz of pitch CPU / (93 * period), a tone imitates it while
+    // the pitch is audible; lower, it is a rattle, closer to the usual noise
+    return (state.noise_enable && state.noise_mode &&
+        ConvertPeriod(c_shortNoiseSteps * state.noise_period, 16) <= 0x0FFF);
+}
+
+void SimRP2A03::ShortNoiseMasks(const State& state, uint8_t& orMask, uint8_t& period) const
+{
+    // the half period of the buzz is 93 * period / 2 CPU clocks, OR * period
+    // of 8 chip clocks give it: the pair with the least error is taken
+    double target = double(c_shortNoiseSteps) * state.noise_period * m_dstClock / (16.0 * m_srcClock);
+    double error = target;
+    orMask = period = 1;
+    for (int mask = 1; mask <= 0xFF; ++mask)
+    {
+        int p = int(target / mask + 0.5);
+        if (p < 1 || p > 0xFF) continue;
+        if (std::abs(mask * p - target) < error)
+        {
+            error = std::abs(mask * p - target);
+            orMask = uint8_t(mask);
+            period = uint8_t(p);
+        }
+    }
+}
+
 void SimRP2A03::DistributeNoiseBetweenChannels(const State& state, uint8_t& mixer, uint8_t* volumes)
 {
-    uint8_t volumeN = NoiseVolume(state.noise_volume);
+    uint8_t volumeN = (ShortNoiseAsTone(state) ? ShortNoiseVolume(state) : NoiseVolume(state.noise_volume));
     if (!state.TriangleOn())
     {
         EnableNoise(mixer, Frame::Channel::B);
@@ -380,34 +447,50 @@ void SimRP2A03::UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes)
 
 float SimRP2A03::VolumeToLevel(uint8_t volume) const
 {
-    int index = (m_outputType != OutputType::AY8930Chip ? volume << 1 | 1 : volume);
-    return c_volumeToLevel[index & 0x1F];
+    volume = std::min(volume, uint8_t(m_levelsCount - 1));
+    return m_levels[volume * m_levelsStep + m_levelsStep - 1];
 }
 
 uint8_t SimRP2A03::LevelToVolume(float level) const
 {
-    level = std::max(0.f, std::min(1.f, level));
-
     // the nearest level among the ones the chip has
-    int step  = (m_outputType != OutputType::AY8930Chip ? 2 : 1);
-    int index = (step - 1);
-    for (int i = index + step; i < 32; i += step)
+    uint8_t volume = 0;
+    for (uint8_t i = 1; i < m_levelsCount; ++i)
     {
-        if (std::abs(level - c_volumeToLevel[i]) < std::abs(level - c_volumeToLevel[index])) index = i;
+        if (std::abs(level - VolumeToLevel(i)) < std::abs(level - VolumeToLevel(volume))) volume = i;
     }
-    return uint8_t(index / step);
+    return volume;
 }
 
 uint8_t SimRP2A03::PulseVolume(uint8_t volume) const
 {
     // the pulse level of the NES mixer, relative to the triangle
     float level = (volume ? 95.88f / (8128.f / volume + 100.f) : 0.f);
-    return LevelToVolume(level * c_psgTriangleRms / c_nesTriangleRms);
+    return LevelToVolume(level * m_psgTriangleRms / c_nesTriangleRms);
 }
 
-uint8_t SimRP2A03::NoiseVolume(uint8_t volume) const
+uint8_t SimRP2A03::NoiseVolume(uint8_t volume, float gain) const
 {
     // the noise level of the NES mixer, relative to the triangle
     float level = (volume ? 159.79f / (12241.f / volume + 100.f) : 0.f);
-    return LevelToVolume(level * c_psgTriangleRms / c_nesTriangleRms);
+    return LevelToVolume(gain * level * m_psgTriangleRms / c_nesTriangleRms);
+}
+
+uint8_t SimRP2A03::ShortNoiseVolume(const State& state) const
+{
+    // the short steps of the sequence put most of its power above hearing, the square
+    // has nearly all of it below: they are leveled by the power of their harmonics there;
+    // the harmonics of the sequence are equal but for the sinc of a step
+    const double pi = 3.14159265358979;
+    double pitch = double(m_srcClock) / (c_shortNoiseSteps * state.noise_period);
+    double sequence = 0, square = 0;
+    for (int k = 1; k * pitch < c_hearingLimit; ++k)
+    {
+        double x = pi * k / c_shortNoiseSteps;
+        sequence += (std::sin(x) / x) * (std::sin(x) / x);
+        if (k & 1) square += 1.0 / (k * k);
+    }
+    sequence /= (c_shortNoiseSteps - 1) / 2.0; // of the power of all harmonics
+    square *= 8 / (pi * pi);
+    return NoiseVolume(state.noise_volume, float(std::sqrt(sequence / square)));
 }

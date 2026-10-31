@@ -148,7 +148,7 @@ bool DecodeVGM::Open(Stream& stream)
                         outputType = SimRP2A03::OutputType::DoubleChip;
                         stream.schip.second.model = stream.schip.first.model;
                     }
-                    static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType);
+                    static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType, stream.schip.first.model);
                 }
 
                 // use the recording rate when it is known

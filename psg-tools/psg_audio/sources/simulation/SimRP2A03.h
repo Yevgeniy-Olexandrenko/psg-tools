@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ChipSim.h"
+#include "stream/Chip.h"
 #include "emulation/RP2A03Apu.h"
 
 class SimRP2A03 : public ChipSim, public RP2A03Apu
@@ -14,7 +15,7 @@ public:
     SimRP2A03();
 
     void ConfigureClock(int srcClock, int dstClock) override;
-    void ConfigureOutput(OutputType outputType);
+    void ConfigureOutput(OutputType outputType, Chip::Model model);
 
     void Reset() override;
     void Write(int chip, Register reg, uint8_t data) override;
@@ -30,16 +31,25 @@ private:
 
     template<Register::Value shape_reg, Register::Period period_reg>
     void ConvertTriangle(const State& state, Frame& frame, uint8_t& mixer, uint8_t* volumes);
+    bool ShortNoiseAsTone(const State& state) const;
+    void ShortNoiseMasks(const State& state, uint8_t& orMask, uint8_t& period) const;
     void DistributeNoiseBetweenChannels(const State& state, uint8_t& mixer, uint8_t* volumes);
     void UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes);
 
     float   VolumeToLevel(uint8_t volume) const;
     uint8_t LevelToVolume(float   level ) const;
     uint8_t PulseVolume  (uint8_t volume) const;
-    uint8_t NoiseVolume  (uint8_t volume) const;
+    uint8_t NoiseVolume  (uint8_t volume, float gain = 1.f) const;
+    uint8_t ShortNoiseVolume(const State& state) const;
 
 private:
     OutputType m_outputType;
     uint8_t m_noiseAndMask;
     int m_triangleHold;
+
+    // output levels of the volumes of the destination chip
+    const float* m_levels;
+    int m_levelsCount;
+    int m_levelsStep;
+    float m_psgTriangleRms;
 };
