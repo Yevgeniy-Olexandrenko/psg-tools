@@ -30,7 +30,9 @@ public:
 	// Re-reads the window size and returns true if it has changed since
 	// the previous call. The caller is expected to redo its layout then.
 	bool Sync();
-	int GetWidth() const { return m_width; }
+	// Columns to draw in: the last one stays empty, for a one column margin
+	// at the right edge like the one at the left edge
+	int GetWidth() const { return (m_width > 1 ? m_width - 1 : m_width); }
 	int GetMaxHeight() const { return m_height; } // the whole window
 
 	// Starts a new live view of the given height, limited by the window,

@@ -90,7 +90,7 @@ bool Screen::Sync()
 
 PrintBuffer& Screen::Begin(int height)
 {
-    m_live.resize(m_width, std::clamp(height, 0, m_height));
+    m_live.resize(GetWidth(), std::clamp(height, 0, m_height));
     m_live.position(0, 0).color(FG_GREY);
     return m_live;
 }
@@ -141,7 +141,7 @@ void Screen::Update(const KeyboardInput& keyboard)
 
     // a page is the history rows on screen, less the bar of a scrolled history;
     // End goes to the end of the history
-    int live = (m_live.w == m_width ? std::min(m_liveHeight, m_height) : 0);
+    int live = (m_live.w == GetWidth() ? std::min(m_liveHeight, m_height) : 0);
     int page = std::max(1, (m_isLivePinned ? m_height - live : m_height) - 1);
 
     if (keyboard.GetKeyState(VK_END).pressed && m_scroll > 0)
@@ -219,10 +219,14 @@ void Screen::Present()
     const int width = m_width, height = m_height;
     if (width <= 0 || height <= 0) return;
 
+    // everything is drawn without the last column, so there is a one column
+    // margin at the right edge, as there is at the left one
+    const int canvas = GetWidth();
+
     // the live view is left out until it is drawn for the new width. A pinned
     // one is at the bottom of the window, below the history, otherwise it is
     // the last rows of the history and scrolls with it.
-    int live = (m_live.w == width ? std::min(m_liveHeight, height) : 0);
+    int live = (m_live.w == canvas ? std::min(m_liveHeight, height) : 0);
     int history = int(m_history.size());
     int room = (m_isLivePinned ? height - live : height);
     int total = (m_isLivePinned ? history : history + live);
@@ -240,20 +244,20 @@ void Screen::Present()
     int first = (total - m_scroll - shown);
     m_frame.assign(size_t(width) * height, k_blank);
 
-    PrintBuffer row(width, 1);
+    PrintBuffer row(canvas, 1);
     for (int y = 0; y < shown; ++y)
     {
         CHAR_INFO* cells = &m_frame[size_t(y) * width];
         int index = (first + y);
         if (index >= history)
         {
-            const CHAR_INFO* liveRow = (m_live.buffer + size_t(index - history) * width);
-            std::copy(liveRow, liveRow + width, cells);
+            const CHAR_INFO* liveRow = (m_live.buffer + size_t(index - history) * canvas);
+            std::copy(liveRow, liveRow + canvas, cells);
             continue;
         }
         row.clear();
         DrawEntry(m_history[index], row);
-        std::copy(row.buffer, row.buffer + width, cells);
+        std::copy(row.buffer, row.buffer + canvas, cells);
     }
 
     // a scrolled history tells how much of it is below, in its last row on
@@ -264,12 +268,16 @@ void Screen::Present()
         int left = 1 + std::max(0, (width - 2 - int(label.size())) / 2);
         row.clear();
         row.position(left, 0).color(FG_DARK_GREY).draw(label);
-        std::copy(row.buffer, row.buffer + width, m_frame.begin() + size_t(shown - 1) * width);
+        std::copy(row.buffer, row.buffer + canvas, m_frame.begin() + size_t(shown - 1) * width);
     }
 
     if (m_isLivePinned && live > 0)
     {
-        std::copy(m_live.buffer, m_live.buffer + size_t(width) * live, m_frame.begin() + size_t(shown) * width);
+        for (int y = 0; y < live; ++y)
+        {
+            const CHAR_INFO* liveRow = (m_live.buffer + size_t(y) * canvas);
+            std::copy(liveRow, liveRow + canvas, m_frame.begin() + size_t(shown + y) * width);
+        }
     }
     for (CHAR_INFO& cell : m_frame)
     {
