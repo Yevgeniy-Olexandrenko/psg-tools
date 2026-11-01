@@ -50,6 +50,10 @@ namespace
     // the NES duties 12.5, 25, 50 and 75%
     const float c_dutyRatios[4] = { 0.125f, 0.25f, 0.5f, 0.75f };
 
+    // levels of the square of one chip for the NES duties, its 50% duty has the same
+    // power as the NES pulse: 2 * sqrt(d * (1 - d))
+    const float c_squareGains[4] = { 0.661f, 0.866f, 1.000f, 0.866f };
+
     // levels of the square and of its octave on two chips for the NES duties:
     // (a^2 + b^2) / 4 = d * (1 - d), b = 0.707 * a for 25% and 75%, b = a for 12.5%
     const float c_dutyGains[4][2] =
@@ -121,6 +125,7 @@ SimRP2A03::SimRP2A03()
     , m_noiseChannels(0)
     , m_noiseAge(0)
     , m_noiseVolume(0)
+    , m_noiseRestarted(false)
 {
     ConfigureOutput(OutputType::SingleChip, Chip::Model::YM2149);
 }
@@ -153,6 +158,7 @@ void SimRP2A03::Reset()
     m_noiseChannels = 0;
     m_noiseAge = 0;
     m_noiseVolume = 0;
+    m_noiseRestarted = false;
 }
 
 void SimRP2A03::Write(int chip, Register reg, uint8_t data)
@@ -160,6 +166,7 @@ void SimRP2A03::Write(int chip, Register reg, uint8_t data)
     if (chip == 0)
     {
         RP2A03Apu::Write(0x4000 | reg, data);
+        if (reg == (NOISELCL & 0x1F)) m_noiseRestarted = true;
     }
 }
 
@@ -177,20 +184,29 @@ void SimRP2A03::Convert(Frame& frame)
 {
     State state{};
 
+    // a restarted decay starts from 15 and the linear counter of the triangle is reloaded
+    // on the next quarter frame, up to 4 ms later: the frame converted right after the
+    // update of the driver takes them at once
+    const auto EnvelopeOut = [](const auto& envelope)
+    {
+        return uint8_t(envelope.start && !envelope.const_vol ? 0x0F : envelope.out);
+    };
+
     // pulse channels
-    const auto GetPulse = [](const auto& pulse, State::Pulse& out)
+    const auto GetPulse = [&](const auto& pulse, State::Pulse& out)
     {
         out.period = pulse.timer_period;
-        out.volume = pulse.envelope.out;
+        out.volume = EnvelopeOut(pulse.envelope);
         out.duty   = pulse.duty;
-        out.enable = (pulse.len_counter && !pulse.sweep.silence && pulse.envelope.out);
+        out.enable = (pulse.len_counter && !pulse.sweep.silence && out.volume);
     };
     GetPulse(m_pulse1, state.pulse[0]);
     GetPulse(m_pulse2, state.pulse[1]);
 
     // triangle channel
     state.triangle_period = m_triangle.timer_period;
-    state.triangle_enable = (m_triangle.lin_counter > 0 && m_triangle.len_counter > 0 && m_triangle.timer_period >= 2);
+    uint8_t linCounter = (m_triangle.reload ? m_triangle.lin_reload : m_triangle.lin_counter);
+    state.triangle_enable = (linCounter > 0 && m_triangle.len_counter > 0 && m_triangle.timer_period >= 2);
 
     // a stopped NES triangle holds its level, cutting the PSG envelope at a random level
     // would click: it is held too, for a while, and the next note resumes from there
@@ -202,10 +218,11 @@ void SimRP2A03::Convert(Frame& frame)
 
     // noise channel
     state.noise_period = m_noise.timer_period;
-    state.noise_volume = m_noise.envelope.out;
+    state.noise_volume = EnvelopeOut(m_noise.envelope);
     state.noise_mode   = m_noise.mode;
-    state.noise_enable = (m_noise.len_counter && m_noise.envelope.out);
+    state.noise_enable = (m_noise.len_counter && state.noise_volume);
     PlaceNoise(state);
+    m_noiseRestarted = false;
 
     switch (m_outputType)
     {
@@ -230,7 +247,7 @@ void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
             int chan = c_pulseChannels[i];
             EnableTone(mixer, chan);
             frame[0].Update(Register::t_period[chan], ConvertPeriod(pulse.period + 1));
-            volumes[chan] = PulseVolume(pulse.volume);
+            volumes[chan] = PulseVolume(state, i);
         }
     }
 
@@ -271,7 +288,7 @@ void SimRP2A03::ConvertToDoubleChip(const State& state, Frame& frame)
             // match 25% and 75% exactly at -3 dB, at any phase; 12.5% gets the same level
             const auto& gains = c_dutyGains[pulse.duty];
             int   chan  = c_pulseChannels[i];
-            float level = PulseLevel(pulse.volume);
+            float level = PulseLevel(state, i);
 
             EnableTone(mixer0, chan);
             frame[0].Update(Register::t_period[chan], ConvertPeriod(pulse.period + 1));
@@ -338,7 +355,7 @@ void SimRP2A03::ConvertToAY8930Chip(const State& state, Frame& frame)
             EnableTone(mixer, chan);
             frame[0].Update(Register::t_period[chan], ConvertPeriod((pulse.period + 1) << 1));
             frame[0].Update(Register::t_duty[chan], uint8_t(0x02 + pulse.duty));
-            volumes[chan] = PulseVolume(pulse.volume);
+            volumes[chan] = PulseVolume(state, i);
         }
     }
 
@@ -401,14 +418,17 @@ void SimRP2A03::UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes)
 
 void SimRP2A03::PlaceNoise(State& state)
 {
-    // a hit: the noise starts or gets louder
+    // a hit: the noise starts, gets louder or its decay restarts; a constant volume
+    // written again to the same level is no hit
     uint8_t volume = (state.noise_enable ? state.noise_volume : 0);
-    m_noiseAge = (volume > m_noiseVolume ? 0 : m_noiseAge + 1);
+    bool restarted = (m_noiseRestarted && volume && !m_noise.envelope.const_vol);
+    m_noiseAge = (volume > m_noiseVolume || restarted ? 0 : m_noiseAge + 1);
     m_noiseVolume = volume;
 
     // the 2nd chip has a channel for the noise, one chip does not play the short noise
+    // as a tone, the lower one is a rattle as the usual noise
     bool place = (state.noise_enable && m_outputType != OutputType::DoubleChip &&
-        !(m_outputType == OutputType::SingleChip && state.noise_mode));
+        !(m_outputType == OutputType::SingleChip && ShortNoiseAsTone(state)));
 
     // a triangle note and a hit start together while no channel is free:
     // the head of the hit takes channel B, the note waits for it
@@ -466,7 +486,7 @@ uint8_t SimRP2A03::SharedNoiseChannels(const State& state, float& gain) const
     float levels[2], duties[2];
     for (int i = 0; i < 2; ++i)
     {
-        levels[i] = VolumeToLevel(PulseVolume(state.pulse[i].volume));
+        levels[i] = VolumeToLevel(PulseVolume(state, i));
         duties[i] = (m_outputType == OutputType::AY8930Chip ? c_dutyRatios[state.pulse[i].duty] : 0.5f);
     }
 
@@ -618,25 +638,38 @@ float SimRP2A03::VolumeToLevel(uint8_t volume) const
 
 uint8_t SimRP2A03::LevelToVolume(float level) const
 {
-    // the nearest level among the ones the chip has
+    // the nearest level in decibels among the ones the chip has,
+    // a level nearer to silence than to the lowest one is silent
     uint8_t volume = 0;
+    float lowest = 0, error = 0;
     for (uint8_t i = 1; i < m_levelsCount; ++i)
     {
-        if (std::abs(level - VolumeToLevel(i)) < std::abs(level - VolumeToLevel(volume))) volume = i;
+        float output = VolumeToLevel(i);
+        if (output <= 0) continue;
+        if (!lowest) lowest = output;
+
+        float e = std::abs(Decibels(level / output));
+        if (!volume || e < error) { volume = i; error = e; }
     }
-    return volume;
+    return (level < lowest / 2 ? 0 : volume);
 }
 
-float SimRP2A03::PulseLevel(uint8_t volume) const
+float SimRP2A03::PulseLevel(const State& state, int index) const
 {
-    // the pulse level of the NES mixer, relative to the triangle
-    float level = (volume ? 95.88f / (8128.f / volume + 100.f) : 0.f);
+    // the pulses level of the NES mixer, relative to the triangle: it compresses the sum
+    // of both, each one gets its part of it
+    const auto Volume = [&](int i) { return (state.pulse[i].enable ? state.pulse[i].volume : 0); };
+    int volume = Volume(index), sum = Volume(0) + Volume(1);
+    float level = (volume ? 95.88f / (8128.f / sum + 100.f) * volume / sum : 0.f);
     return (level * m_psgTriangleRms / c_nesTriangleRms);
 }
 
-uint8_t SimRP2A03::PulseVolume(uint8_t volume) const
+uint8_t SimRP2A03::PulseVolume(const State& state, int index) const
 {
-    return LevelToVolume(PulseLevel(volume));
+    // one chip plays every duty as 50%, of the same power
+    float level = PulseLevel(state, index);
+    if (m_outputType == OutputType::SingleChip) level *= c_squareGains[state.pulse[index].duty];
+    return LevelToVolume(level);
 }
 
 float SimRP2A03::NoiseLevel(const State& state) const

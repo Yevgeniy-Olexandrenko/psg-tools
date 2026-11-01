@@ -164,10 +164,14 @@ bool DecodeVGM::Open(Stream& stream)
                 m_samplesPerFrame = (44100 / frameRate);
                 m_waitSamples = 0;
 
-                if (header.loopSamples)
-                {
-                    m_loop = (header.totalSamples - header.loopSamples) / m_samplesPerFrame;
-                }
+                m_loop = 0;
+                m_loopTime = (header.loopSamples ? int(header.totalSamples - header.loopSamples) : -1);
+                m_time = 0;
+                m_frames = 0;
+                m_writes = 0;
+                m_written = false;
+                m_sinceWrite = 0;
+                m_sinceFrame = m_samplesPerFrame;
 
                 // GD3 tags reading
                 if (uint8_t* gd3Offset = m_data + header.gd3Offset)
@@ -225,22 +229,51 @@ bool DecodeVGM::Open(Stream& stream)
 
 bool DecodeVGM::Decode(Frame& frame)
 {
-    m_simulator->Convert(frame);
+    // a player writes the registers once per frame, in a burst with short pauses inside,
+    // and waits for the next frame: a frame is taken at the start of the long pause after
+    // a burst, as the player has just set it, and every frame while nothing is written;
+    // a burst too close to the last frame is a late part of its update
+    const int longPause = (m_samplesPerFrame / 4);
+    const int noUpdate = (m_samplesPerFrame + m_samplesPerFrame / 2);
 
-    // simulate exactly one frame: a wait crossing the frame
-    // boundary is split, its rest goes to the next frame
-    int frameSamples = m_samplesPerFrame;
-    while (frameSamples)
+    while (true)
     {
-        if (!m_waitSamples && !(m_waitSamples = DecodeBlock())) return false;
+        if (!m_waitSamples)
+        {
+            int writes = m_writes;
+            if (!(m_waitSamples = DecodeBlock())) return false;
+            if (m_writes != writes)
+            {
+                m_written = true;
+                m_sinceWrite = 0;
+            }
+        }
 
-        int samples = std::min(m_waitSamples, frameSamples);
+        bool update = (m_written && m_sinceWrite + m_waitSamples >= longPause);
+        if (update && m_sinceFrame < longPause) update = m_written = false;
+
+        if (update || m_sinceFrame >= noUpdate)
+        {
+            m_simulator->Convert(frame);
+            m_sinceFrame = (update ? 0 : m_sinceFrame - m_samplesPerFrame);
+            m_written = false;
+
+            if (m_loopTime >= 0 && m_time >= m_loopTime)
+            {
+                m_loop = m_frames;
+                m_loopTime = -1;
+            }
+            ++m_frames;
+            return true;
+        }
+
+        int samples = std::min(m_waitSamples, noUpdate - m_sinceFrame);
         m_simulator->Simulate(samples);
         m_waitSamples -= samples;
-        frameSamples  -= samples;
+        m_sinceWrite  += samples;
+        m_sinceFrame  += samples;
+        m_time        += samples;
     }
-    dbg.print_message("%d\n", m_waitSamples);
-    return true;
 }
 
 void DecodeVGM::Close(Stream& stream)
@@ -281,6 +314,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[0];
                 uint8_t dd = m_dataPtr[1];
                 m_simulator->Write((aa & 0x20) >> 5, 0, dd);
+                ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 1;
@@ -294,6 +328,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
+                ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 2;
@@ -307,6 +342,7 @@ int DecodeVGM::DecodeBlock()
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
                 m_simulator->Write(0, aa, dd);
+                ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
             m_dataPtr += 2;

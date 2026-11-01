@@ -100,5 +100,13 @@ private:
     int m_samplesPerFrame;
     int m_waitSamples;
 
+    int  m_time;       // samples simulated
+    int  m_loopTime;   // of the loop start, -1 without a loop
+    int  m_frames;     // decoded
+    int  m_writes;     // to the registers of the simulated chip
+    bool m_written;    // since the last frame
+    int  m_sinceWrite; // samples
+    int  m_sinceFrame; // samples
+
     std::shared_ptr<ChipSim> m_simulator;
 };

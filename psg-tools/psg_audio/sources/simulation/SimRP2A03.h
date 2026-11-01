@@ -43,8 +43,8 @@ private:
 
     float   VolumeToLevel(uint8_t volume) const;
     uint8_t LevelToVolume(float   level ) const;
-    float   PulseLevel   (uint8_t volume) const;
-    uint8_t PulseVolume  (uint8_t volume) const;
+    float   PulseLevel   (const State& state, int index) const;
+    uint8_t PulseVolume  (const State& state, int index) const;
     float   NoiseLevel   (const State& state) const;
     uint8_t NoiseVolume  (const State& state) const;
     float   ShortNoiseGain(const State& state) const;
@@ -59,6 +59,7 @@ private:
     uint8_t m_noiseChannels; // mask of the channels of the noise in the last frame
     int m_noiseAge;          // frames since the last hit of the noise
     uint8_t m_noiseVolume;   // NES volume of the noise in the last frame
+    bool m_noiseRestarted;   // by a write of the length since the last frame
 
     // output levels of the volumes of the destination chip
     const float* m_levels;
