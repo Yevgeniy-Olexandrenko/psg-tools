@@ -86,6 +86,40 @@ namespace
     // the short mode noise repeats a sequence of 93 steps
     const int c_shortNoiseSteps = 93;
 
+    // a DMC sample is analyzed at about this rate over a window of two frames,
+    // it is silent below the RMS level (in steps of the DMC counter)
+    const double c_dmcAnalysisRate = 16000;
+    const float  c_dmcMinRms = 1.f;
+
+    // the 2nd AY8930 plays the two strongest tones of a DMC sample in the pitch range and
+    // the rest of it as noise; a tone takes the power of its harmonics, its fundamental is
+    // searched down to the peak / divisors, its duty is the one of the nearest harmonics:
+    // 25% and 50% only below the 1st pitch, from 12.5% below the 2nd one, another one than
+    // 50% at an error under the bias, the last one up to the hysteresis
+    const float  c_dmcMinPitch = 40, c_dmcMaxPitch = 4000;
+    const int    c_dmcHarmonics = 8;
+    const int    c_dmcDivisors = 4;
+    const double c_dmcHarmonicScore = 0.8;
+    const double c_dmcFundamentalPower = 0.1;
+    const double c_dutyCycles[5] = { 0.03125, 0.0625, 0.125, 0.25, 0.5 };
+    const double c_dmcWideDutyPitch = 150, c_dmcMediumDutyPitch = 400;
+    const double c_dmcDutyBias = 0.75;
+    const double c_dmcDutyHysteresis = 1.2;
+
+    // a pitch under the 1st one is refined over a window of the frames within the range;
+    // a pitch of a tone stays while the new one is off it by less than the share, or while
+    // its autocorrelation is at least the part of the best one
+    const double c_dmcRefinePitch = 300;
+    const int    c_dmcLongWindow = 4;
+    const double c_dmcRefineRange = 1.2;
+    const double c_dmcPitchHold = 0.03;
+    const double c_dmcPitchKeep = 0.9;
+
+    // a tone of a smaller share of the power of a frame is no tone
+    const double c_dmcMinToneShare = 0.05;
+
+    const double c_pi = 3.14159265358979;
+
     // the upper frequency of hearing, Hz
     const double c_hearingLimit = 20000;
 
@@ -114,6 +148,34 @@ namespace
     {
         return uint8_t(1 << chan);
     }
+
+    void Fft(std::vector<double>& re, std::vector<double>& im)
+    {
+        // in place, radix 2, the size is a power of 2
+        size_t n = re.size();
+        for (size_t i = 1, j = 0; i < n; ++i)
+        {
+            size_t bit = n >> 1;
+            for (; j & bit; bit >>= 1) j ^= bit;
+            j ^= bit;
+            if (i < j) { std::swap(re[i], re[j]); std::swap(im[i], im[j]); }
+        }
+        for (size_t len = 2; len <= n; len <<= 1)
+        {
+            double angle = -2 * c_pi / len;
+            for (size_t i = 0; i < n; i += len)
+            {
+                for (size_t k = 0; k < len / 2; ++k)
+                {
+                    double wr = std::cos(angle * k), wi = std::sin(angle * k);
+                    size_t u = i + k, v = i + k + len / 2;
+                    double vr = re[v] * wr - im[v] * wi, vi = re[v] * wi + im[v] * wr;
+                    re[v] = re[u] - vr; im[v] = im[u] - vi;
+                    re[u] += vr; im[u] += vi;
+                }
+            }
+        }
+    }
 }
 
 SimRP2A03::SimRP2A03()
@@ -126,6 +188,12 @@ SimRP2A03::SimRP2A03()
     , m_noiseAge(0)
     , m_noiseVolume(0)
     , m_noiseRestarted(false)
+    , m_dmcDuty{ 4, 4 }
+    , m_dmcPitch{ 0, 0 }
+    , m_dmcRate(0)
+    , m_dmcLoop(false)
+    , m_dmcElapsed(0)
+    , m_frameSamples(735)
 {
     ConfigureOutput(OutputType::SingleChip, Chip::Model::YM2149);
 }
@@ -134,10 +202,16 @@ void SimRP2A03::ConfigureClock(int srcClock, int dstClock)
 {
     RP2A03Apu::Init(44100, srcClock);
     ChipSim::ConfigureClock(srcClock, dstClock);
+
+    // PAL and Dendy play at 50 Hz
+    m_frameSamples = (srcClock / 1000 == 1662 || srcClock / 1000 == 1773 ? 882 : 735);
 }
 
 void SimRP2A03::ConfigureOutput(OutputType outputType, Chip::Model model)
 {
+    // two AY8930: the APU goes to the 1st one as to one AY8930, the DMC takes the 2nd one
+    m_dmcChip = (outputType == OutputType::AY8930DoubleChip);
+    if (m_dmcChip) outputType = OutputType::AY8930Chip;
     m_outputType = outputType;
 
     // AY8930 has the YM2149 DAC, in the expanded mode with all 32 volumes
@@ -159,19 +233,35 @@ void SimRP2A03::Reset()
     m_noiseAge = 0;
     m_noiseVolume = 0;
     m_noiseRestarted = false;
+    m_dmcDuty[0] = m_dmcDuty[1] = 4;
+    m_dmcPitch[0] = m_dmcPitch[1] = 0;
+    m_dmcWave.clear();
 }
 
 void SimRP2A03::Write(int chip, Register reg, uint8_t data)
 {
     if (chip == 0)
     {
+        bool dmcIdle = (m_dmc.bytesleft == 0);
         RP2A03Apu::Write(0x4000 | reg, data);
         if (reg == (NOISELCL & 0x1F)) m_noiseRestarted = true;
+
+        if (reg == (STATUS & 0x1F))
+        {
+            if (m_dmcChip && dmcIdle && m_dmc.bytesleft) StartDmcSample();
+            if (!(data & 0x10)) m_dmcWave.clear();
+        }
     }
+}
+
+void SimRP2A03::WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size)
+{
+    RP2A03Apu::WriteMemory(addr, data, size);
 }
 
 void SimRP2A03::Simulate(int samples)
 {
+    m_dmcElapsed += samples;
     while (samples--)
     {
         m_cpuCycles += m_cpuCyclesPerSample;
@@ -230,6 +320,7 @@ void SimRP2A03::Convert(Frame& frame)
     case OutputType::DoubleChip: ConvertToDoubleChip(state, frame); break;
     case OutputType::AY8930Chip: ConvertToAY8930Chip(state, frame); break;
     }
+    if (m_dmcChip) ConvertDmcChip(frame[1]);
 }
 
 void SimRP2A03::ConvertToSingleChip(const State& state, Frame& frame)
@@ -630,6 +721,344 @@ void SimRP2A03::ShortNoiseMasks(const State& state, uint8_t& orMask, uint8_t& pe
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct SimRP2A03::DmcTone
+{
+    double hz;                    // 0 for none
+    double share;                 // of the power of the window
+    double bands[c_dmcHarmonics]; // shares of the power of the tone in its harmonics
+};
+
+void SimRP2A03::StartDmcSample()
+{
+    // the whole sample is decoded at once: each delta bit steps the counter by 2
+    m_dmcWave.clear();
+    int counter = m_dmc.counter;
+    uint16_t addr = m_dmc.address;
+    for (int n = 0; n < m_dmc.length; ++n)
+    {
+        uint8_t bits = m_memory[addr & 0x7FFF];
+        addr = (addr == 0xFFFF ? 0x8000 : addr + 1);
+        for (int bit = 0; bit < 8; ++bit, bits >>= 1)
+        {
+            if ((bits & 1) && counter < 126) counter += 2;
+            else if (!(bits & 1) && counter > 1) counter -= 2;
+            m_dmcWave.push_back(uint8_t(counter));
+        }
+    }
+    m_dmcRate = double(m_cpuClock) / m_dmc.rate_actual;
+    m_dmcLoop = m_dmc.loop;
+    m_dmcElapsed = 0;
+    m_dmcPitch[0] = m_dmcPitch[1] = 0;
+}
+
+bool SimRP2A03::DmcWindow(std::vector<float>& x, double& rate, float& rms, float& levelScale, int frames)
+{
+    // the sample from the time played on, over a window of the frames,
+    // averaged down to about the analysis rate
+    if (m_dmcWave.empty()) return false;
+
+    size_t size = m_dmcWave.size();
+    double bitsPerSample = (m_dmcRate / 44100);
+    size_t start = size_t(m_dmcElapsed * bitsPerSample);
+    if (!m_dmcLoop && start >= size)
+    {
+        m_dmcWave.clear();
+        return false;
+    }
+
+    int step = std::max(1, int(m_dmcRate / c_dmcAnalysisRate + 0.5));
+    size_t frameLength = size_t(m_frameSamples * bitsPerSample / step);
+    x.clear();
+    for (size_t i = start; x.size() < frames * frameLength; i += step)
+    {
+        if (!m_dmcLoop && i + step > size) break;
+        float sum = 0;
+        for (int k = 0; k < step; ++k) sum += m_dmcWave[(i + k) % size];
+        x.push_back(sum / step);
+    }
+    if (x.size() < 8) return false;
+    rate = (m_dmcRate / step);
+
+    // the level of the frame played, the counter is relative to the mean
+    float mean = 0, power = 0;
+    for (float v : x) mean += v;
+    mean /= x.size();
+    for (float& v : x) v -= mean;
+    size_t heard = std::min(x.size(), frameLength);
+    for (size_t i = 0; i < heard; ++i) power += x[i] * x[i];
+    rms = std::sqrt(power / heard);
+
+    // a small change of the DMC output in the NES mixer, at the mean of the counter,
+    // relative to the triangle; the PSG square or noise of amplitude L has RMS L / 2
+    float slope = 159.79f / 22638 / ((1 + 100 * mean / 22638) * (1 + 100 * mean / 22638));
+    levelScale = (2 * slope * m_psgTriangleRms / c_nesTriangleRms);
+    return (rms >= c_dmcMinRms);
+}
+
+void SimRP2A03::FindDmcTones(const std::vector<float>& x, double rate, DmcTone* tones, double& noiseShare, double& shiftRate) const
+{
+    // the Hann windowed spectrum of the window, zero padded 4 times for finer bins
+    size_t n = 1;
+    while (n < 4 * x.size()) n <<= 1;
+    std::vector<double> re(n, 0), im(n, 0);
+    for (size_t i = 0; i < x.size(); ++i)
+    {
+        re[i] = x[i] * (0.5 - 0.5 * std::cos(2 * c_pi * i / (x.size() - 1)));
+    }
+    Fft(re, im);
+
+    std::vector<double> power(n / 2);
+    double total = 0;
+    for (size_t k = 1; k < n / 2; ++k)
+    {
+        power[k] = re[k] * re[k] + im[k] * im[k];
+        total += power[k];
+    }
+    if (total <= 0) total = 1;
+
+    // a peak takes the bins of the main lobe of the window around it
+    const long lobe = long(2 * n / x.size());
+    const auto Band = [&](double hz, bool take)
+    {
+        long center = std::lround(hz * n / rate);
+        double sum = 0;
+        for (long k = std::max(1L, center - lobe); k <= std::min(long(n / 2) - 1, center + lobe); ++k)
+        {
+            sum += power[k];
+            if (take) power[k] = 0;
+        }
+        return sum;
+    };
+    const auto Harmonics = [&](double hz, bool take, double* bands)
+    {
+        double sum = 0;
+        for (int h = 1; h <= c_dmcHarmonics; ++h)
+        {
+            double band = (h * hz < rate / 2 ? Band(h * hz, take) : 0);
+            if (bands) bands[h - 1] = band;
+            sum += band;
+        }
+        return sum;
+    };
+
+    // a tone at the strongest peak: its fundamental is the lowest fraction of the peak
+    // with power of its own whose harmonics carry about as much as the most do; the tone
+    // takes the power of all its harmonics, their shares are kept for its duty; a tone
+    // of a small share is no tone
+    size_t minBin = std::max(size_t(lobe + 1), size_t(c_dmcMinPitch * n / rate) + 1);
+    size_t maxBin = std::min(n / 2 - size_t(lobe) - 1, size_t(c_dmcMaxPitch * n / rate));
+    for (int t = 0; t < 2; ++t)
+    {
+        DmcTone& tone = tones[t];
+        tone.hz = tone.share = 0;
+        std::fill(tone.bands, tone.bands + c_dmcHarmonics, 0.0);
+
+        size_t best = 0;
+        for (size_t k = minBin; k <= maxBin; ++k)
+        {
+            if (power[k] > power[k - 1] && power[k] >= power[k + 1] && (!best || power[k] > power[best])) best = k;
+        }
+        if (!best) continue;
+
+        // the frequency between the bins by a parabola over the log power
+        double a = std::log(power[best - 1] + 1e-12), b = std::log(power[best] + 1e-12), c = std::log(power[best + 1] + 1e-12);
+        double d = (a - 2 * b + c != 0 ? 0.5 * (a - c) / (a - 2 * b + c) : 0);
+        double peakHz = (best + d) * rate / n;
+        double peakPower = Band(peakHz, false);
+
+        double scores[c_dmcDivisors + 1]{}, top = 0;
+        for (int div = 1; div <= c_dmcDivisors && peakHz / div >= c_dmcMinPitch; ++div)
+        {
+            scores[div] = Harmonics(peakHz / div, false, nullptr);
+            top = std::max(top, scores[div]);
+        }
+        tone.hz = peakHz;
+        for (int div = c_dmcDivisors; div >= 1; --div)
+        {
+            if (scores[div] >= c_dmcHarmonicScore * top && Band(peakHz / div, false) >= c_dmcFundamentalPower * peakPower)
+            {
+                tone.hz = peakHz / div;
+                break;
+            }
+        }
+
+        double sum = Harmonics(tone.hz, true, tone.bands);
+        tone.share = sum / total;
+        for (int h = 0; h < c_dmcHarmonics && sum > 0; ++h) tone.bands[h] /= sum;
+    }
+    for (int t = 0; t < 2; ++t)
+    {
+        if (tones[t].share < c_dmcMinToneShare) tones[t].hz = 0;
+    }
+
+    // the rest is noise: a white noise of shift rate R has the centroid
+    // of its spectrum at R / 4 while R is within the analysis band
+    double rest = 0, moment = 0;
+    for (size_t k = 1; k < n / 2; ++k)
+    {
+        rest += power[k];
+        moment += power[k] * k * rate / n;
+    }
+    noiseShare = rest / total;
+    shiftRate = (rest > 0 ? 4 * moment / rest : 0);
+}
+
+void SimRP2A03::TrackDmcTones(DmcTone* tones)
+{
+    // a tone stays in the channel of the nearest pitch of the last frame,
+    // a new one goes to A if it is the lower one
+    const auto Distance = [](double hz, double last)
+    {
+        return (hz && last ? std::abs(std::log(hz / last)) : hz || last ? 1.0 : 0.0);
+    };
+    double keep = Distance(tones[0].hz, m_dmcPitch[0]) + Distance(tones[1].hz, m_dmcPitch[1]);
+    double swap = Distance(tones[1].hz, m_dmcPitch[0]) + Distance(tones[0].hz, m_dmcPitch[1]);
+    bool lowerFirst = (!m_dmcPitch[0] && !m_dmcPitch[1] && tones[1].hz && tones[1].hz < tones[0].hz);
+    if (swap < keep || lowerFirst) std::swap(tones[0], tones[1]);
+
+    // a low pitch has a period or two in the window: it is refined by the autocorrelation
+    // over a longer window around it, interpolated between the lags; a pitch near the one
+    // of the last frame or an octave off it stays, as a note of the sample does
+    std::vector<float> y;
+    double rate;
+    float rms, levelScale;
+    bool longWindow = DmcWindow(y, rate, rms, levelScale, c_dmcLongWindow);
+    const auto Correlation = [&](int lag)
+    {
+        double xy = 0, xx = 0, yy = 0;
+        for (size_t i = 0; i + lag < y.size(); ++i)
+        {
+            xy += y[i] * y[i + lag];
+            xx += y[i] * y[i];
+            yy += y[i + lag] * y[i + lag];
+        }
+        return xy / std::sqrt(xx * yy + 1e-9);
+    };
+
+    for (int t = 0; t < 2; ++t)
+    {
+        double& hz = tones[t].hz;
+        double last = m_dmcPitch[t];
+        if (hz && hz < c_dmcRefinePitch && longWindow)
+        {
+            int lo = std::max(2, int(rate / (hz * c_dmcRefineRange)));
+            int hi = std::min(int(y.size() / 2), int(rate * c_dmcRefineRange / hz) + 1);
+            int lag = 0;
+            double best = 0;
+            for (int l = lo; l <= hi; ++l)
+            {
+                double r = Correlation(l);
+                if (r > best) { best = r; lag = l; }
+            }
+            if (lag > lo && lag < hi)
+            {
+                double a = Correlation(lag - 1), c = Correlation(lag + 1);
+                double d = (a - 2 * best + c != 0 ? 0.5 * (a - c) / (a - 2 * best + c) : 0);
+                hz = rate / (lag + d);
+            }
+
+            // the last pitch stays while it fits the window nearly as well
+            int lastLag = (last ? int(rate / last + 0.5) : 0);
+            if (lastLag > 1 && lastLag < int(y.size() / 2) && Correlation(lastLag) >= c_dmcPitchKeep * best) hz = last;
+        }
+
+        if (hz && last)
+        {
+            double ratio = hz / last;
+            if (std::abs(ratio - 1) < c_dmcPitchHold || std::abs(ratio - 2) < 2 * c_dmcPitchHold ||
+                std::abs(ratio - 0.5) < 0.5 * c_dmcPitchHold) hz = last;
+        }
+        m_dmcPitch[t] = hz;
+    }
+}
+
+int SimRP2A03::DmcDuty(const DmcTone& tone, double rate, int index)
+{
+    // the duty of the nearest harmonics: the harmonics of a pulse of duty d have the power
+    // sin(pi h d)^2 / h^2, the profiles are compared as the square roots of the shares;
+    // narrow pulses buzz at a low pitch, so only the wide ones are taken below the pitches;
+    // another duty than 50% only when it fits better by far, the duty of the last frame
+    // while it fits not much worse than the best one
+    int minDuty = (tone.hz < c_dmcWideDutyPitch ? 3 : tone.hz < c_dmcMediumDutyPitch ? 2 : 0);
+    double errors[5]{};
+    for (int i = minDuty; i <= 4; ++i)
+    {
+        double model[c_dmcHarmonics], modelSum = 0;
+        for (int h = 1; h <= c_dmcHarmonics; ++h)
+        {
+            double s = std::sin(c_pi * h * c_dutyCycles[i]);
+            model[h - 1] = (h * tone.hz < rate / 2 ? s * s / (h * h) : 0);
+            modelSum += model[h - 1];
+        }
+        for (int h = 0; h < c_dmcHarmonics; ++h)
+        {
+            double diff = std::sqrt(tone.bands[h]) - std::sqrt(model[h] / modelSum);
+            errors[i] += diff * diff;
+        }
+    }
+
+    int duty = 4;
+    for (int i = minDuty; i < 4; ++i)
+    {
+        if (errors[i] < c_dmcDutyBias * errors[4] && errors[i] < errors[duty]) duty = i;
+    }
+    int last = m_dmcDuty[index];
+    if (last >= minDuty && errors[last] <= c_dmcDutyHysteresis * errors[duty]) duty = last;
+    return (m_dmcDuty[index] = duty);
+}
+
+void SimRP2A03::ConvertDmcChip(Frame::Registers& regs)
+{
+    uint8_t mixer = 0x3F;
+    uint8_t volumes[3]{};
+    if (!regs.IsExpMode()) regs.SetExpMode();
+
+    std::vector<float> x;
+    double rate;
+    float rms, levelScale;
+    if (DmcWindow(x, rate, rms, levelScale, 2))
+    {
+        DmcTone tones[2];
+        double noiseShare, shiftRate;
+        FindDmcTones(x, rate, tones, noiseShare, shiftRate);
+        TrackDmcTones(tones);
+
+        // Tones -> Pulses A and C: the expanded mode tone period is 8 chip clocks,
+        // the pulse of amplitude L and duty d has the RMS L * sqrt(d * (1 - d))
+        const int chans[2] = { Frame::Channel::A, Frame::Channel::C };
+        for (int t = 0; t < 2; ++t)
+        {
+            int duty = DmcDuty(tones[t], rate, t);
+            double d = c_dutyCycles[duty];
+            float level = float(rms * std::sqrt(tones[t].share) * levelScale / 2 / std::sqrt(d * (1 - d)));
+            uint8_t volume = LevelToVolume(level);
+            if (!tones[t].hz || !volume) continue;
+
+            EnableTone(mixer, chans[t]);
+            regs.Update(Register::t_period[chans[t]], uint16_t(std::clamp(m_dstClock / (8.0 * tones[t].hz) + 0.5, 1.0, 65535.0)));
+            regs.Update(Register::t_duty[chans[t]], uint8_t(duty));
+            volumes[chans[t]] = volume;
+        }
+
+        // Rest -> Noise B, as the NES noise on AY8930: its period of 8 * period clocks
+        // is a half of the shift
+        uint8_t volume = LevelToVolume(float(rms * std::sqrt(noiseShare)) * levelScale);
+        if (shiftRate > 0 && volume)
+        {
+            EnableNoise(mixer, Frame::Channel::B);
+            regs.Update(Register::N_AndMask, c_ay8930NoiseAndMask);
+            regs.Update(Register::N_OrMask, 0x00);
+            regs.Update(Register::Period::N, uint16_t(std::clamp(m_dstClock / (16.0 * shiftRate) + 0.5, 1.0, 255.0)));
+            volumes[Frame::Channel::B] = volume;
+        }
+    }
+
+    regs.Update(Register::Mixer, mixer);
+    UpdateVolumes(regs, volumes);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 float SimRP2A03::VolumeToLevel(uint8_t volume) const
 {
     volume = std::min(volume, uint8_t(m_levelsCount - 1));
@@ -691,16 +1120,15 @@ float SimRP2A03::ShortNoiseGain(const State& state) const
     // the steps of the sequence put most of its power above hearing, the square of the
     // same pitch has nearly all of it below: they are leveled by the power heard; the
     // harmonics of the sequence are equal but for the sinc of a step
-    const double pi = 3.14159265358979;
     double pitch = double(m_srcClock) / (c_shortNoiseSteps * state.noise_period);
     double sequence = 0, square = 0;
     for (int k = 1; k * pitch < c_hearingLimit; ++k)
     {
-        double x = pi * k / c_shortNoiseSteps;
+        double x = c_pi * k / c_shortNoiseSteps;
         sequence += (std::sin(x) / x) * (std::sin(x) / x);
         if (k & 1) square += 1.0 / (k * k);
     }
     sequence /= (c_shortNoiseSteps - 1) / 2.0; // of the power of all the harmonics
-    square *= 8 / (pi * pi);
+    square *= 8 / (c_pi * c_pi);
     return float(std::sqrt(sequence / square));
 }

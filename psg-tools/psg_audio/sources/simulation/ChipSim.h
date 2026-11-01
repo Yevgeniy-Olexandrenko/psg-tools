@@ -27,6 +27,7 @@ public:
 public:
 	virtual void Reset() = 0;
 	virtual void Write(int chip, Register reg, uint8_t data) = 0;
+	virtual void WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size) {}
 	virtual void Simulate(int samples) = 0;
 	virtual void Convert(Frame& frame) = 0;
 

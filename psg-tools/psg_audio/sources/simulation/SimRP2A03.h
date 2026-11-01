@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "ChipSim.h"
 #include "stream/Chip.h"
 #include "emulation/RP2A03Apu.h"
@@ -9,7 +10,8 @@ class SimRP2A03 : public ChipSim, public RP2A03Apu
 public:
     enum class OutputType
     {
-        SingleChip, DoubleChip, AY8930Chip
+        SingleChip, DoubleChip, AY8930Chip,
+        AY8930DoubleChip // the APU on the 1st AY8930, the DMC on the 2nd one
     };
 
     SimRP2A03();
@@ -19,6 +21,7 @@ public:
 
     void Reset() override;
     void Write(int chip, Register reg, uint8_t data) override;
+    void WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size) override;
     void Simulate(int samples) override;
     void Convert(Frame& frame) override;
 
@@ -41,6 +44,15 @@ private:
     bool    ShortNoiseAsTone(const State& state) const;
     void    ShortNoiseMasks(const State& state, uint8_t& orMask, uint8_t& period) const;
 
+    struct DmcTone;
+
+    void StartDmcSample();
+    bool DmcWindow(std::vector<float>& x, double& rate, float& rms, float& levelScale, int frames);
+    void FindDmcTones(const std::vector<float>& x, double rate, DmcTone* tones, double& noiseShare, double& shiftRate) const;
+    void TrackDmcTones(DmcTone* tones);
+    int  DmcDuty(const DmcTone& tone, double rate, int index);
+    void ConvertDmcChip(Frame::Registers& regs);
+
     float   VolumeToLevel(uint8_t volume) const;
     uint8_t LevelToVolume(float   level ) const;
     float   PulseLevel   (const State& state, int index) const;
@@ -60,6 +72,15 @@ private:
     int m_noiseAge;          // frames since the last hit of the noise
     uint8_t m_noiseVolume;   // NES volume of the noise in the last frame
     bool m_noiseRestarted;   // by a write of the length since the last frame
+
+    bool m_dmcChip;                 // the 2nd AY8930 plays the DMC
+    int m_dmcDuty[2];               // of its tones in the last frame
+    double m_dmcPitch[2];           // of its tones in the last frame, 0 for none
+    std::vector<uint8_t> m_dmcWave; // levels of the DMC counter of the sample played
+    double m_dmcRate;               // of the levels, Hz
+    bool m_dmcLoop;
+    int m_dmcElapsed;               // output samples since the sample started
+    int m_frameSamples;             // output samples of a frame
 
     // output levels of the volumes of the destination chip
     const float* m_levels;

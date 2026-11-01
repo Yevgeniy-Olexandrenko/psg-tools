@@ -142,6 +142,12 @@ bool DecodeVGM::Open(Stream& stream)
                     {
                         outputType = SimRP2A03::OutputType::AY8930Chip;
                         stream.schip.first.model = Chip::Model::AY8930;
+                        if (stream.dchip.count == 2 && stream.dchip.second.model == Chip::Model::AY8930)
+                        {
+                            // two AY8930: the 2nd one plays the DMC
+                            outputType = SimRP2A03::OutputType::AY8930DoubleChip;
+                            stream.schip.second.model = Chip::Model::AY8930;
+                        }
                     }
                     else if (stream.dchip.count == 2)
                     {
@@ -348,16 +354,15 @@ int DecodeVGM::DecodeBlock()
             m_dataPtr += 2;
         }
 
-        // Data block 0x67 0x66 tt ss ss ss ss, just skip it
+        // Data block 0x67 0x66 tt ss ss ss ss, the NES APU RAM (tt = C2) is loaded
+        // as aa aa dd...: the samples of the DMC at address aaaa
         else if (m_dataPtr[0] == 0x67)
         {
             uint32_t dataSize = *(uint32_t*)(&m_dataPtr[3]) - 2;
-            if (m_simulator->type() == ChipSim::Type::RP2A03)
+            if (m_simulator->type() == ChipSim::Type::RP2A03 && m_dataPtr[2] == 0xC2)
             {
                 uint16_t dataAddr = *(uint16_t*)(&m_dataPtr[7]);
-
-                // TODO
-
+                m_simulator->WriteMemory(dataAddr, &m_dataPtr[9], dataSize);
                 dbg.print_message("d%04X:%05d ", dataAddr, dataSize);
             }
             m_dataPtr += (6 + dataSize + 2);
