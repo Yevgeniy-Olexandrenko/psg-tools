@@ -34,7 +34,7 @@ private:
     void UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes);
 
     void    PlaceNoise(State& state);
-    uint8_t SharedNoiseChannels(const State& state) const;
+    uint8_t SharedNoiseChannels(const State& state, float& gain) const;
     void    MixNoise(const State& state, uint8_t& mixer, uint8_t* volumes) const;
     uint16_t YMNoisePeriod(const State& state) const;
     void    UpdateAY8930Noise(const State& state, Frame::Registers& regs) const;
@@ -52,6 +52,9 @@ private:
 private:
     OutputType m_outputType;
     int m_triangleHold;      // frames left to hold the level of a stopped triangle
+    bool m_trianglePlayed;      // in the last frame
+    bool m_triangleInterrupted; // by the head of a hit in the last frame
+    int m_noiseHead;            // frames left of the head of a hit in channel B
 
     uint8_t m_noiseChannels; // mask of the channels of the noise in the last frame
     int m_noiseAge;          // frames since the last hit of the noise

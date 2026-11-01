@@ -1,6 +1,7 @@
 #include "SimRP2A03.h"
 #include "stream/Frame.h"
 #include "stream/Stream.h"
+#include <algorithm>
 #include <cmath>
 
 // the AY8930 noise takes its masks per NES noise period from c_noiseMasks,
@@ -29,7 +30,8 @@ struct SimRP2A03::State
     bool     noise_mode;
     bool     noise_enable;
     uint8_t  noise_channels;   // mask of the channels the noise is played in
-    bool     noise_shared;     // mixed in the pulses of the channels, at their volumes
+    bool     noise_shared;     // mixed in the pulses of the channels
+    float    noise_gain;       // of the volumes of the shared channels
 
     // channel B is taken by the triangle
     bool TriangleOn() const { return (triangle_enable || triangle_hold); }
@@ -72,6 +74,10 @@ namespace
     // it is mixed in them for the first frames of a hit only
     const float c_noiseMaskingDb = 12.f;
     const int c_noiseAttackFrames = 2;
+
+    // frames of the head of a hit played in channel B when a triangle note starts with it
+    // and no channel is free: the note waits and starts after it
+    const int c_noiseHeadFrames = 2;
 
     // the AY8930 expanded mode noise toggles after (LFSR & AND | OR) periods: the masks
     // and the period as num / den of the NES shift; periods 6-F found by a spectral search,
@@ -121,6 +127,9 @@ namespace
 SimRP2A03::SimRP2A03()
     : ChipSim(Type::RP2A03)
     , m_triangleHold(0)
+    , m_trianglePlayed(false)
+    , m_triangleInterrupted(false)
+    , m_noiseHead(0)
     , m_noiseChannels(0)
     , m_noiseAge(0)
     , m_noiseVolume(0)
@@ -150,6 +159,9 @@ void SimRP2A03::Reset()
 {
     RP2A03Apu::Reset();
     m_triangleHold = 0;
+    m_trianglePlayed = false;
+    m_triangleInterrupted = false;
+    m_noiseHead = 0;
     m_noiseChannels = 0;
     m_noiseAge = 0;
     m_noiseVolume = 0;
@@ -411,6 +423,14 @@ void SimRP2A03::PlaceNoise(State& state)
     bool place = (state.noise_enable && m_outputType != OutputType::DoubleChip &&
         !(m_outputType == OutputType::SingleChip && state.noise_mode));
 
+    // a triangle note and a hit start together while no channel is free:
+    // the head of the hit takes channel B, the note waits for it
+    bool pulsesOn = (state.pulse[0].enable && state.pulse[1].enable);
+    bool noteStarts = (state.triangle_enable && !m_trianglePlayed);
+    m_trianglePlayed = state.triangle_enable;
+    if (!place || !state.triangle_enable) m_noiseHead = 0;
+    else if (pulsesOn && noteStarts && m_noiseAge == 0) m_noiseHead = c_noiseHeadFrames;
+
     state.noise_channels = 0;
     if (place && !state.triangle_enable)
     {
@@ -420,7 +440,12 @@ void SimRP2A03::PlaceNoise(State& state)
         state.triangle_hold = false;
         m_triangleHold = 0;
     }
-    else if (place && !(state.pulse[0].enable && state.pulse[1].enable))
+    else if (place && m_noiseHead > 0)
+    {
+        --m_noiseHead;
+        state.noise_channels = ChannelMask(Frame::Channel::B);
+    }
+    else if (place && !pulsesOn)
     {
         // the channel of a silent pulse, the same one while both are silent
         uint8_t maskC = ChannelMask(c_pulseChannels[1]);
@@ -429,15 +454,27 @@ void SimRP2A03::PlaceNoise(State& state)
     }
     else if (place)
     {
-        // no free channel: the noise is mixed in the pulses, which keep their volumes
-        state.noise_channels = SharedNoiseChannels(state);
+        // no free channel: the noise is mixed in the pulses, their volumes raised for a quiet one
+        state.noise_channels = SharedNoiseChannels(state, state.noise_gain);
         state.noise_shared = true;
     }
     m_noiseChannels = state.noise_channels;
+
+    // the envelope ran on under the head of the hit: it restarts from zero after it,
+    // going back to the level it ran to would click; a stopped triangle is not held
+    bool interrupted = (state.triangle_enable && state.noise_channels == ChannelMask(Frame::Channel::B));
+    if (m_triangleInterrupted && !interrupted)
+    {
+        if (state.triangle_enable) state.triangle_restart = true;
+        state.triangle_hold = false;
+        m_triangleHold = 0;
+    }
+    m_triangleInterrupted = interrupted;
 }
 
-uint8_t SimRP2A03::SharedNoiseChannels(const State& state) const
+uint8_t SimRP2A03::SharedNoiseChannels(const State& state, float& gain) const
 {
+    gain = 1;
     // the levels the pulses play at, one chip plays every duty as a square
     float levels[2], duties[2];
     for (int i = 0; i < 2; ++i)
@@ -467,15 +504,29 @@ uint8_t SimRP2A03::SharedNoiseChannels(const State& state) const
         return std::sqrt(parts * parts + products);
     };
 
+    // a quiet noise raises the volumes of its channels up to twice, so far as they go:
+    // that gives the tones back their lost half too
+    const auto Gain = [&](uint8_t mask)
+    {
+        float highest = 1e-6f;
+        for (int i = 0; i < 2; ++i)
+        {
+            if (mask & ChannelMask(c_pulseChannels[i])) highest = std::max(highest, levels[i]);
+        }
+        return std::max(1.f, std::min({ target / std::max(NoiseLevelOf(mask), 1e-6f), 2.f, 1.f / highest }));
+    };
+
     // the cost: the error of the noise level and the tone loss of the pulses mixed in,
     // a louder pulse is more likely the melody and is spoiled the least
     float louder = std::max(std::max(levels[0], levels[1]), 1e-6f);
     const auto Cost = [&](uint8_t mask)
     {
-        float cost = std::abs(Decibels(NoiseLevelOf(mask) / target));
+        float gain = Gain(mask);
+        float cost = std::abs(Decibels(gain * NoiseLevelOf(mask) / target));
         for (int i = 0; i < 2; ++i)
         {
-            if (mask & ChannelMask(c_pulseChannels[i])) cost += c_toneLossWeight * c_toneLossDb * levels[i] / louder;
+            float toneLossDb = c_toneLossDb - Decibels(gain);
+            if (mask & ChannelMask(c_pulseChannels[i])) cost += c_toneLossWeight * toneLossDb * levels[i] / louder;
         }
         return cost;
     };
@@ -493,6 +544,7 @@ uint8_t SimRP2A03::SharedNoiseChannels(const State& state) const
     {
         if (mask == m_noiseChannels && Cost(mask) <= Cost(best) + c_noiseHysteresisDb) best = mask;
     }
+    gain = Gain(best);
     return best;
 }
 
@@ -502,8 +554,13 @@ void SimRP2A03::MixNoise(const State& state, uint8_t& mixer, uint8_t* volumes) c
     {
         if (state.noise_channels & ChannelMask(chan))
         {
+            // the AY8930 tone that lets the envelope through would let no noise through
+            if (chan == Frame::Channel::B && state.TriangleOn() && m_outputType == OutputType::AY8930Chip)
+                mixer |= ChannelMask(chan);
+
             EnableNoise(mixer, chan);
             if (!state.noise_shared) volumes[chan] = NoiseVolume(state);
+            else if (state.noise_gain > 1) volumes[chan] = LevelToVolume(state.noise_gain * VolumeToLevel(volumes[chan]));
         }
     }
 }
