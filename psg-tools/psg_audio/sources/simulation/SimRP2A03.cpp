@@ -4,10 +4,6 @@
 #include <algorithm>
 #include <cmath>
 
-// the AY8930 noise takes its masks per NES noise period from c_noiseMasks,
-// otherwise AND 4 with half the NES shift for all of them (sounds closer so far)
-// #define Enable_NoiseMasksTable
-
 struct SimRP2A03::State
 {
     struct Pulse
@@ -25,7 +21,6 @@ struct SimRP2A03::State
     bool     triangle_restart; // starts after a pause, the envelope restarts
 
     uint16_t noise_period;
-    uint8_t  noise_index;      // of the period in the NES table
     uint8_t  noise_volume;
     bool     noise_mode;
     bool     noise_enable;
@@ -79,17 +74,10 @@ namespace
     // and no channel is free: the note waits and starts after it
     const int c_noiseHeadFrames = 2;
 
-    // the AY8930 expanded mode noise toggles after (LFSR & AND | OR) periods: the masks
-    // and the period as num / den of the NES shift; periods 6-F found by a spectral search,
-    // 0-5 and the in-between 7, 9, D set by ear; PAL shift rates are within 7% of these
-    struct NoiseMasks { uint8_t andMask, orMask, num, den; };
-    const NoiseMasks c_noiseMasks[16] =
-    {
-        {  4, 0, 1, 2 }, {  4, 0, 1, 2 }, {  4, 0, 1, 2 }, {  4, 0, 1, 2 },
-        {  4, 0, 1, 2 }, {  4, 0, 1, 2 }, { 10, 1, 1, 3 }, { 10, 1, 9, 20 },
-        {  7, 0, 1, 1 }, {  5, 0, 10, 7 }, {  7, 0, 1, 1 }, {  6, 0, 1, 1 },
-        { 15, 0, 1, 3 }, { 15, 0, 3, 5 }, { 11, 0, 5, 4 }, { 15, 2, 1, 2 },
-    };
+    // the AY8930 expanded mode noise toggles after (LFSR & AND | OR) periods: with AND 13
+    // its runs are 1, 4, 5, 8, 9, 12 or 13 periods, close to the white noise of the NES
+    // by ear at the period of half the NES shift
+    const uint8_t c_ay8930NoiseAndMask = 0x0D;
 
     // the short mode noise repeats a sequence of 93 steps
     const int c_shortNoiseSteps = 93;
@@ -214,7 +202,6 @@ void SimRP2A03::Convert(Frame& frame)
 
     // noise channel
     state.noise_period = m_noise.timer_period;
-    state.noise_index  = m_noise.period_lut;
     state.noise_volume = m_noise.envelope.out;
     state.noise_mode   = m_noise.mode;
     state.noise_enable = (m_noise.len_counter && m_noise.envelope.out);
@@ -585,15 +572,10 @@ void SimRP2A03::UpdateAY8930Noise(const State& state, Frame::Registers& regs) co
     }
     else
     {
-        // the period is a part of the NES shift
-#ifdef Enable_NoiseMasksTable
-        const auto& masks = c_noiseMasks[state.noise_index & 0x0F];
-#else
-        const NoiseMasks masks{ 4, 0, 1, 2 };
-#endif
-        uint16_t period = ConvertPeriod(state.noise_period * masks.num, 8 * masks.den);
-        regs.Update(Register::N_AndMask, masks.andMask);
-        regs.Update(Register::N_OrMask,  masks.orMask);
+        // the period of 8 * period chip clocks is half the NES shift of period CPU clocks
+        uint16_t period = ConvertPeriod(state.noise_period, 16);
+        regs.Update(Register::N_AndMask, c_ay8930NoiseAndMask);
+        regs.Update(Register::N_OrMask,  0x00);
         regs.Update(Register::Period::N, std::min(period, uint16_t(0xFF)));
     }
 }
