@@ -37,4 +37,5 @@ private:
     bool  m_pause;
     float m_step;
     bool  m_hideStream;
+    bool  m_showAnalyzer;
 };

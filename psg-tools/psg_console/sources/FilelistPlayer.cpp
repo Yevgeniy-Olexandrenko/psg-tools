@@ -70,6 +70,7 @@ FilelistPlayer::FilelistPlayer(Chip& chip, Output& output, FilelistTraversal& fi
     , m_pause(false)
     , m_step(1.f)
     , m_hideStream(false)
+    , m_showAnalyzer(false)
 {}
 
 void FilelistPlayer::Play()
@@ -146,7 +147,7 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
             {
                 frameId = m_player.GetFrameId();
                 drawTime = now;
-                gui::DrawPlayback(GetFileView(stream), stream, frameId, m_output, !m_hideStream);
+                gui::DrawPlayback(GetFileView(stream), stream, frameId, m_output, !m_hideStream, m_showAnalyzer);
             }
 
             if (m_termination)
@@ -286,6 +287,12 @@ FilelistPlayer::Action FilelistPlayer::HandleUserInput(const Stream& stream)
     if (gui::GetKeyState('H').pressed)
     {
         m_hideStream ^= true;
+    }
+
+    // the spectrum analyzer replaces the registers dump
+    if (gui::GetKeyState('S').pressed)
+    {
+        m_showAnalyzer ^= true;
     }
 
     return Action::Nothing;

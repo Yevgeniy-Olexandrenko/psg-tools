@@ -40,7 +40,8 @@ namespace gui
 	// The live view is redrawn by each call, its layout adapts to the
 	// current size of the console window
 	void DrawDecoding(const FileView& file, const Stream& stream);
-	void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames);
+	// the frames area shows the registers dump and the meters, or the spectrum analyzer
+	void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames, bool showAnalyzer);
 	void DrawEncoding(const FileView& file, const Stream& stream, int frameId, size_t framesCount, const std::string& output);
 
 	// Removes the live view and leaves the header and all the properties of

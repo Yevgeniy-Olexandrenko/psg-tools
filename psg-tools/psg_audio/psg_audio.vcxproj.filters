@@ -165,6 +165,9 @@
     <ClInclude Include="sources\processing\ProcessingChain.h">
       <Filter>Sources\processing</Filter>
     </ClInclude>
+    <ClInclude Include="sources\player\LevelMeter.h">
+      <Filter>Sources\player</Filter>
+    </ClInclude>
     <ClInclude Include="sources\player\Output.h">
       <Filter>Sources\player</Filter>
     </ClInclude>
@@ -352,6 +355,9 @@
     </ClCompile>
     <ClCompile Include="sources\processing\ProcessingChain.cpp">
       <Filter>Sources\processing</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\LevelMeter.cpp">
+      <Filter>Sources\player</Filter>
     </ClCompile>
     <ClCompile Include="sources\player\Output.cpp">
       <Filter>Sources\player</Filter>

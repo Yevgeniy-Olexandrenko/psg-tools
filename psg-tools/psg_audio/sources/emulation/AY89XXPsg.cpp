@@ -146,6 +146,11 @@ AY89XXPsg::AY89XXPsg(ChipType chipType, PSGType psgType, int clockRate, int samp
 	Reset();
 }
 
+const double* AY89XXPsg::GetDACTable(bool isYM)
+{
+	return (isYM ? YM_DAC_TABLE : AY_DAC_TABLE);
+}
+
 void AY89XXPsg::Reset()
 {
 	m_mode = 0; // AY-3-8910 compatible mode

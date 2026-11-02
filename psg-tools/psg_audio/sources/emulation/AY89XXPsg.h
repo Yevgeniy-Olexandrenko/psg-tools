@@ -91,6 +91,10 @@ public:
 	double GetOutB() const;
 	double GetOutC() const;
 
+	// the DAC output (0 to 1) of the 32 levels: the YM table is for the YM2149
+	// and the AY8930, the AY table (16 levels, each two times) is for the others
+	static const double* GetDACTable(bool isYM);
+
 protected:
 	enum class ChipType { AY8910, AY8914, AY8930, YM2149 };
 	enum class PSGType  { AY, YM };

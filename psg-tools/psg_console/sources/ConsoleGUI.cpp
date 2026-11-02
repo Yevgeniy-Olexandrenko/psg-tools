@@ -1,7 +1,10 @@
 ﻿#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
+#include <deque>
 #include <iomanip>
 #include <sstream>
 #include <vector>
@@ -16,6 +19,38 @@ namespace gui
     const int k_maxFramesRows = 16;
     // the header row and the frames before, at and after the playing one
     const int k_minFramesRows = 4;
+    // the levels of the last frames for the trails of the meters, more than
+    // the widest window shows
+    const size_t k_maxLevels = 1024;
+
+    // The bars are left half blocks, so they stand apart. The ends of the
+    // bars of the meters and the peaks of the analyzer are quarter blocks:
+    // two levels in a cell. The raster fonts have no quarter blocks.
+    const wchar_t k_halfBlock = wchar_t(0x258C);
+    const wchar_t k_lowerQuarter = wchar_t(0x2596);
+    const wchar_t k_upperQuarter = wchar_t(0x2598);
+
+    // the colors of the registers dump: tone, noise, envelope
+    const SHORT k_soundColors[LevelMeter::k_sounds] = { FG_GREEN, FG_CYAN, FG_YELLOW };
+
+    // a bar of the analyzer rises at once and falls by this number of levels
+    // (of 255) in a frame; its peak holds, then falls more slowly
+    const int k_barFall = 6;
+    const int k_peakHold = 25;
+    const int k_peakFall = 3;
+
+    // A column of the analyzer shows the loudest of 1 to 4 semitones, the
+    // smallest number that fits the width and gives whole columns in an
+    // octave. A narrower window shows no analyzer.
+    const int k_maxBandsPerColumn = 4;
+
+    // the frequencies on the axis of the analyzer, in Hz: the octaves from
+    // 1 kHz, with the usual names of the octave bands
+    const std::pair<double, const char*> k_analyzerLabels[] =
+    {
+        { 31.25, "31" }, { 62.5, "63" }, { 125, "125" }, { 250, "250" }, { 500, "500" },
+        { 1000, "1k" }, { 2000, "2k" }, { 4000, "4k" }, { 8000, "8k" }, { 16000, "16k" },
+    };
 
     // decoding and encoding report every single frame, which is way more
     // often than the console needs to be redrawn
@@ -39,6 +74,19 @@ namespace gui
 
     PrintBuffer   m_framesBuffer(0, 0);
     KeyboardInput m_keyboardInput;
+
+    // the levels of the frames written to the output, the newest last
+    std::deque<Output::Levels> m_levels;
+
+    // the bands of the analyzer as it shows them
+    struct AnalyzerBand
+    {
+        int level;
+        int peak;
+        int hold;
+        LevelMeter::Sound sound;
+    };
+    AnalyzerBand m_analyzer[LevelMeter::k_bands] {};
 
     Screen& screen()
     {
@@ -616,11 +664,6 @@ namespace gui
         return layout;
     }
 
-    bool isSameLayout(const FramesLayout& a, const FramesLayout& b)
-    {
-        return (a.rows == b.rows && a.chips == b.chips && a.stacked == b.stacked && a.meters == b.meters && a.width == b.width);
-    }
-
     void printFramesBlock(const Stream& stream, int frameId, const Output& output, int x, int y, int rows, int chip, int chips)
     {
         bool isExpMode = stream.IsExpandedModeUsed();
@@ -667,49 +710,158 @@ namespace gui
         }
     }
 
-    void printLevels(const Output& output, int offset, int dumpWidth)
+    void updateLevels(const Output& output)
     {
-        int height = m_framesBuffer.h;
-        int width  = m_framesBuffer.w;
+        // One column of the meters for each frame written to the output: the
+        // trails move with the playback, not with the redraws, and stop at a
+        // pause. Take the levels also when the meters are hidden.
+        static uint32_t s_levelsCount = 0;
+        static std::vector<Output::Levels> s_levels;
+        output.GetLevels(s_levelsCount, s_levels);
 
-        // the trails of the meters move away from the registers dump
-        for (int y = 0; y < height; ++y)
+        m_levels.insert(m_levels.end(), s_levels.begin(), s_levels.end());
+        while (m_levels.size() > k_maxLevels) m_levels.pop_front();
+    }
+
+    void updateBands(const Output& output)
+    {
+        // the bars and the peaks also move with the written frames,
+        // also when the analyzer is hidden
+        static uint32_t s_bandsCount = 0;
+        static std::vector<Output::Bands> s_bands;
+        output.GetBands(s_bandsCount, s_bands);
+
+        for (const Output::Bands& bands : s_bands)
         {
-            CHAR_INFO* row = (m_framesBuffer.buffer + y * width);
-            for (int x = 1; x <= offset - 3; ++x) row[x] = row[x + 1];
-            for (int x = width - 1; x >= offset + dumpWidth + 2; --x) row[x] = row[x - 1];
+            for (int band = 0; band < LevelMeter::k_bands; ++band)
+            {
+                AnalyzerBand& shown = m_analyzer[band];
+                shown.level = std::max(0, shown.level - k_barFall);
+                if (bands.levels[band] >= shown.level)
+                {
+                    shown.level = bands.levels[band];
+                    shown.sound = bands.sounds[band];
+                }
+
+                if (shown.level >= shown.peak)
+                {
+                    shown.peak = shown.level;
+                    shown.hold = k_peakHold;
+                }
+                else if (shown.hold > 0)
+                    --shown.hold;
+                else
+                    shown.peak = std::max(shown.level, shown.peak - k_peakFall);
+            }
+        }
+    }
+
+    // the semitones per column of the analyzer that fit the width, zero if none
+    int getAnalyzerGroup(int width)
+    {
+        int space = (width - 1);
+        for (int group = 1; group <= k_maxBandsPerColumn; ++group)
+        {
+            if (12 % group == 0 && LevelMeter::k_bands / group <= space) return group;
+        }
+        return 0;
+    }
+
+    void printAnalyzer(int width, int rows, int group)
+    {
+        // draw all of the analyzer in each frame, in the middle of the width;
+        // the last row is the axis
+        m_framesBuffer.resize(width, rows);
+
+        int columns = (LevelMeter::k_bands / group);
+        int x = (1 + (width - 1 - columns) / 2);
+        int bars = (rows - 1);
+
+        for (int column = 0; column < columns; ++column)
+        {
+            const AnalyzerBand* loudest = &m_analyzer[column * group];
+            int peak = 0;
+            for (int band = column * group; band < (column + 1) * group; ++band)
+            {
+                if (m_analyzer[band].level > loudest->level) loudest = &m_analyzer[band];
+                peak = std::max(peak, m_analyzer[band].peak);
+            }
+
+            int bar = ((loudest->level * bars + 127) / 255);
+            for (int y = 0; y < bar; ++y)
+            {
+                m_framesBuffer.position(x + column, bars - 1 - y).color(k_soundColors[loudest->sound]).draw(k_halfBlock);
+            }
+
+            // the peak, in half cells, shows only above the bar
+            int halves = ((peak * 2 * bars + 127) / 255);
+            int y = ((halves - 1) / 2);
+            if (halves > 0 && y >= bar)
+            {
+                m_framesBuffer.position(x + column, bars - 1 - y).color(halves == 2 * bars ? FG_RED : FG_WHITE);
+                m_framesBuffer.draw(halves & 1 ? k_lowerQuarter : k_upperQuarter);
+            }
         }
 
-        float levelL, levelR;
-        output.GetLevels(levelL, levelR);
-
-        int half_h = (height / 2);
-        int last_y = (half_h - 1);
-        for (int y = 0; y < half_h; ++y)
+        // A label is at the center of the column of its frequency. If a label
+        // of 3 characters and a space do not fit in an octave, label every
+        // second octave.
+        m_framesBuffer.position(x, bars).color(FG_DARK_GREY).draw(std::string(columns, '-'));
+        int step = (12 / group >= 4 ? 1 : 2);
+        for (size_t i = 0; i < std::size(k_analyzerLabels); i += step)
         {
-            wchar_t charL = (y < int(levelL* half_h + 0.5f) ? '|' : ' ');
-            wchar_t charR = (y < int(levelR* half_h + 0.5f) ? '|' : ' ');
+            const auto& label = k_analyzerLabels[i];
+            int band = int(std::floor(12 * std::log2(label.first / LevelMeter::k_firstBandFreq) + 0.5));
+            int length = int(std::strlen(label.second));
+            int start = (band / group - (length - 1) / 2);
+            if (start >= 0 && start + length <= columns)
+            {
+                m_framesBuffer.position(x + start, bars).color(FG_DARK_CYAN).draw(label.second);
+            }
+        }
+    }
 
+    // a bar of a trail, up and down from the middle, in half cells
+    void printTrailBar(int x, int halves)
+    {
+        int half_h = (m_framesBuffer.h / 2);
+        int last_y = (half_h - 1);
+
+        for (int y = 0; y < half_h && 2 * y < halves; ++y)
+        {
             SHORT colorU = (y == last_y ? FG_RED : (y == 0 ? FG_CYAN : FG_GREY));
             SHORT colorD = (y == last_y ? FG_DARK_RED : (y == 0 ? FG_DARK_CYAN : FG_DARK_GREY));
+            bool whole = (2 * y + 1 < halves);
 
-            m_framesBuffer.position(offset - 2, last_y - y).color(colorU).draw(charL);
-            m_framesBuffer.position(offset - 2, half_h + y).color(colorD).draw(charL);
+            m_framesBuffer.position(x, last_y - y).color(colorU).draw(whole ? k_halfBlock : k_lowerQuarter);
+            m_framesBuffer.position(x, half_h + y).color(colorD).draw(whole ? k_halfBlock : k_upperQuarter);
+        }
+    }
 
-            m_framesBuffer.position(offset + dumpWidth + 1, last_y - y).color(colorU).draw(charR);
-            m_framesBuffer.position(offset + dumpWidth + 1, half_h + y).color(colorD).draw(charR);
+    void printLevels(int offset, int dumpWidth)
+    {
+        int width  = m_framesBuffer.w;
+        int halves = (m_framesBuffer.h / 2 * 2);
+
+        // The trails go from the registers dump to the edges, the newest level
+        // next to the dump. They come from the history in each frame, so a new
+        // window size shows them fully at once.
+        int xL = (offset - 2);
+        int xR = (offset + dumpWidth + 1);
+        int columns = std::min(int(m_levels.size()), std::max(xL, width - xR));
+
+        for (int i = 0; i < columns; ++i)
+        {
+            const Output::Levels& levels = m_levels[m_levels.size() - 1 - i];
+            if (xL - i >= 1) printTrailBar(xL - i, (levels.L * halves + 127) / 255);
+            if (xR + i < width) printTrailBar(xR + i, (levels.R * halves + 127) / 255);
         }
     }
 
     void printFrames(const Stream& stream, int frameId, const Output& output, const FramesLayout& layout, int width)
     {
-        // the buffer keeps the trails of the level meters between the frames
-        static FramesLayout s_layout{};
-        if (frameId == 0 || width != m_framesBuffer.w || !isSameLayout(layout, s_layout))
-        {
-            m_framesBuffer.resize(width, layout.rows);
-            s_layout = layout;
-        }
+        // draw all of the block in each frame, the meters from the history
+        m_framesBuffer.resize(width, layout.rows);
 
         int offset = 1 + (width - 1 - layout.width) / 2;
         if (layout.stacked)
@@ -725,7 +877,7 @@ namespace gui
 
         if (layout.meters)
         {
-            printLevels(output, offset, layout.width);
+            printLevels(offset, layout.width);
         }
     }
 
@@ -744,28 +896,37 @@ namespace gui
         }
     }
 
-    void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames)
+    void DrawPlayback(const FileView& file, const Stream& stream, int frameId, const Output& output, bool showFrames, bool showAnalyzer)
     {
         screen().Sync();
+        updateLevels(output);
+        updateBands(output);
         std::string outputName = output.toString();
         std::vector<Property> properties = getProperties(stream, &outputName);
 
-        // the frames get the rows left from the header, the properties and the progress bar
+        // The frames get the rows that the header, the properties and the
+        // progress bar do not use. The analyzer replaces the frames and the
+        // meters, uses the full width and needs the rows of a block of frames.
         int maxHeight = screen().GetMaxHeight();
         int propertiesRows = std::clamp(maxHeight - 2, 0, int(properties.size()));
         int framesRows = (showFrames ? std::min(k_maxFramesRows, maxHeight - 2 - propertiesRows) : 0);
         FramesLayout layout = getFramesLayout(stream, screen().GetWidth(), framesRows);
+        int group = (showAnalyzer ? getAnalyzerGroup(screen().GetWidth()) : 0);
+        int rows = (showAnalyzer ? (group && framesRows >= k_minFramesRows ? framesRows : 0) : layout.rows);
 
-        PrintBuffer& canvas = screen().Begin(2 + propertiesRows + layout.rows);
+        PrintBuffer& canvas = screen().Begin(2 + propertiesRows + rows);
         drawFileHeader(canvas, 0, file);
         for (int i = 0; i < propertiesRows; ++i)
         {
             drawProperty(canvas, 1 + i, properties[i]);
         }
 
-        if (layout.rows)
+        if (rows)
         {
-            printFrames(stream, frameId, output, layout, canvas.w);
+            if (showAnalyzer)
+                printAnalyzer(canvas.w, rows, group);
+            else
+                printFrames(stream, frameId, output, layout, canvas.w);
             canvas.paste(m_framesBuffer, 0, 1 + propertiesRows);
         }
 

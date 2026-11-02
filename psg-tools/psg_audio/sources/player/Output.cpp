@@ -7,9 +7,30 @@
 #include "processing/ChannelsLayoutChange.h"
 #include "processing/AY8930EnvelopeFix.h"
 
+namespace
+{
+    // The player thread writes while the GUI copies, so do not take the
+    // oldest quarter of the history: the player writes there next.
+    template<typename T, size_t N>
+    void TakeHistory(const std::array<T, N>& history, uint32_t written, uint32_t& count, std::vector<T>& items)
+    {
+        const uint32_t maxCount = uint32_t(N * 3 / 4);
+        if (written - count > maxCount) count = (written - maxCount);
+
+        items.clear();
+        for (; count != written; ++count)
+        {
+            items.push_back(history[count % N]);
+        }
+    }
+}
+
 Output::Output()
     : m_alive(false)
     , m_processing("output_processing")
+    , m_levels{}
+    , m_bands{}
+    , m_measuredCount(0)
 {
 }
 
@@ -51,6 +72,8 @@ bool Output::Init(const Stream& stream)
                     .Append<ChipClockRateConvert>(stream.schip, m_dchip)
                     .Append<ChannelsLayoutChange>(m_dchip)
                     .Append<AY8930EnvelopeFix>(m_dchip);
+
+                m_meter.Init(m_dchip, stream.play.frameRate);
             }
         }
     }
@@ -102,6 +125,14 @@ bool Output::Write(const Frame& frame)
 
             if (!(m_alive &= DeviceWrite(chip, data))) break;
         }
+
+        // measure the frame and publish the result for the GUI
+        uint32_t count = m_measuredCount.load(std::memory_order_relaxed);
+        Levels& levels = m_levels[count % m_levels.size()];
+        Bands& bands = m_bands[count % m_bands.size()];
+        m_meter.Measure(pframe, levels.L, levels.R);
+        m_meter.GetBands(bands.levels, bands.sounds);
+        m_measuredCount.store(count + 1, std::memory_order_release);
     }
     return m_alive;
 }
@@ -122,80 +153,17 @@ Output::Enables& Output::GetEnables()
     return static_cast<ChannelsOutputEnable*>(m_processing.GetProcessor(0))->GetEnables();
 }
 
-void Output::GetLevels(float& L, float& C, float& R) const
+void Output::GetLevels(uint32_t& count, std::vector<Levels>& levels) const
 {
-    float a = ComputeChannelLevel(0, Frame::Channel::A);
-    float b = ComputeChannelLevel(0, Frame::Channel::B);
-    float c = ComputeChannelLevel(0, Frame::Channel::C);
-
-    if (m_dchip.count == 2)
-    {
-        a = (0.5f * (a + ComputeChannelLevel(1, Frame::Channel::A)));
-        b = (0.5f * (b + ComputeChannelLevel(1, Frame::Channel::B)));
-        c = (0.5f * (c + ComputeChannelLevel(1, Frame::Channel::C)));
-    }
-
-    if (m_dchip.output == Chip::Output::Stereo)
-    {
-        switch (m_dchip.stereo)
-        {
-        case Chip::Stereo::ABC: L = a; C = b; R = c; break;
-        case Chip::Stereo::ACB: L = a; C = c; R = b; break;
-        case Chip::Stereo::BAC: L = b; C = a; R = c; break;
-        case Chip::Stereo::BCA: L = b; C = c; R = a; break;
-        case Chip::Stereo::CAB: L = c; C = a; R = b; break;
-        case Chip::Stereo::CBA: L = c; C = b; R = a; break;
-        }
-    }
-    else
-    {
-        L = C = R = ((a + b + c) / 3.f);
-    }
+    TakeHistory(m_levels, m_measuredCount.load(std::memory_order_acquire), count, levels);
 }
 
-void Output::GetLevels(float& L, float& R) const
+void Output::GetBands(uint32_t& count, std::vector<Bands>& bands) const
 {
-    float l, c, r;
-    GetLevels(l, c, r);
-
-    if (m_dchip.output == Chip::Output::Stereo)
-    {
-        L = ((l + 0.5f * c) / 1.5f);
-        R = ((r + 0.5f * c) / 1.5f);
-    }
-    else
-    {
-        L = R = ((l + c + r) / 3.f);
-    }
+    TakeHistory(m_bands, m_measuredCount.load(std::memory_order_acquire), count, bands);
 }
 
 std::string Output::toString() const
 {
     return (m_dchip.toString() + " -> " + GetDeviceName());
-}
-
-float Output::ComputeChannelLevel(int chip, int chan) const
-{
-    uint8_t volume = 0;
-    auto& regs = m_processing.GetFrame()[chip];
-
-    if (regs.IsEnvelopeEnabled(chan))
-    {
-        // envelope is enabled in the given channel
-        if (regs.IsPeriodicEnvelope(chan))
-        {
-            // if periodic envelope set max volume
-            volume = regs.vmask();
-        }
-    }
-    else
-    {
-        // envelope is disabled in the given channel
-        if (regs.IsToneEnabled(chan) || regs.IsNoiseEnabled(chan))
-        {
-            // tone or noise is enabled
-            volume = regs.GetVolume(chan);
-        }
-    }
-    return (float(volume) / float(regs.vmask()));
 }
