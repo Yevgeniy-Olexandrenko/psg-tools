@@ -84,8 +84,9 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 						return false;
 					}
 				}
+				// a stream without frames cannot be played or encoded
 				decoder->Close(stream);
-				return true;
+				return (stream.framesCount > 0);
 			}
 		}
 		return false;

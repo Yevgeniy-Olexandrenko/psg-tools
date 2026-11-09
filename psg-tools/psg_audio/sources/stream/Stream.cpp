@@ -72,6 +72,9 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
     m_loopFramesCount = loopFramesCount;
     m_lastFrameId = lastFrameId;
 
+    // an empty stream has no frames to loop or to cut
+    if (!m_stream.framesCount) return;
+
     if (m_loopFrameId < m_stream.framesCount / 2)
     {
         // playback loop available, compute new duration using maximum extra loops amount
