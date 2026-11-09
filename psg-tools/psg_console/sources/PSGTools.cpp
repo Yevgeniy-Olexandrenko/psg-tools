@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
                 {
                     if (wavePath.has_parent_path())
                         std::filesystem::create_directories(wavePath.parent_path());
-                    output.reset(new WaveFile(wavePath));
+                    output.reset(new WaveFile(wavePath, true));
                 }
                 else
                     output.reset(new Emulator());

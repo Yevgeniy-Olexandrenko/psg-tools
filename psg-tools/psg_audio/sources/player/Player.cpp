@@ -1,41 +1,5 @@
-#include <Windows.h>
 #include "Player.h"
 #include "Output.h"
-
-////////////////////////////////////////////////////////////////////////////////
-
-double GetTime()
-{
-	LARGE_INTEGER counter, frequency;
-	QueryPerformanceCounter(&counter);
-	QueryPerformanceFrequency(&frequency);
-	return counter.QuadPart / double(frequency.QuadPart);
-}
-
-void WaitFor(const double period)
-{
-	static double accumulator = 0;
-	double start, finish, elapsed;
-
-	accumulator += period;
-	finish = (GetTime() + accumulator);
-
-	while (true)
-	{
-		start = GetTime(); Sleep(1U);
-		elapsed = (GetTime() - start);
-
-		if ((accumulator -= elapsed) < 0) return;
-
-		if (accumulator < elapsed)
-		{
-			start += elapsed;
-			while (GetTime() < finish) SwitchToThread();
-			accumulator -= (GetTime() - start);
-			return;
-		}
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -115,33 +79,15 @@ FrameId Player::GetFrameId() const
 
 void Player::Playback()
 {
-	timeBeginPeriod(1U);
-	auto hndl = reinterpret_cast<HANDLE>(m_thread.native_handle());
-	SetThreadPriority(hndl, THREAD_PRIORITY_TIME_CRITICAL);
-
-	auto firstFrame  = true;
-	auto frameNextTS = GetTime();
-	auto framePeriod = 1.0 / m_stream->play.frameRate;
-
+	// the output waits in Write for the time of the next frame
 	bool playing = m_playing;
+	bool firstFrame = true;
 	while (playing && !m_paused)
 	{
-		// play current frame
-		if (firstFrame)
-		{
-			Frame frame(m_stream->play.GetFrame(GetFrameId()));
-			if (!m_output.Write(!frame)) playing = false;
-			firstFrame = false;
-		}
-		else
-		{
-			const Frame& frame = m_stream->play.GetFrame(GetFrameId());
-			if (!m_output.Write(frame)) playing = false;
-		}
-
-		// next frame timestamp waiting
-		frameNextTS += framePeriod;
-		WaitFor(frameNextTS - GetTime());
+		// the first frame sets all registers
+		const Frame& frame = m_stream->play.GetFrame(GetFrameId());
+		if (!m_output.Write(firstFrame ? !Frame(frame) : frame, int(GetFrameId()))) playing = false;
+		firstFrame = false;
 
 		// go to next frame
 		m_frameId = (m_frameId + m_step);
@@ -160,5 +106,4 @@ void Player::Playback()
 	// silence output when job is done
 	m_output.Write(!Frame());
 	m_playing = playing;
-	timeEndPeriod(1U);
 }

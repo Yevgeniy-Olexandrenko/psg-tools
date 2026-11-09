@@ -258,6 +258,9 @@
     <ClInclude Include="sources\player\PCMOutput.h">
       <Filter>Sources\player</Filter>
     </ClInclude>
+    <ClInclude Include="sources\player\FrameTimer.h">
+      <Filter>Sources\player</Filter>
+    </ClInclude>
     <ClInclude Include="sources\player\wavefile\WaveFile.h">
       <Filter>Sources\player\wavefile</Filter>
     </ClInclude>
@@ -426,6 +429,9 @@
       <Filter>Sources\stream</Filter>
     </ClCompile>
     <ClCompile Include="sources\player\PCMOutput.cpp">
+      <Filter>Sources\player</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\player\FrameTimer.cpp">
       <Filter>Sources\player</Filter>
     </ClCompile>
     <ClCompile Include="sources\player\wavefile\WaveFile.cpp">

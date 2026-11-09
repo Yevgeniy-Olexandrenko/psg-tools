@@ -140,12 +140,13 @@ FilelistPlayer::Action FilelistPlayer::PlayStream(const Stream& stream)
             m_output.GetEnables() = m_enables;
             gui::Update();
 
-            // redraw every new frame, and from time to time while the playback
+            // redraw every frame heard, and from time to time while the playback
             // is paused, to show changes of settings and the window size
             auto now = std::chrono::steady_clock::now();
-            if (m_player.GetFrameId() != frameId || now - drawTime >= std::chrono::milliseconds(40))
+            auto heardId = FrameId(m_output.GetPosition());
+            if (heardId != frameId || now - drawTime >= std::chrono::milliseconds(40))
             {
-                frameId = m_player.GetFrameId();
+                frameId = heardId;
                 drawTime = now;
                 gui::DrawPlayback(GetFileView(stream), stream, frameId, m_output, !m_hideStream, m_showAnalyzer);
             }

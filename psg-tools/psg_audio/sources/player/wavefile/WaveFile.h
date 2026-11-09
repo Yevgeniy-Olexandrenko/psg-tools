@@ -3,11 +3,13 @@
 #include <fstream>
 #include <filesystem>
 #include "player/PCMOutput.h"
+#include "player/FrameTimer.h"
 
 class WaveFile : public PCMOutput
 {
 public:
-	WaveFile(const std::filesystem::path& path);
+	// in real time it writes each frame at its time, like a player
+	WaveFile(const std::filesystem::path& path, bool realTime = false);
 	virtual ~WaveFile();
 
 	// adds the stream's title, artist, comment and type to the
@@ -23,7 +25,7 @@ protected:
 
 	bool DeviceOpen() override;
 	bool DeviceInit(const Stream& stream, Chip& dchip) override;
-	bool DeviceWrite(int chip, const Data& data) override;
+	bool DeviceWrite(const FrameData& data) override;
 	void DeviceClose() override;
 
 private:
@@ -38,7 +40,8 @@ private:
 	std::filesystem::path m_path;
 	std::vector<InfoItem> m_info;
 	std::ofstream m_output;
-	int m_lastChip;
+	bool m_realTime;
+	FrameTimer m_timer;
 
 	double m_samplesPerFrame;
 	double m_samplesToRender;

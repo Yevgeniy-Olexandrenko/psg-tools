@@ -1,5 +1,6 @@
 #include "Output.h"
 
+#include <algorithm>
 #include <cassert>
 #include "stream/Stream.h"
 #include "processing/ChannelsOutputEnable.h"
@@ -28,9 +29,13 @@ namespace
 Output::Output()
     : m_alive(false)
     , m_processing("output_processing")
+    , m_heard{}
     , m_levels{}
     , m_bands{}
     , m_measuredCount(0)
+    , m_framePeriod{}
+    , m_latency{}
+    , m_position(0)
 {
 }
 
@@ -74,13 +79,20 @@ bool Output::Init(const Stream& stream)
                     .Append<AY8930EnvelopeFix>(m_dchip);
 
                 m_meter.Init(m_dchip, stream.play.frameRate);
+
+                using Seconds = std::chrono::duration<double>;
+                m_framePeriod = std::chrono::duration_cast<Clock::duration>(Seconds(1 / stream.play.frameRate));
+                m_latency = std::chrono::duration_cast<Clock::duration>(Seconds(GetDeviceLatency()));
+                m_heardTime = {};
+                m_position = 0;
+                m_heard.fill({}); // the last stream is heard, at position 0
             }
         }
     }
     return m_alive;
 }
 
-bool Output::Write(const Frame& frame)
+bool Output::Write(const Frame& frame, int position)
 {
     if (m_alive)
     {
@@ -88,12 +100,12 @@ bool Output::Write(const Frame& frame)
         const Frame& pframe = m_processing.Execute(frame);
 
         // output to chip(s)
-        Data data(32);
+        m_data[0].clear();
+        m_data[1].clear();
         for (int chip = 0; chip < m_dchip.count; ++chip)
         {
-            data.clear();
             bool switchBanks = false;
-
+            ChipData& data = m_data[chip];
             if (m_dchip.hasExpMode(chip) && pframe[chip].IsExpMode())
             {
                 for (Register reg = Register::BankB_Fst; reg < Register::BankB_Lst; ++reg)
@@ -122,14 +134,24 @@ bool Output::Write(const Frame& frame)
                     data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
                 }
             }
-
-            if (!(m_alive &= DeviceWrite(chip, data))) break;
         }
+        m_alive &= DeviceWrite(m_data);
+
+        // The frame sounds after the latency of the device. The writes have
+        // the jitter of the device, so the frame times step by the frame
+        // period and follow the writes slowly. After a pause they jump to
+        // the write. They never go back, the GUI takes them in order.
+        const Clock::time_point time = (Clock::now() + m_latency);
+        const Clock::time_point next = (m_heardTime + m_framePeriod);
+        const Clock::duration error = (time - next);
+        m_heardTime = (error > 2 * m_framePeriod ? time : next + std::max(error, -m_framePeriod) / 16);
+        if (position >= 0) m_position = position;
 
         // measure the frame and publish the result for the GUI
         uint32_t count = m_measuredCount.load(std::memory_order_relaxed);
         Levels& levels = m_levels[count % m_levels.size()];
         Bands& bands = m_bands[count % m_bands.size()];
+        m_heard[count % m_heard.size()] = { m_heardTime, m_position };
         m_meter.Measure(pframe, levels.L, levels.R);
         m_meter.GetBands(bands.levels, bands.sounds);
         m_measuredCount.store(count + 1, std::memory_order_release);
@@ -153,14 +175,28 @@ Output::Enables& Output::GetEnables()
     return static_cast<ChannelsOutputEnable*>(m_processing.GetProcessor(0))->GetEnables();
 }
 
+uint32_t Output::GetHeardCount() const
+{
+    const Clock::time_point now = Clock::now();
+    uint32_t count = m_measuredCount.load(std::memory_order_acquire);
+    const uint32_t oldest = (count - uint32_t(m_heard.size() * 3 / 4));
+    while (count != oldest && m_heard[(count - 1) % m_heard.size()].time > now) --count;
+    return count;
+}
+
+int Output::GetPosition() const
+{
+    return m_heard[(GetHeardCount() - 1) % m_heard.size()].position;
+}
+
 void Output::GetLevels(uint32_t& count, std::vector<Levels>& levels) const
 {
-    TakeHistory(m_levels, m_measuredCount.load(std::memory_order_acquire), count, levels);
+    TakeHistory(m_levels, GetHeardCount(), count, levels);
 }
 
 void Output::GetBands(uint32_t& count, std::vector<Bands>& bands) const
 {
-    TakeHistory(m_bands, m_measuredCount.load(std::memory_order_acquire), count, bands);
+    TakeHistory(m_bands, GetHeardCount(), count, bands);
 }
 
 std::string Output::toString() const

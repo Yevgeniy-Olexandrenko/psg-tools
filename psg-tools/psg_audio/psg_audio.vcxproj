@@ -61,6 +61,7 @@
     <ClInclude Include="sources\filelist\FilelistTraversal.h" />
     <ClInclude Include="sources\player\emulator\Emulator.h" />
     <ClInclude Include="sources\player\emulator\WaveAudio.h" />
+    <ClInclude Include="sources\player\FrameTimer.h" />
     <ClInclude Include="sources\player\LevelMeter.h" />
     <ClInclude Include="sources\player\Output.h" />
     <ClInclude Include="sources\player\PCMOutput.h" />
@@ -126,6 +127,7 @@
     <ClCompile Include="sources\filelist\FilelistTraversal.cpp" />
     <ClCompile Include="sources\player\emulator\Emulator.cpp" />
     <ClCompile Include="sources\player\emulator\WaveAudio.cpp" />
+    <ClCompile Include="sources\player\FrameTimer.cpp" />
     <ClCompile Include="sources\player\LevelMeter.cpp" />
     <ClCompile Include="sources\player\Output.cpp" />
     <ClCompile Include="sources\player\PCMOutput.cpp" />

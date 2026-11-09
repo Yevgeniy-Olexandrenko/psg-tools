@@ -22,9 +22,9 @@ namespace
 	}
 }
 
-WaveFile::WaveFile(const std::filesystem::path& path)
+WaveFile::WaveFile(const std::filesystem::path& path, bool realTime)
 	: m_path(path)
-	, m_lastChip(-1)
+	, m_realTime(realTime)
 	, m_samplesPerFrame(0)
 	, m_samplesToRender(0)
 	, m_dataSize(0)
@@ -84,7 +84,7 @@ bool WaveFile::DeviceInit(const Stream& stream, Chip& dchip)
 	if (m_output)
 	{
 		PCMOutput::PCMInit(dchip);
-		m_lastChip = dchip.count - 1;
+		m_timer.Start(stream.play.frameRate);
 
 		m_samplesPerFrame = double(k_PCMSampleRate) / stream.play.frameRate;
 		m_samplesToRender = 0;
@@ -93,41 +93,40 @@ bool WaveFile::DeviceInit(const Stream& stream, Chip& dchip)
 	return false;
 }
 
-bool WaveFile::DeviceWrite(int chip, const Data& data)
+bool WaveFile::DeviceWrite(const FrameData& data)
 {
 	constexpr float sampleMax = float(std::numeric_limits<int16_t>::max());
 	constexpr float sampleMin = float(std::numeric_limits<int16_t>::min());
 
-	PCMOutput::DeviceWrite(chip, data);
-	if (chip == m_lastChip)
+	if (m_realTime) m_timer.Wait();
+	PCMOutput::PCMWrite(data);
+
+	// render PCM for 1 frame time, the fractional part
+	// of samples per frame is carried to the next frame
+	m_samplesToRender += m_samplesPerFrame;
+	size_t samples = size_t(m_samplesToRender);
+	m_samplesToRender -= samples;
+
+	m_floatBuffer.resize(samples * k_channels);
+	m_sampleBuffer.resize(samples * k_channels);
+	PCMOutput::PCMFill(m_floatBuffer.data(), samples);
+
+	for (size_t i = 0; i < m_floatBuffer.size(); ++i)
 	{
-		// render PCM for 1 frame time, the fractional part
-		// of samples per frame is carried to the next frame
-		m_samplesToRender += m_samplesPerFrame;
-		size_t samples = size_t(m_samplesToRender);
-		m_samplesToRender -= samples;
+		float sample = (m_floatBuffer[i] * sampleMax);
+		if (sample > sampleMax) sample = sampleMax;
+		if (sample < sampleMin) sample = sampleMin;
+		m_sampleBuffer[i] = int16_t(sample);
+	}
 
-		m_floatBuffer.resize(samples * k_channels);
-		m_sampleBuffer.resize(samples * k_channels);
-		PCMOutput::PCMFill(m_floatBuffer);
+	auto bytes = uint32_t(m_sampleBuffer.size() * sizeof(int16_t));
+	m_output.write(reinterpret_cast<const char*>(m_sampleBuffer.data()), bytes);
+	m_dataSize += bytes;
 
-		for (size_t i = 0; i < m_floatBuffer.size(); ++i)
-		{
-			float sample = (m_floatBuffer[i] * sampleMax);
-			if (sample > sampleMax) sample = sampleMax;
-			if (sample < sampleMin) sample = sampleMin;
-			m_sampleBuffer[i] = int16_t(sample);
-		}
-
-		auto bytes = uint32_t(m_sampleBuffer.size() * sizeof(int16_t));
-		m_output.write(reinterpret_cast<const char*>(m_sampleBuffer.data()), bytes);
-		m_dataSize += bytes;
-
-		if (m_dataSize >= m_headerUpdateSize)
-		{
-			m_headerUpdateSize = (m_dataSize + k_headerUpdatePeriod);
-			UpdateHeader();
-		}
+	if (m_dataSize >= m_headerUpdateSize)
+	{
+		m_headerUpdateSize = (m_dataSize + k_headerUpdatePeriod);
+		UpdateHeader();
 	}
 	return bool(m_output);
 }

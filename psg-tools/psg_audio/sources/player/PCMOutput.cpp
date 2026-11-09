@@ -10,13 +10,15 @@ PCMOutput::~PCMOutput()
 {
 }
 
-bool PCMOutput::DeviceWrite(int chip, const Data& data)
+void PCMOutput::PCMWrite(const FrameData& data)
 {
-	for (const auto& [reg, val] : data)
+	for (int chip = 0; chip < 2 && m_psg[chip]; ++chip)
 	{
-		m_psg[chip]->Write(reg, val);
+		for (const auto& [reg, val] : data[chip])
+		{
+			m_psg[chip]->Write(reg, val);
+		}
 	}
-	return true;
 }
 
 void PCMOutput::PCMInit(Chip& dchip)
@@ -27,42 +29,36 @@ void PCMOutput::PCMInit(Chip& dchip)
 		m_panR[chan] = pan;
 	};
 
-	// create sound chip emulator instances, and remove the instance
-	// of the second chip left from a previous TurboSound stream
 	m_psg[1].reset();
 	for (int chip = 0; chip < dchip.count; ++chip)
 	{
-		// create sound chip emulator by model
 		switch (dchip.model(chip))
 		{
-		case Chip::Model::AY8910: m_psg[chip].reset(new ChipAY8910(dchip.clockValue, k_PCMSampleRate)); break;
 		case Chip::Model::YM2149: m_psg[chip].reset(new ChipYM2149(dchip.clockValue, k_PCMSampleRate)); break;
 		case Chip::Model::AY8930: m_psg[chip].reset(new ChipAY8930(dchip.clockValue, k_PCMSampleRate)); break;
+		default:                  m_psg[chip].reset(new ChipAY8910(dchip.clockValue, k_PCMSampleRate)); break;
 		}
 		m_psg[chip]->Reset();
 	}
 
 	if (dchip.output == Chip::Output::Mono)
 	{
-		SetPan(0, 0.5f);
-		SetPan(1, 0.5f);
-		SetPan(2, 0.5f);
+		SetPan(0, 0.5f); SetPan(1, 0.5f); SetPan(2, 0.5f);
 	}
 	else
 	{
-		SetPan(0, 0.1f);
-		SetPan(1, 0.5f);
-		SetPan(2, 0.9f);
+		SetPan(0, 0.1f); SetPan(1, 0.5f); SetPan(2, 0.9f);
 	}
 }
 
-void PCMOutput::PCMFill(std::vector<float>& buffer)
+void PCMOutput::PCMFill(float* buffer, size_t samples)
 {
+	const size_t size = (samples * 2);
 	if (m_psg[0])
 	{
 		if (m_psg[1])
 		{
-			for (size_t i = 0; i < buffer.size();)
+			for (size_t i = 0; i < size;)
 			{
 				m_psg[0]->Process();
 				m_psg[1]->Process();
@@ -79,7 +75,7 @@ void PCMOutput::PCMFill(std::vector<float>& buffer)
 		}
 		else
 		{
-			for (size_t i = 0; i < buffer.size();)
+			for (size_t i = 0; i < size;)
 			{
 				m_psg[0]->Process();
 				m_psg[0]->RemoveDC();
