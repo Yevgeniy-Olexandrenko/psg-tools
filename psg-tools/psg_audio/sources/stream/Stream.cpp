@@ -330,7 +330,7 @@ void Stream::ConfigureDestinationChip()
     }
 
     // configure model of the 2nd destination chip
-    if (schip.second.modelKnown)
+    if (schip.second.modelKnown && IsSecondChipUsed())
     {
         if (!dchip.second.modelKnown || dchip.second.model == Chip::Model::Compatible)
         {

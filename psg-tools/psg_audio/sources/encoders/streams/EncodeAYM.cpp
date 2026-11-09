@@ -101,7 +101,7 @@ bool EncodeAYM::Open(const Stream& stream)
         m_output.open(stream.file, std::fstream::binary);
         if (m_output)
         {
-            if (stream.IsSecondChipUsed()) m_chips = 2;
+            m_chips = stream.dchip.count;
             uint8_t stereo = uint8_t(Chip::Stereo(stream.dchip.stereo));
             uint8_t output = (stream.dchip.output == Chip::Output::Mono ? 0 : stereo);
 

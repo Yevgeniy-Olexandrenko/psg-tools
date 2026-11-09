@@ -83,9 +83,9 @@ bool DecodePSG::Decode(Frame& frame)
 
 void DecodePSG::Close(Stream& stream)
 {
-    stream.Finalize(0);
     m_input.close();
 
+    // the file has no header, the frames tell the chips
     if (stream.IsExpandedModeUsed(0))
         stream.schip.first.model = Chip::Model::AY8930;
 
@@ -94,4 +94,6 @@ void DecodePSG::Close(Stream& stream)
 
     if (stream.IsSecondChipUsed() && !stream.schip.second.modelKnown)
         stream.schip.second.model = stream.schip.first.model;
+
+    stream.Finalize(0);
 }
