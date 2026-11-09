@@ -27,7 +27,9 @@ void PCMOutput::PCMInit(Chip& dchip)
 		m_panR[chan] = pan;
 	};
 
-	// create sound chip emulator instances
+	// create sound chip emulator instances, and remove the instance
+	// of the second chip left from a previous TurboSound stream
+	m_psg[1].reset();
 	for (int chip = 0; chip < dchip.count; ++chip)
 	{
 		// create sound chip emulator by model
