@@ -1,16 +1,15 @@
 #pragma once
 
-#include <mutex>
-#include <thread>
 #include <atomic>
+#include <thread>
 #include <vector>
-#include <condition_variable>
 #include <Windows.h>
 
+// Plays a ring of blocks on the default sound device (the wave mapper),
+// FillBuffer gives the samples of each block. When the device stops taking
+// the blocks (it was lost or switched), the audio thread opens it again.
 class WaveAudio
 {
-	using Sample = short;
-
 protected:
 	WaveAudio();
 	virtual ~WaveAudio();
@@ -23,24 +22,16 @@ protected:
 	virtual void FillBuffer(std::vector<float>& buffer) = 0;
 
 private:
+	bool OpenDevice();
+	void CloseDevice();
 	void DriverLoop();
-	void FreeAudioBlock();
-	static void CALLBACK waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD dwParam1, DWORD dwParam2);
 
-private:
+	WAVEFORMATEX m_format{};
 	HWAVEOUT m_waveOut{ nullptr };
-	
-	std::atomic<bool> m_driverLoopActive{ false };
-	std::thread m_driverLoopThread;
-	uint32_t m_floatBufferSize{ 0 };
+	HANDLE m_blockDone{ nullptr }; // the device signals it for each played block
+	std::vector<std::vector<short>> m_blocks;
+	std::vector<WAVEHDR> m_headers;
 
-	std::unique_ptr<std::vector<Sample>[]> m_blockMemory;
-	std::unique_ptr<WAVEHDR[]> m_blockHeader;
-
-	uint32_t m_blocks{ 0 };
-	std::atomic<uint32_t> m_freeBlocks{ 0 };
-	uint32_t m_currentBlock{ 0 };
-
-	std::condition_variable m_blockAvailableConVar;
-	std::mutex m_blockAvailableMutex;
+	std::atomic<bool> m_active{ false };
+	std::thread m_thread;
 };

@@ -1,141 +1,135 @@
 #include "WaveAudio.h"
 
-#undef min
-#undef max
-
 #pragma comment(lib, "winmm.lib")
 
+namespace
+{
+	// a block plays for a few ms: when the oldest one does not come back
+	// for this time, the device is lost or switched
+	constexpr DWORD k_stallTimeMs = 500;
+}
+
 WaveAudio::WaveAudio()
+	: m_blockDone(CreateEvent(nullptr, FALSE, FALSE, nullptr))
 {
 }
 
 WaveAudio::~WaveAudio()
 {
 	Close();
+	CloseHandle(m_blockDone);
 }
 
 bool WaveAudio::Open(int sampleRate, int channels, int blocks, int blockSamples)
 {
-	WAVEFORMATEX waveFormat;
-	waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-	waveFormat.nSamplesPerSec = sampleRate;
-	waveFormat.wBitsPerSample = sizeof(Sample) * 8;
-	waveFormat.nChannels = channels;
-	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
-	waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
-	waveFormat.cbSize = 0;
+	Close();
 
-	if (waveOutOpen(&m_waveOut, WAVE_MAPPER, &waveFormat, (DWORD_PTR)WaveAudio::waveOutProc, (DWORD_PTR)this, CALLBACK_FUNCTION) != S_OK)
-		return false;
+	m_format.wFormatTag = WAVE_FORMAT_PCM;
+	m_format.nChannels = WORD(channels);
+	m_format.nSamplesPerSec = DWORD(sampleRate);
+	m_format.wBitsPerSample = 16;
+	m_format.nBlockAlign = WORD(channels * sizeof(short));
+	m_format.nAvgBytesPerSec = DWORD(sampleRate * m_format.nBlockAlign);
+	m_format.cbSize = 0;
 
-	m_blocks = blocks;
-	m_freeBlocks = blocks;
-	m_floatBufferSize = (blockSamples * channels);
-
-	m_blockHeader = std::make_unique<WAVEHDR[]>(m_blocks);
-	m_blockMemory = std::make_unique<std::vector<Sample>[]>(m_blocks);
-	for (size_t i = 0; i < m_blocks; i++)
+	m_blocks.assign(blocks, std::vector<short>(size_t(blockSamples) * channels));
+	m_headers.assign(blocks, WAVEHDR{});
+	for (int i = 0; i < blocks; ++i)
 	{
-		m_blockMemory[i].resize(blockSamples * channels, 0);
-		m_blockHeader[i].dwBufferLength = DWORD(m_blockMemory[i].size() * sizeof(Sample));
-		m_blockHeader[i].lpData = (LPSTR)(m_blockMemory[i].data());
+		m_headers[i].lpData = LPSTR(m_blocks[i].data());
+		m_headers[i].dwBufferLength = DWORD(m_blocks[i].size() * sizeof(short));
 	}
 
+	if (!OpenDevice()) return false;
 	Resume();
 	return true;
 }
 
 void WaveAudio::Pause()
 {
-	m_driverLoopActive = false;
-	if (m_driverLoopThread.joinable()) m_driverLoopThread.join();
+	m_active = false;
+	SetEvent(m_blockDone);
+	if (m_thread.joinable()) m_thread.join();
 }
 
 void WaveAudio::Resume()
 {
-	m_driverLoopActive = true;
-	m_driverLoopThread = std::thread(&WaveAudio::DriverLoop, this);
+	if (!m_thread.joinable())
+	{
+		m_active = true;
+		m_thread = std::thread(&WaveAudio::DriverLoop, this);
+	}
 }
 
 void WaveAudio::Close()
 {
 	Pause();
-	waveOutClose(m_waveOut);
+	CloseDevice();
+}
+
+bool WaveAudio::OpenDevice()
+{
+	if (waveOutOpen(&m_waveOut, WAVE_MAPPER, &m_format, DWORD_PTR(m_blockDone), 0, CALLBACK_EVENT) != MMSYSERR_NOERROR)
+	{
+		m_waveOut = nullptr;
+		return false;
+	}
+	for (WAVEHDR& header : m_headers)
+	{
+		header.dwFlags = 0;
+		waveOutPrepareHeader(m_waveOut, &header, sizeof(WAVEHDR));
+	}
+	return true;
+}
+
+void WaveAudio::CloseDevice()
+{
+	if (m_waveOut)
+	{
+		// take the queued blocks back, else the device cannot close
+		waveOutReset(m_waveOut);
+		for (WAVEHDR& header : m_headers)
+		{
+			waveOutUnprepareHeader(m_waveOut, &header, sizeof(WAVEHDR));
+		}
+		waveOutClose(m_waveOut);
+		m_waveOut = nullptr;
+	}
 }
 
 void WaveAudio::DriverLoop()
 {
-	constexpr float sampleMax = float(std::numeric_limits<short>::max());
-	constexpr float sampleMin = float(std::numeric_limits<short>::min());
+	std::vector<float> buffer(m_blocks[0].size());
+	size_t next = 0;
 
-	// We will be using this vector to transfer to the host for filling, with 
-	// user sound data (float32, -1.0 --> +1.0)
-	std::vector<float> floatBuffer(m_floatBufferSize, 0.0f);
-	
-	// While the system is active, start requesting audio data
-	while (m_driverLoopActive)
+	while (m_active)
 	{
-		// Are there any blocks available to fill? ...
-		if (m_freeBlocks == 0)
+		// the device plays the blocks in order: wait for the oldest one
+		WAVEHDR& header = m_headers[next];
+		if (!m_waveOut || (header.dwFlags & WHDR_INQUEUE))
 		{
-			// ...no, So wait until one is available
-			std::unique_lock<std::mutex> lock(m_blockAvailableMutex);
-			while (m_freeBlocks == 0) // sometimes, Windows signals incorrectly
+			if (WaitForSingleObject(m_blockDone, k_stallTimeMs) == WAIT_TIMEOUT)
 			{
-				// This thread will suspend until this CV is signalled
-				// from FreeAudioBlock.
-				m_blockAvailableConVar.wait(lock);
+				CloseDevice();
+				OpenDevice();
 			}
+			continue;
 		}
 
-		// ...yes, so use next one, by indicating one fewer
-		// block is available
-		m_freeBlocks--;
-
-		// Prepare block for processing, by oddly, marking it as unprepared :P
-		if (m_blockHeader[m_currentBlock].dwFlags & WHDR_PREPARED)
+		FillBuffer(buffer);
+		std::vector<short>& block = m_blocks[next];
+		for (size_t i = 0; i < block.size(); ++i)
 		{
-			waveOutUnprepareHeader(m_waveOut, &m_blockHeader[m_currentBlock], sizeof(WAVEHDR));
+			float sample = (buffer[i] < -1.f ? -1.f : buffer[i] > 1.f ? 1.f : buffer[i]);
+			block[i] = short(sample * 32767.f);
 		}
 
-		// Populate a float buffer, that gets cleanly converted to
-		// a buffer of shorts for DAC
-		FillBuffer(floatBuffer);
-		for (size_t i = 0; i < m_floatBufferSize; ++i)
+		header.dwFlags &= ~WHDR_DONE;
+		if (waveOutWrite(m_waveOut, &header, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 		{
-			float sample = (floatBuffer[i] * sampleMax);
-			if (sample > sampleMax) sample = sampleMax;
-			if (sample < sampleMin) sample = sampleMin;
-			m_blockMemory[m_currentBlock][i] = Sample(sample);
+			CloseDevice();
+			OpenDevice();
 		}
-
-		// Send block to sound device
-		waveOutPrepareHeader(m_waveOut, &m_blockHeader[m_currentBlock], sizeof(WAVEHDR));
-		waveOutWrite(m_waveOut, &m_blockHeader[m_currentBlock], sizeof(WAVEHDR));
-		m_currentBlock++;
-		m_currentBlock %= m_blocks;
+		next = (next + 1) % m_headers.size();
 	}
-}
-
-void WaveAudio::FreeAudioBlock()
-{
-	// Audio subsystem is done with the block it was using, thus
-	// making it available again
-	m_freeBlocks++;
-
-	// Signal to driver loop that a block is now available. It 
-	// could have been suspended waiting for one
-	std::unique_lock<std::mutex> lock(m_blockAvailableMutex);
-	m_blockAvailableConVar.notify_one();
-}
-
-void WaveAudio::waveOutProc(HWAVEOUT hWaveOut, UINT uMsg, DWORD_PTR dwInstance, DWORD dwParam1, DWORD dwParam2)
-{
-	// All sorts of messages may be pinged here, but we're only interested
-	// in audio block is finished...
-	if (uMsg != WOM_DONE) return;
-
-	// ...which has happened so allow driver object to free resource
-	WaveAudio* driver = (WaveAudio*)dwInstance;
-	driver->FreeAudioBlock();
 }
