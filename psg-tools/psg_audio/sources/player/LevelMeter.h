@@ -25,7 +25,7 @@ public:
 
     LevelMeter();
 
-    void Init(const Chip& chip, int frameRate);
+    void Init(const Chip& chip, double frameRate);
 
     // Measures a frame that goes to the chip(s). The levels of the left and
     // the right outputs are 0 (silence or below the range) to 255 (all

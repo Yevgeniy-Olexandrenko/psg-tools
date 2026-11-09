@@ -375,14 +375,14 @@ LevelMeter::LevelMeter()
 {
 }
 
-void LevelMeter::Init(const Chip& chip, int frameRate)
+void LevelMeter::Init(const Chip& chip, double frameRate)
 {
     m_tables = &GetTables();
     m_chips = chip.count;
 
     // the envelope makes a step every 'period' ticks of clock / 8 (see EnvelopeUnit)
     int clock = std::max(int(chip.clockValue), 1);
-    m_stepsPerFrame = ((uint64_t(clock) << 16) / (8 * uint64_t(std::max(frameRate, 1))));
+    m_stepsPerFrame = uint64_t(clock * 65536.0 / (8 * std::max(frameRate, 1.0)));
     m_clockBand = int(std::floor(256 * 12 * std::log2(clock / k_firstBandFreq) + 0.5));
 
     for (int i = 0; i < m_chips; ++i)

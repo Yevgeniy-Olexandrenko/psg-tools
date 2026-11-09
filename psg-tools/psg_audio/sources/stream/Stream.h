@@ -6,7 +6,10 @@
 #include "Chip.h"
 #include "debug/DebugPayload.h"
 
-using FrameRate = uint16_t;
+// frames per second, it can be fractional; the formats that keep
+// a whole number of frames per second take the rounded value
+using FrameRate = double;
+inline int RoundFrameRate(FrameRate frameRate) { return int(frameRate + 0.5); }
 
 class Stream : public DebugPayload
 {

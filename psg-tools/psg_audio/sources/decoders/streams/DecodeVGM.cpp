@@ -178,6 +178,10 @@ bool DecodeVGM::Open(Stream& stream)
                 m_written = false;
                 m_sinceWrite = 0;
                 m_sinceFrame = m_samplesPerFrame;
+                m_burstTime = 0;
+                m_updateTime = -1;
+                m_updateTimes.assign(2 * m_samplesPerFrame, 0);
+                m_updates = 0;
 
                 // GD3 tags reading
                 if (uint8_t* gd3Offset = m_data + header.gd3Offset)
@@ -250,6 +254,7 @@ bool DecodeVGM::Decode(Frame& frame)
             if (!(m_waitSamples = DecodeBlock())) return false;
             if (m_writes != writes)
             {
+                if (!m_written) m_burstTime = m_time;
                 m_written = true;
                 m_sinceWrite = 0;
             }
@@ -260,6 +265,15 @@ bool DecodeVGM::Decode(Frame& frame)
 
         if (update || m_sinceFrame >= noUpdate)
         {
+            // count the times between the updates in a row, from the start of
+            // a burst: the player starts it at the frame, its length varies
+            if (update && m_updateTime >= 0 && m_burstTime - m_updateTime <= noUpdate)
+            {
+                m_updateTimes[m_burstTime - m_updateTime]++;
+                m_updates++;
+            }
+            m_updateTime = (update ? m_burstTime : -1);
+
             m_simulator->Convert(frame);
             m_sinceFrame = (update ? 0 : m_sinceFrame - m_samplesPerFrame);
             m_written = false;
@@ -284,6 +298,21 @@ bool DecodeVGM::Decode(Frame& frame)
 
 void DecodeVGM::Close(Stream& stream)
 {
+    // The most common time between the updates in a row is the frame time, if most of
+    // the updates come at about this time. The mean of these times, which vary by a few
+    // samples, gives the real frame rate instead of the 50 or 60 Hz of the header.
+    int mode = int(std::max_element(m_updateTimes.begin(), m_updateTimes.end()) - m_updateTimes.begin());
+    int count = 0;
+    double time = 0;
+    for (int t = std::max(mode - 2, 0); t <= mode + 2 && t < int(m_updateTimes.size()); ++t)
+    {
+        count += m_updateTimes[t];
+        time += double(t) * m_updateTimes[t];
+    }
+    if (count >= 50 && 2 * count >= m_updates)
+    {
+        stream.play.frameRate = (44100 * count / time);
+    }
     stream.Finalize(m_loop);
     delete[] m_data;
     dbg.close();

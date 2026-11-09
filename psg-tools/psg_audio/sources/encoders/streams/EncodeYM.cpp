@@ -52,7 +52,7 @@ void EncodeYM::Close(const Stream& stream)
 	PutU32(data, 0x00000001); // song attributes: interleaved
 	PutU16(data, 0);          // number of digidrums
 	PutU32(data, uint32_t(stream.dchip.clockValue));
-	PutU16(data, uint16_t(stream.play.frameRate));
+	PutU16(data, uint16_t(RoundFrameRate(stream.play.frameRate)));
 	PutU32(data, uint32_t(m_loopFrameId));
 	PutU16(data, 0);          // size of additional data
 	PutStr(data, stream.info.title);

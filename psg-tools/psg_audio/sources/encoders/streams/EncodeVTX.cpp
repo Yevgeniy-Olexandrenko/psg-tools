@@ -62,7 +62,7 @@ void EncodeVTX::Close(const Stream& stream)
 		m_output << stereo;
 		PutU16(m_output, loop <= 0xFFFF ? loop : 0);
 		PutU32(m_output, uint32_t(stream.dchip.clockValue));
-		m_output << uint8_t(stream.play.frameRate);
+		m_output << uint8_t(RoundFrameRate(stream.play.frameRate));
 		PutU16(m_output, 0); // year
 		PutU32(m_output, uint32_t(data.size()));
 

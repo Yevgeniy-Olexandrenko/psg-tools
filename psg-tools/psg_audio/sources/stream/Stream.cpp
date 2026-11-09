@@ -92,7 +92,7 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
         {
             if (m_stream.GetFrame(frameId).IsAudible())
             {
-                lastFrameId = (frameId + frameRate * k_maxSilenceSec);
+                lastFrameId = FrameId(frameId + frameRate * k_maxSilenceSec);
                 if (lastFrameId < m_lastFrameId) m_lastFrameId = lastFrameId;
                 break;
             }
@@ -162,7 +162,12 @@ std::string Stream::ToString(Property property) const
     case Property::Frames:
     {	stream << framesCount;
         if (hasLoop) stream << " -> " << loopFrameId;
-        stream << " @ " << play.frameRate << " Hz";
+        stream << " @ ";
+        if (play.frameRate == RoundFrameRate(play.frameRate))
+            stream << RoundFrameRate(play.frameRate);
+        else
+            stream << std::fixed << std::setprecision(2) << play.frameRate;
+        stream << " Hz";
     }	break;
 
     case Property::Duration:
@@ -246,7 +251,7 @@ bool Stream::IsExpandedModeUsed(int chip) const
 
 void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& ms) const
 {
-    auto duration = (frameCount * 1000) / play.frameRate;
+    auto duration = uint64_t(frameCount * 1000 / play.frameRate);
     ms = int(duration % 1000); duration /= 1000;
     ss = int(duration % 60);   duration /= 60;
     mm = int(duration % 60);   duration /= 60;
@@ -255,7 +260,7 @@ void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss, int& 
 
 void Stream::ComputeDuration(size_t frameCount, int& hh, int& mm, int& ss) const
 {
-    auto duration = (((frameCount * 1000) / play.frameRate) + 500) / 1000;
+    auto duration = uint64_t(frameCount / play.frameRate + 0.5);
     ss = int(duration % 60); duration /= 60;
     mm = int(duration % 60); duration /= 60;
     hh = int(duration);
@@ -293,7 +298,7 @@ void Stream::print_payload(std::ostream& stream) const
             frame.print_footer(stream);
             stream << std::endl;
 
-            if ((frameId + 1) % play.frameRate == 0) stream << std::endl;
+            if ((frameId + 1) % RoundFrameRate(play.frameRate) == 0) stream << std::endl;
         }
     }
 }

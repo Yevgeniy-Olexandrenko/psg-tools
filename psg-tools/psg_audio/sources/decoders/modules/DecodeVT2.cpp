@@ -265,7 +265,7 @@ bool DecodeVT2::Open(Stream& stream)
 					if (m_isTS)
 						stream.schip.second.model = stream.schip.first.model;
 					if (module.intFreq)
-						stream.play.frameRate = (module.intFreq + 500) / 1000;
+						stream.play.frameRate = (module.intFreq / 1000.0);
 					stream.info.type = "Vortex Tracker II (PT v" + module.version + ") module";
 				}
 			}

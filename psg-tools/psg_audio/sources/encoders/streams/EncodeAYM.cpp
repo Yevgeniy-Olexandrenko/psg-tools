@@ -113,7 +113,7 @@ bool EncodeAYM::Open(const Stream& stream)
             header.chipCount  = m_chips;
             header.chipFreq   = uint32_t(stream.dchip.clockValue);
             header.chipOutput = output;
-            header.frameRate  = uint16_t(stream.play.frameRate);
+            header.frameRate  = uint16_t(RoundFrameRate(stream.play.frameRate));
             header.frameCount = uint32_t(m_framesCount);
             header.frameLoop  = uint32_t(m_loopFrameId);
             m_output.write((char*)&header, sizeof(header));
