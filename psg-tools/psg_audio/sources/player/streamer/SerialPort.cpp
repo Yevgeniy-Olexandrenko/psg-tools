@@ -28,14 +28,20 @@ bool SerialPort::Open(int index)
 
 	if (hComm != INVALID_HANDLE_VALUE)
 	{
+		// A read waits for the first byte up to 2 s, and ends when no new
+		// byte comes in 100 ms. A write fails after 1 s, so a device that
+		// does not take data does not stop the player.
 		COMMTIMEOUTS timeouts = { 0 };
-		timeouts.ReadTotalTimeoutMultiplier = 1;
+		timeouts.ReadIntervalTimeout = 100;
+		timeouts.ReadTotalTimeoutConstant = 2000;
+		timeouts.WriteTotalTimeoutConstant = 1000;
 
-		if (SetCommTimeouts(hComm, &timeouts) && SetCommMask(hComm, EV_RXCHAR))
+		if (SetCommTimeouts(hComm, &timeouts))
 		{
 			m_port = hComm;
 			return true;
 		}
+		CloseHandle(hComm);
 	}
 	return false;
 }
@@ -196,15 +202,10 @@ int SerialPort::SendBinary(const char* data, int size)
 
 int SerialPort::ReciveText(char* buffer, int size)
 {
-	DWORD eventMask;
-	DWORD bytesRead;
+	// keep one byte for the terminating zero
+	DWORD bytesRead = 0;
+	if (size < 1 || !ReadFile(m_port, buffer, size - 1, &bytesRead, NULL)) return -1;
 
-	BOOL status = WaitCommEvent(m_port, &eventMask, NULL);
-	if (status == FALSE) return FALSE;
-	
-	status = ReadFile(m_port, buffer, size, &bytesRead, NULL);
-	if (status == FALSE) return -1;
-	
 	buffer[bytesRead] = 0;
 	return bytesRead;
 }
