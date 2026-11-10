@@ -78,6 +78,7 @@
     <ClInclude Include="sources\PSGAudio.h" />
     <ClInclude Include="sources\simulation\ChipSim.h" />
     <ClInclude Include="sources\simulation\SimAY8910.h" />
+    <ClInclude Include="sources\simulation\SimHybrid.h" />
     <ClInclude Include="sources\simulation\SimRP2A03.h" />
     <ClInclude Include="sources\simulation\SimSN76489.h" />
     <ClInclude Include="sources\stream\Chip.h" />
@@ -139,6 +140,7 @@
     <ClCompile Include="sources\processing\ProcessingChain.cpp" />
     <ClCompile Include="sources\PSGAudio.cpp" />
     <ClCompile Include="sources\simulation\SimAY8910.cpp" />
+    <ClCompile Include="sources\simulation\SimHybrid.cpp" />
     <ClCompile Include="sources\simulation\SimRP2A03.cpp" />
     <ClCompile Include="sources\simulation\SimSN76489.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />

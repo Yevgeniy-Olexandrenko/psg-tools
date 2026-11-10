@@ -2,8 +2,7 @@
 
 #include <memory>
 #include "decoders/Decoder.h"
-
-class ChipSim;
+#include "simulation/ChipSim.h"
 
 class DecodeVGM : public Decoder
 {
@@ -90,6 +89,11 @@ public:
 	void Close(Stream& stream) override;
 
 private:
+    static bool HasOtherChips(const Header& header);
+    static bool HasDualChips(const Header& header);
+    static Chip::Model AYModel(const Header& header);
+    static std::shared_ptr<ChipSim> CreateSimulator(ChipSim::Type type);
+
     int  DecodeBlock();
 
 private:

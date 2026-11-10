@@ -219,6 +219,9 @@
     <ClInclude Include="sources\simulation\SimAY8910.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
+    <ClInclude Include="sources\simulation\SimHybrid.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
     <ClInclude Include="sources\simulation\SimRP2A03.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
@@ -399,6 +402,9 @@
       <Filter>Sources\emulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimAY8910.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimHybrid.cpp">
       <Filter>Sources\simulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimRP2A03.cpp">

@@ -99,24 +99,26 @@ Frame& Frame::operator+=(const Frame& other)
 {
     for (int chip = 0; chip < 2; ++chip)
     {
-        auto& dst = m_regs[chip];
-        auto& src = other.m_regs[chip];
+        m_regs[chip] += other.m_regs[chip];
+    }
+    return *this;
+}
 
-        // case when the chip mode is switching
-        if (dst.IsExpMode() != src.IsExpMode())
-        {
-            memcpy(dst.m_data, src.m_data, 25);
-            dst.SetChanges();
-        }
+Frame::Registers& Frame::Registers::operator+=(const Registers& other)
+{
+    // The chip mode changes: take all the data. Update would reset
+    // the data on the write of the mode and lose the lower registers.
+    if (IsExpMode() != other.IsExpMode())
+    {
+        memcpy(m_data, other.m_data, 25);
+        SetChanges();
+    }
 
-        // case when the chip data is simply updating: only the data of
-        // the other frame is taken, the changes are recomputed against
-        // this frame's data, except for the envelope shape register,
-        // which is taken only when it was written in the other frame
-        else for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
-        {
-            dst.Update(reg, src.Read(reg));
-        }
+    // Take only the data and find the changes against this chip. Take
+    // the envelope shape only if the other chip wrote it: a write restarts the envelope.
+    else for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
+    {
+        Update(reg, other.Read(reg));
     }
     return *this;
 }

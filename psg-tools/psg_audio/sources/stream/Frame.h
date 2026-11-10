@@ -56,6 +56,8 @@ public:
         bool GetInfo(Register reg, Info& info) const;
 
     public:
+        Registers& operator+= (const Registers& other);
+
         void ResetData();
         void ResetChanges();
         void SetChanges();

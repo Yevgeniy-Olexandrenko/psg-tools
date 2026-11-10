@@ -5,6 +5,7 @@
 #include "simulation/SimAY8910.h"
 #include "simulation/SimRP2A03.h"
 #include "simulation/SimSN76489.h"
+#include "simulation/SimHybrid.h"
 #include "debug/DebugOutput.h"
 
 static DebugOutput<DBG_DECODE_VGM> dbg;
@@ -46,18 +47,48 @@ bool DecodeVGM::Open(Stream& stream)
             dataOffset = header.vgmDataOffset + 0x34;
         }
 
-        // header fields located at or after the data start must be treated as 0
-        if (dataOffset < sizeof(header))
+        // Treat as 0 the fields of later versions, the fields at or
+        // after the data start and the fields in the extra header.
+        uint32_t headerSize = sizeof(header);
+        if (header.version < 0x151) headerSize = 0x38;
+        else if (header.version < 0x161) headerSize = 0x80;
+        else if (header.version < 0x170) headerSize = 0xBC;
+        else if (header.version < 0x171) headerSize = 0xC0;
+        if (header.version >= 0x170 && header.extraHeaderOffset)
         {
-            memset((uint8_t*)(&header) + dataOffset, 0, sizeof(header) - dataOffset);
+            headerSize = std::min(headerSize, 0xBC + header.extraHeaderOffset);
+        }
+        headerSize = std::min(headerSize, dataOffset);
+        if (headerSize < sizeof(header))
+        {
+            memset((uint8_t*)(&header) + headerSize, 0, sizeof(header) - headerSize);
         }
 
-        if (header.sn76489Clock) m_simulator.reset(new SimSN76489());
-        else if (header.version >= 0x151 && header.ay8910Clock) m_simulator.reset(new SimAY8910());
-        else if (header.version >= 0x161 && header.nesApuClock) m_simulator.reset(new SimRP2A03());
+        // Chips that have a simulator, in the order of priority.
+        std::vector<ChipSim::Type> chips;
+        if (header.version >= 0x161 && header.nesApuClock) chips.push_back(ChipSim::Type::RP2A03);
+        if (header.sn76489Clock) chips.push_back(ChipSim::Type::SN76489);
+        if (header.version >= 0x151 && header.ay8910Clock) chips.push_back(ChipSim::Type::AY8910);
 
-        if (header.ident == VGMSignature && m_simulator)
+        // Two different chips play on two PSGs, one simulator on each PSG. Reject
+        // them if the user selects one PSG or if a dual chip needs a third PSG.
+        bool oneChosen = (stream.dchip.first.model != Chip::Model::Compatible && !stream.dchip.second.modelKnown);
+        bool hybrid = (chips.size() == 2);
+        bool playable = (chips.size() == 1 || (hybrid && !oneChosen && !HasDualChips(header)));
+
+        if (header.ident == VGMSignature && playable && !HasOtherChips(header))
         {
+            if (hybrid)
+            {
+                std::shared_ptr<ChipSim> sims[2];
+                for (int psg = 0; psg < 2; ++psg) sims[psg] = CreateSimulator(chips[psg]);
+                m_simulator.reset(new SimHybrid(sims[0], sims[1]));
+            }
+            else
+            {
+                m_simulator = CreateSimulator(chips[0]);
+            }
+
             int fileSize = 0x04 + header.eofOffset;
             m_data = new uint8_t[fileSize];
 
@@ -68,7 +99,49 @@ bool DecodeVGM::Open(Stream& stream)
                 int clockRate = 0;
                 int frameRate = 60;
 
-                if (m_simulator->type() == ChipSim::Type::SN76489)
+                if (hybrid)
+                {
+                    // Both PSGs use the destination clock, the ZX Spectrum clock by default.
+                    stream.schip.clock = (stream.dchip.clockKnown ? stream.dchip.clock : Chip::Clock::F1773400);
+                    stream.schip.output = (stream.dchip.outputKnown ? stream.dchip.output : Chip::Output::Mono);
+
+                    // Each simulator plays its chip on one PSG of the destination model.
+                    for (int psg = 0; psg < 2; ++psg)
+                    {
+                        ChipSim* sim = m_simulator->Find(chips[psg]);
+                        Chip::Model model = stream.dchip.model(psg);
+                        bool compatible = (model == Chip::Model::Compatible || model == Chip::Model::Unknown);
+                        int clock = 0;
+
+                        if (chips[psg] == ChipSim::Type::SN76489)
+                        {
+                            clock = (header.sn76489Clock & 0x3FFFFFFF);
+                            if (compatible) model = Chip::Model::AY8910;
+                        }
+                        else if (chips[psg] == ChipSim::Type::AY8910)
+                        {
+                            clock = (header.ay8910Clock & 0x3FFFFFFF);
+                            if (header.ay8910Flags & 0x10) clock /= 2;
+                            if (compatible) model = AYModel(header);
+                        }
+                        else if (chips[psg] == ChipSim::Type::RP2A03)
+                        {
+                            clock = (header.nesApuClock & 0x3FFFFFFF);
+                            if (clock / 1000 == 1662 || clock / 1000 == 1773) frameRate = 50;
+                            if (compatible) model = Chip::Model::YM2149;
+
+                            auto outputType = (model == Chip::Model::AY8930 ?
+                                SimRP2A03::OutputType::AY8930Chip : SimRP2A03::OutputType::SingleChip);
+                            static_cast<SimRP2A03*>(sim)->ConfigureOutput(outputType, model);
+                        }
+
+                        if (psg) stream.schip.second.model = model;
+                        else stream.schip.first.model = model;
+                        sim->ConfigureClock(clock, stream.schip.clockValue);
+                    }
+                }
+
+                else if (m_simulator->type() == ChipSim::Type::SN76489)
                 {
                     clockRate = (header.sn76489Clock & 0x3FFFFFFF);
                     auto twoChips = bool(header.sn76489Clock & 0x40000000);
@@ -89,9 +162,7 @@ bool DecodeVGM::Open(Stream& stream)
                     // TODO: detect frame rate
 
                     // detect chip model and count
-                    Chip::Model model = Chip::Model::AY8910;
-                    if (header.ay8910Type == 0x03) model = Chip::Model::AY8930;
-                    if (header.ay8910Type >= 0x10) model = Chip::Model::YM2149;
+                    Chip::Model model = AYModel(header);
                     auto twoChips = bool(header.ay8910Clock & 0x40000000);
           
                     // setup chip model, clock rate and 2nd chip if needed
@@ -166,7 +237,7 @@ bool DecodeVGM::Open(Stream& stream)
                 stream.info.type = "VGM stream";
                 stream.play.frameRate = frameRate;
 
-                m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
+                if (!hybrid) m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
                 m_samplesPerFrame = (44100 / frameRate);
                 m_waitSamples = 0;
 
@@ -320,6 +391,60 @@ void DecodeVGM::Close(Stream& stream)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+bool DecodeVGM::HasOtherChips(const Header& header)
+{
+    // Chips without a simulator. Bit 31 selects a variant without a
+    // simulator: T6W28 for SN76489, FDS for the NES APU.
+    const uint32_t clocks[] =
+    {
+        header.ym2413Clock, header.ym2612Clock, header.ym2151Clock, header.segaPcmClock,
+        header.rf5c68Clock, header.ym2203Clock, header.ym2608Clock, header.ym2610bClock,
+        header.ym3812Clock, header.ym3526Clock, header.y8950Clock, header.ymf262Clock,
+        header.ymf278bClock, header.ymf271Clock, header.ymz280bClock, header.rf5c164Clock,
+        header.pwmClock, header.gbDmgClock, header.multiPcmClock, header.upd7759Clock,
+        header.okim6258Clock, header.oki6295Clock, header.k051649Clock, header.k054539Clock,
+        header.huc6280Clock, header.c140Clock, header.k053260Clock, header.pokeyClock,
+        header.qsoundClock, header.scspClock, header.wswanClock, header.vsuClock,
+        header.saa1090Clock, header.es5503Clock, header.es5506Clock, header.x1010Clock,
+        header.c352Clock, header.ga20Clock,
+        header.sn76489Clock & 0x80000000, header.nesApuClock & 0x80000000
+    };
+    for (uint32_t clock : clocks)
+    {
+        if (clock) return true;
+    }
+
+    // Clocks of the chips of later format versions.
+    for (uint8_t byte : header.reserved4)
+    {
+        if (byte) return true;
+    }
+    return false;
+}
+
+bool DecodeVGM::HasDualChips(const Header& header)
+{
+    return ((header.sn76489Clock | header.ay8910Clock | header.nesApuClock) & 0x40000000);
+}
+
+Chip::Model DecodeVGM::AYModel(const Header& header)
+{
+    if (header.ay8910Type == 0x03) return Chip::Model::AY8930;
+    if (header.ay8910Type >= 0x10) return Chip::Model::YM2149;
+    return Chip::Model::AY8910;
+}
+
+std::shared_ptr<ChipSim> DecodeVGM::CreateSimulator(ChipSim::Type type)
+{
+    switch (type)
+    {
+    case ChipSim::Type::SN76489: return std::make_shared<SimSN76489>();
+    case ChipSim::Type::AY8910:  return std::make_shared<SimAY8910>();
+    case ChipSim::Type::RP2A03:  return std::make_shared<SimRP2A03>();
+    default: return nullptr;
+    }
+}
+
 int DecodeVGM::DecodeBlock()
 {
     int samples = 0;
@@ -341,14 +466,20 @@ int DecodeVGM::DecodeBlock()
             m_dataPtr += 1;
         }
 
+        // Game Gear PSG stereo, write dd to port 0x06. Not simulated yet: skip it.
+        else if (m_dataPtr[0] == 0x4F)
+        {
+            m_dataPtr += 1;
+        }
+
         // SN76489, write value dd
         else if (m_dataPtr[0] == 0x50 || m_dataPtr[0] == 0x30)
         {
-            if (m_simulator->type() == ChipSim::Type::SN76489)
+            if (ChipSim* sim = m_simulator->Find(ChipSim::Type::SN76489))
             {
                 uint8_t aa = m_dataPtr[0];
                 uint8_t dd = m_dataPtr[1];
-                m_simulator->Write((aa & 0x20) >> 5, 0, dd);
+                sim->Write((aa & 0x20) >> 5, 0, dd);
                 ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
@@ -358,11 +489,11 @@ int DecodeVGM::DecodeBlock()
         // AY8910, write value dd to register aa
         else if (m_dataPtr[0] == 0xA0)
         {
-            if (m_simulator->type() == ChipSim::Type::AY8910)
+            if (ChipSim* sim = m_simulator->Find(ChipSim::Type::AY8910))
             {
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
-                m_simulator->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
+                sim->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
                 ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
@@ -372,11 +503,11 @@ int DecodeVGM::DecodeBlock()
         // RP2A03, write value dd to register aa
         else if (m_dataPtr[0] == 0xB4)
         {
-            if (m_simulator->type() == ChipSim::Type::RP2A03)
+            if (ChipSim* sim = m_simulator->Find(ChipSim::Type::RP2A03))
             {
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];
-                m_simulator->Write(0, aa, dd);
+                sim->Write(0, aa, dd);
                 ++m_writes;
                 dbg.print_message("r%02X:%02X ", aa, dd);
             }
@@ -388,10 +519,11 @@ int DecodeVGM::DecodeBlock()
         else if (m_dataPtr[0] == 0x67)
         {
             uint32_t dataSize = *(uint32_t*)(&m_dataPtr[3]) - 2;
-            if (m_simulator->type() == ChipSim::Type::RP2A03 && m_dataPtr[2] == 0xC2)
+            ChipSim* sim = m_simulator->Find(ChipSim::Type::RP2A03);
+            if (sim && m_dataPtr[2] == 0xC2)
             {
                 uint16_t dataAddr = *(uint16_t*)(&m_dataPtr[7]);
-                m_simulator->WriteMemory(dataAddr, &m_dataPtr[9], dataSize);
+                sim->WriteMemory(dataAddr, &m_dataPtr[9], dataSize);
                 dbg.print_message("d%04X:%05d ", dataAddr, dataSize);
             }
             m_dataPtr += (6 + dataSize + 2);

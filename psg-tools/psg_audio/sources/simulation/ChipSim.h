@@ -5,7 +5,7 @@
 class ChipSim
 {
 public:
-	enum class Type { AY8910, RP2A03, SN76489 };
+	enum class Type { RP2A03, SN76489, AY8910, Hybrid };
 
 	ChipSim(Type type) 
 		: m_type(type)
@@ -22,6 +22,12 @@ public:
 	{
 		m_srcClock = srcClock;
 		m_dstClock = dstClock;
+	}
+
+	// Returns the simulator of the chip type. The decoder sends it the writes to that chip.
+	virtual ChipSim* Find(Type type)
+	{
+		return (type == m_type ? this : nullptr);
 	}
 
 public:
