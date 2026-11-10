@@ -79,7 +79,7 @@ All output goes through the classic Win32 Console API, with no VT sequences, so 
 
 ### Adding or enabling a format
 
-Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Several classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`, `EncodeVGM`. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
+Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Some classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`. `EncodeVGM` writes the AY8910 commands of VGM 1.71 (`.vgm`, or gzipped `.vgz`); the AY8930 expanded mode registers go as 0x10-0x1A, as in the PSG format. `emulation/machines/` (`AYMachine`, `NSFMachine`, `VGMMachine` on top of `Z80Cpu`/`RP2A03Cpu`) compiles but isn't wired into anything.
 
 AYM is the project's own compressed streaming format (`EncodeAYM`, with selectable compression profiles and LZ78). It is under active development. `documents/output_file_formats.md` has the RSF spec and a feature/compression comparison of the output formats.
 

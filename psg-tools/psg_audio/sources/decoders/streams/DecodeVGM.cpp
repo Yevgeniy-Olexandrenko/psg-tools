@@ -290,7 +290,8 @@ bool DecodeVGM::Open(Stream& stream)
 
                         stream.info.title = GD3[0];
                         stream.info.artist = GD3[6];
-                        stream.info.comment = GD3[2];
+                        // EncodeVGM writes the comment to the notes, not to the game name
+                        stream.info.comment = (GD3[2].empty() ? GD3[10] : GD3[2]);
 
                         if (!GD3[4].empty())
                             stream.info.type = (std::string)stream.info.type + " (" + GD3[4] + ")";
