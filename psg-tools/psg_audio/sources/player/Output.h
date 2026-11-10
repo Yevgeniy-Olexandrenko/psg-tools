@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include "processing/ProcessingChain.h"
+#include "stream/ChipBus.h"
 #include "LevelMeter.h"
 
 class Stream;
@@ -71,6 +72,9 @@ private:
 	bool m_alive;
 	ProcessingChain m_processing;
 	FrameData m_data;
+#ifdef Enable_ChipBus
+	ChipBus m_bus[2];
+#endif
 
 	// the player thread writes the times, the levels and the spectra
 	// of the frames, the GUI reads them when the frames are heard

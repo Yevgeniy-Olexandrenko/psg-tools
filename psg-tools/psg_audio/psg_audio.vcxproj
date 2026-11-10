@@ -82,6 +82,7 @@
     <ClInclude Include="sources\simulation\SimRP2A03.h" />
     <ClInclude Include="sources\simulation\SimSN76489.h" />
     <ClInclude Include="sources\stream\Chip.h" />
+    <ClInclude Include="sources\stream\ChipBus.h" />
     <ClInclude Include="sources\stream\Frame.h" />
     <ClInclude Include="sources\stream\Register.h" />
     <ClInclude Include="sources\stream\Stream.h" />
@@ -144,6 +145,7 @@
     <ClCompile Include="sources\simulation\SimRP2A03.cpp" />
     <ClCompile Include="sources\simulation\SimSN76489.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />
+    <ClCompile Include="sources\stream\ChipBus.cpp" />
     <ClCompile Include="sources\stream\Frame.cpp" />
     <ClCompile Include="sources\stream\Register.cpp" />
     <ClCompile Include="sources\stream\Stream.cpp" />

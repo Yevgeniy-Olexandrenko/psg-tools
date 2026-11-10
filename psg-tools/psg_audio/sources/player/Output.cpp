@@ -78,6 +78,10 @@ bool Output::Init(const Stream& stream)
                     .Append<ChannelsLayoutChange>(m_dchip)
                     .Append<AY8930EnvelopeFix>(m_dchip);
 
+#ifdef Enable_ChipBus
+                // the chip mode is unknown: the first frame switches it
+                for (int chip = 0; chip < 2; ++chip) m_bus[chip].Reset(m_dchip.hasExpMode(chip));
+#endif
                 m_meter.Init(m_dchip, stream.play.frameRate);
 
                 using Seconds = std::chrono::duration<double>;
@@ -104,6 +108,9 @@ bool Output::Write(const Frame& frame, int position)
         m_data[1].clear();
         for (int chip = 0; chip < m_dchip.count; ++chip)
         {
+#ifdef Enable_ChipBus
+            m_bus[chip].Send(pframe[chip], m_data[chip]);
+#else
             bool switchBanks = false;
             ChipData& data = m_data[chip];
             if (m_dchip.hasExpMode(chip) && pframe[chip].IsExpMode())
@@ -134,6 +141,7 @@ bool Output::Write(const Frame& frame, int position)
                     data.emplace_back(reg & 0x0F, pframe[chip].GetData(reg));
                 }
             }
+#endif
         }
         m_alive &= DeviceWrite(m_data);
 

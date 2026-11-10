@@ -19,11 +19,41 @@ void SimAY8910::Reset()
 {
 	m_frame.ResetData();
 	m_frame.ResetChanges();
+#ifdef Enable_ChipBus
+	m_bus[0].Reset();
+	m_bus[1].Reset();
+#else
+	m_bankB[0] = m_bankB[1] = false;
+#endif
 }
 
 void SimAY8910::Write(int chip, Register reg, uint8_t data)
 {
+#ifdef Enable_ChipBus
+	m_bus[chip].Receive(reg, data, m_frame[chip]);
+#else
+	// An AY8930 stream selects the register bank through R13 as the chip does
+	// (0xB0 in the high nibble: expanded mode, bank B). In bank B, registers
+	// 0x00-0x0C go to 0x10-0x1C of the frame. R13 is in both banks.
+	// EncodeVGM writes bank B directly as 0x10-0x1A, as the PSG format.
+	if (reg == Register::Mode_Bank)
+	{
+		m_bankB[chip] = ((data & 0xF0) == 0xB0);
+	}
+	else if (reg >= Register::BankB_Fst)
+	{
+		// bank B register as is
+	}
+	else if (reg > Register::Mode_Bank)
+	{
+		return; // I/O ports and test registers
+	}
+	else if (m_bankB[chip])
+	{
+		reg = Register::Value(Register::BankB_Fst + reg);
+	}
 	m_frame[chip].Update(reg, data);
+#endif
 }
 
 void SimAY8910::Simulate(int samples)

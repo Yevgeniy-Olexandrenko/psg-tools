@@ -3,6 +3,7 @@
 #include <memory>
 #include "ChipSim.h"
 #include "processing/ChipClockRateConvert.h"
+#include "stream/ChipBus.h"
 
 class SimAY8910 : public ChipSim
 {
@@ -17,5 +18,10 @@ public:
 
 private:
 	Frame m_frame;
+#ifdef Enable_ChipBus
+	ChipBus m_bus[2];
+#else
+	bool m_bankB[2];
+#endif
 	std::unique_ptr<ChipClockRateConvert> m_convert;
 };
