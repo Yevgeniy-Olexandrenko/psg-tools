@@ -83,6 +83,7 @@ class AY89XXPsg
 public:
 	void Reset();
 	void Write(uint8_t reg, uint8_t data);
+	void Read(uint8_t reg, uint8_t& data);
 
 	void Process();
 	void RemoveDC();
@@ -103,6 +104,8 @@ protected:
 
 private:
 	void WriteDirect(uint8_t reg, uint8_t data);
+	void ReadDirect(uint8_t reg, uint8_t& data);
+
 	void Process(double& outA, double& outB, double& outC);
 
 	double Decimate(double* x) const;

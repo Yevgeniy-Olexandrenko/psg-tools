@@ -72,6 +72,18 @@ namespace
 		AY_BVOL,    AY_CVOL,     AY_PORTA,   AY_PORTB
 	};
 
+	const uint8_t MASK_8910[] =
+	{
+		0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0xFF,
+		0x1F, 0x1F, 0x1F, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF
+	};
+
+	const uint8_t MASK_8914[] =
+	{
+		0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0xFF,
+		0x3F, 0x3F, 0x3F, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF
+	};
+
 	const double AY_DAC_TABLE[]
 	{
 		0.0, 0.0,
@@ -166,19 +178,31 @@ void AY89XXPsg::Reset()
 
 void AY89XXPsg::Write(uint8_t reg, uint8_t data)
 {
-	reg &= 0x0F;
+	if (reg & 0xF0) return;
+	if (m_chipType == ChipType::AY8914)
+	{
+		// AY8914 has different register map
+		reg = MAP_8914_TO_8910[reg];
+	}
 	reg |= get_register_bank();
 	WriteDirect(reg, data);
 }
 
-void AY89XXPsg::WriteDirect(uint8_t reg, uint8_t data)
+void AY89XXPsg::Read(uint8_t reg, uint8_t& data)
 {
+	data = 0xFF;
+	if (reg & 0xF0) return;
 	if (m_chipType == ChipType::AY8914)
 	{
 		// AY8914 has different register map
-		reg = MAP_8914_TO_8910[reg & 0x0F];
+		reg = MAP_8914_TO_8910[reg];
 	}
+	reg |= get_register_bank();
+	ReadDirect(reg, data);
+}
 
+void AY89XXPsg::WriteDirect(uint8_t reg, uint8_t data)
+{
 	if ((reg & 0x0F) == AY_EASHAPE) reg &= 0x0F;
 	m_regs[reg] = data;
 
@@ -227,24 +251,18 @@ void AY89XXPsg::WriteDirect(uint8_t reg, uint8_t data)
 	case AY_EASHAPE:
 		if (m_chipType == ChipType::AY8930)
 		{
-#if 1
-			m_mode = (data >> 4) & 0x0F;
-#else
+			// a switch between the compatibility and the expanded mode
+			// clears all the registers but this one (as MAME)
 			const uint8_t old_mode = m_mode;
 			m_mode = (data >> 4) & 0x0F;
-			if (old_mode != m_mode)
+			if (((old_mode & 0x0E) == 0x0A) != ((m_mode & 0x0E) == 0x0A))
 			{
-				// AY8930 expanded mode
-				if (((old_mode & 0x0E) == 0x0A) ^ ((m_mode & 0x0E) == 0x0A))
+				for (uint8_t i = 0; i < AY_EASHAPE; i++)
 				{
-					for (int i = 0; i < AY_EASHAPE; i++)
-					{
-						SoundChip::Write(i + 0x00, 0);
-						SoundChip::Write(i + 0x10, 0);
-					}
+					WriteDirect(i + 0x00, 0);
+					WriteDirect(i + 0x10, 0);
 				}
 			}
-#endif
 		}
 		m_envelope[0].SetShape(m_regs[AY_EASHAPE]);
 		break;
@@ -291,6 +309,15 @@ void AY89XXPsg::WriteDirect(uint8_t reg, uint8_t data)
 		m_regs[reg] = 0; // reserved, set as 0
 		break;
 	}
+}
+
+void AY89XXPsg::ReadDirect(uint8_t reg, uint8_t& data)
+{
+	if ((reg & 0x0F) == AY_EASHAPE) reg &= 0x0F;
+	data = m_regs[reg];
+
+	if (m_chipType == ChipType::AY8910) data &= MASK_8910[reg];
+	if (m_chipType == ChipType::AY8914) data &= MASK_8914[reg];
 }
 
 void AY89XXPsg::Process(double& outA, double& outB, double& outC)

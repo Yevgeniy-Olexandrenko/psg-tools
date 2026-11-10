@@ -432,8 +432,9 @@ void Frame::Registers::Update(Register reg, uint8_t data)
                 data &= info.mask;
                 if (info.index == c_modeBankRegIdx)
                 {
-                    // check if mode changed, reset registers
-                    if ((m_data[info.index] ^ data) & 0xE0)
+                    // a switch between the compatibility and the expanded
+                    // mode clears all the registers, as the chip does
+                    if (IsExpMode() != ((data & 0xE0) == 0xA0))
                     {
                         ResetData();
                         SetChanges();
