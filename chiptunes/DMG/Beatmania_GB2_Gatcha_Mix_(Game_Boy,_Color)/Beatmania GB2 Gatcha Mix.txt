@@ -1,0 +1,102 @@
+***********************************************
+* VGM music package                           *
+* http://vgm.mdscene.net/                     *
+***********************************************
+Game name:           Beatmania GB2 Gatcha Mix
+System:              Nintendo Game Boy /
+                     Nintendo Game Boy Color
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        unknown,
+                     Hikaru Utada,
+                     Tetsuro Oda,
+                     Mitsuru Igarashi,
+                     Akio Dobashi,
+                     Masamune Kusano,
+                     Tamio Okuda,
+                     Takuya, Sugizo,
+                     Yukihiro Takahashi,
+                     Yuka Kawamura,
+                     Hirose Kohmi,
+                     Tsunku, Hideo Saito,
+                     Hiroshi Miyagawa,
+                     Takuji Miki,
+                     Takeo Watanabe,
+                     Toshiro Yabuki,
+                     Kunio Miyauchi,
+                     DUB-GB, Hiroyuki Togo,
+                     Reo Nagumo,
+                     Toshiyuki Kakuta
+ Sound Director:     Hiroyuki Togo
+ Sound Supervisor:   Tkakeshi Iwakiri
+ Sound Data Analizer:Watanabe Masashi
+                     Toshiyuki Kakuta
+ GB Arranger:        Gaku Hirose
+ Sound Design:       Yusuke Beppu,
+                     Takanori Masuko
+                     Fumito Tamayama
+                     Shigenori Masuko
+Game developer:      Konami Computer 
+                     Entertainment Japan
+Game publisher:      Konami Corporation
+Game release date:   1999-03-11
+
+Package created by:  2ch-H
+Package version:     1.01
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Title                            0:17   0:15
+02 Select                           0:28   0:28
+03 Free Mode                        0:44   0:44
+04 Option                           0:22   0:22
+05 Password                         0:28   0:28
+06 Cheer                            0:10   0:08
+07 Automatic                        1:40   -
+08 Yume Miru Shoujo ja Irarenai     1:36   -
+09 Time goes by                     1:32   -
+10 Makenaide                        1:28   -
+11 Friends                          1:36   -
+12 Robinson                         1:32   -
+13 Sasurai                          1:24   -
+14 Over Drive                       1:30   -
+15 Believe                          1:32   -
+16 Rydeen                           1:25   -
+17 Yozora no Mukou                  1:28   -
+18 Nagisa ni Matsuwaru Et Cetera    1:32   -
+19 Catch You Catch Me               1:33   -
+20 Daite Hold on Me !               1:33   -
+21 Watashi ga Obasan ni Nattemo     1:30   -
+22 Space Battleship Yamato          1:38   -
+23 Suteki na Kimi                   1:39   -
+24 Tobe ! Gundam                    1:25   -
+25 Tenshi no Kyusoku                1:27   -
+26 Ultraman no Uta                  1:33   -
+27 RVTK-1                           1:19   -
+28 Miracle Moon 
+   -Otsukisama ga Chukeikyoku-      1:39   -
+29 Hunting For You                  1:24   -
+30 Luv To Me                        1:28   -
+31 Genom Screams                    1:47   -
+32 Ending                           1:43   -
+33 Game Over                        0:01   -
+
+Total Length                       42:22  44:47
+
+
+Notes:
+Track Names are used in Display Name
+and Beatmania OSTs and J-pop Song Title.
+
+This pack was made using MESS0144 VGM mod.
+
+
+Size reduction (vgm_cmp):
+    1.44 MB -> 1.09 MB (75.6 %)
+
+
+Package history:
+1.00 2012-06-15 2ch-H: Initial release.
+1.01 2013-07-17 2ch-H: Fixed JinglePause
+ problem.

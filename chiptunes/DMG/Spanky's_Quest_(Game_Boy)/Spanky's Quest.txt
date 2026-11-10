@@ -1,0 +1,48 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Spanky's Quest (U) /
+                     Lucky Monkey (J)
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Hiroyuki Iwatsuki
+ Sound Manager:      Iku Mizutani
+Game developer:      Natsume
+Game publisher:      Natsume
+Game release date:   1991-04-26 (J) /
+                     1992-07 (U)
+
+Package created by:  GTheGuardian
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Opening                          0:09   -
+02 Tower Select                     0:21   0:21
+03 Tower 1                          0:40   0:40
+04 Tower 2                          0:35   0:35
+05 Tower 3                          0:46   0:46
+06 Tower 4                          0:59   0:59
+07 Stage Clear                      0:03   -
+08 Bonus Tower                      0:18   0:17
+09 Boss Battle                      0:21   0:17
+10 Last Boss Battle                 0:26   0:26
+11 Ending                           1:17   1:17
+12 Game Over                        0:03   -
+
+Total Length                        5:57  11:35
+
+
+Notes:
+Track names are from
+"Rom Cassette Disc In NATSUME Vol.2"
+(CDCD-10007)
+
+This pack was made using MAME 0.164 VGM mod.
+
+
+Package history:
+1.00 2015-10-31 GTheGuardian: Initial release.

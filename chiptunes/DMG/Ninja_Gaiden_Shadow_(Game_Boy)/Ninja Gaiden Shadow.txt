@@ -1,0 +1,44 @@
+***********************************************
+* VGM music package                           *
+* http://vgm.mdscene.net/                     *
+***********************************************
+Game name:           Ninja Gaiden Shadow (U) /
+                     Ninja Ryukenden GB (J) /
+                     Shadow Warriors (E)
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Hiroyuki Iwatsuki
+Game developer:      Natsume
+Game publisher:      Tecmo
+Game release date:   1991-12-13
+
+Package created by:  GTheGuardian
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Opening                          0:58   -
+02 Stage Start                      0:02   -
+03 Stage 1                          0:53   0:53
+04 Boss                             0:36   0:34
+05 Stage Clear                      0:09   -
+06 Stage 2                          0:44   0:43
+07 Stage 3                          0:59   0:42
+08 Stage 4                          1:00   1:00
+09 Stage 5                          0:56   0:55
+10 Final Boss                       0:45   0:39
+11 Ending                           0:53   -
+12 Staff Roll                       1:37   1:36
+13 Game Over                        0:03   -
+
+Total Length                        9:35  16:36
+
+
+Notes:
+This pack was made using MESS0148 VGM mod.
+
+
+Package history:
+1.00 2013-05-11 GTheGuardian: Initial release.

@@ -1,0 +1,83 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Super Mario Land 2: 6
+                     Golden Coins (U, E) /
+                     Super Mario Land 2: 6-tsu
+                     no Kinka (J)
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Kazumi Totaka
+Game developer:      Nintendo R&D1
+Game publisher:      Nintendo
+Game release date:   1992-10-21 (J) /
+                     1992-11-02 (U) /
+                     1993-01-28 (E)
+
+Package created by:  Lu9
+Package version:     2.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Choose Your Pipe                 0:29   0:29
+02 Overworld Map                    0:13   0:13
+03 Athletic Theme                   0:53   0:51
+04 Tree Zone Map                    0:08   0:08
+05 Treetop                          0:29   0:26
+06 Turtle Eats Mario                0:02   -
+07 Turtle Zone Map                  0:03   0:03
+08 Seashore                         0:32   0:30
+09 Mario Zone Map                   0:10   0:10
+10 Machine                          0:27   0:27
+11 Macro Zone Map                   0:08   0:07
+12 Pumpkin Zone Map                 0:15   0:15
+13 Graveyard                        0:41   0:41
+14 Haunted House                    0:22   0:22
+15 Space Zone Map                   0:08   0:08
+16 The Moon                         0:38   0:36
+17 Star Maze                        1:00   1:00
+18 Mario Down                       0:02   -
+19 Game Over                        0:19   0:19
+20 Invincibility                    0:13   -
+21 Bonus Chance                     0:03   0:03
+22 Prize Incoming                   0:02   -
+23 Prize Get                        0:03   -
+24 Boss Battle                      0:27   0:21
+25 World Clear                      0:08   0:01
+26 Golden Coin Get                  0:08   -
+27 The Castle Gates                 0:09   0:09
+28 Wario's Castle                   1:08   1:08
+29 Battle With Wario (Phase 1)      0:31   0:26
+30 Battle With Wario (Phase 2)      0:31   0:26
+31 Battle With Wario (Phase 3)      0:09   0:03
+32 Ending Theme                     0:24   -
+33 Staff Roll                       1:05   0:42
+34 Hurry Up                         0:02   -
+35 Level Clear                      0:03   -
+36 Golden Coin Get (Open Door)      0:20   -
+37 Totaka's Song                    0:11   -
+38 Boss Battle (No Intro)           0:21   0:21
+39 Battle With Wario (Phase 1)
+   (No Intro)                       0:26   0:26
+40 Battle With Wario (Phase 2)
+   (No Intro)                       0:26   0:26
+41 Battle With Wario (Phase 3)
+   (No Intro)                       0:03   0:03
+
+Total Length                       14:18  26:05
+
+
+Notes:
+Generated with NEZplug v0.9.4.8 + 2 + 19.20.
+
+Totaka's Song was logged with MAME 0.200 VGM
+mod.
+
+
+Package history:
+1.00 2019-04-16 Lu9: Initial release.
+2.00 2019-12-31 Valley Bell: track 17 fixed,
+ tracks 36 and 37 added, thanks to Lu9.

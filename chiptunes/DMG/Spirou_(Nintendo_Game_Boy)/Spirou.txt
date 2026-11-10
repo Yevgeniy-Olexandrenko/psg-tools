@@ -1,0 +1,47 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Spirou
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Alberto Jose González
+Game developer:      Bit Managers
+Game publisher:      Infogrames
+Game release date:   1996
+
+Package created by:  Gnome
+Package version:     1.03
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Title Screen                     0:39   0:39
+02 New York                         0:45   0:45
+03 Toy Factory                      1:55   1:24
+04 Metro                            1:24   0:55
+05 Mountain                         1:26   1:26
+06 Marsh                            1:15   1:15
+07 Jungle                           1:16   1:12
+08 Cavern                           1:32   1:32
+09 Underground River                1:04   1:00
+10 Cyanure's Underground Base       1:08   1:08
+11 Battle Against Cyanure           0:43   0:38
+12 Game Over                        0:12   -
+13 Ending                           0:39   0:39
+
+Total Length                       13:55  26:26
+
+
+Notes:
+This pack was made using
+NEZplug Version 0.9.4.8 + 2 + 19.20 VGM mod,
+except track 03, which was logged with
+MAME 0.200 VGM mod.
+
+
+Package history:
+1.00 2017-06-04 Gnome: Initial release.
+1.01 2019-12-12 Gnome: Relogged some tracks.
+1.03 2020-10-18 Gnome: Relogged track 03.

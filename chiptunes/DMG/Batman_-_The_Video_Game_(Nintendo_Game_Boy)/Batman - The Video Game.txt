@@ -1,0 +1,87 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Batman: The Video Game
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Nobuyuki Hara, Shinichi
+                     Seya, Naoki Kodaka
+Game developer:      Sunsoft
+Game publisher:      Sunsoft
+Game release date:   1989-12-22 (J) /
+                     1990-06 (U) / 1990 (E)
+
+Package created by:  The Golden Horse
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Title                            1:13   0:39
+02 Cutscene                         0:19   0:19
+03 Gotham City                      2:14   1:08
+04 Stage Clear                      0:03   -
+05 Chemical Factory                 0:49   0:42
+06 Flugelheim Museum                1:03   0:45
+07 Batwing Stage                    1:27   0:52
+08 Gotham Cathedral                 2:07   0:56
+09 Batman vs Jack / Joker           0:40   0:34
+10 Ending                           1:04   0:34
+11 Death                            0:04   -
+12 Game Over                        0:17   0:17
+
+Total Length                       11:20  18:06
+
+
+Notes:
+[Source]
+ In-game level titles¹ and usage
+[Generator]
+ MAME 0.200 (modded by Valley Bell),
+ using Sound Test (and MAME debug²)
+
+This is a perfectly plain, run-of-the-mill
+platformer-shooter, except that the shooter
+hero is Batman, famous among superhero fans (at
+the time, it was not as mainstream as today)
+for his refusal to use guns since one was used
+to kill his parents. Besides that out-of-
+character novelty, the only notable thing about
+this game is its excellent soundtrack, which is
+of course inevitable when you have Sunsoft's
+sound team on board. It easily matches the
+*other* movie tie-in games released by Sunsoft
+in thrills, composition and making the most out
+of the console's sound hardware. A recommended
+listen!
+
+NOTE: Like the rest of the tie-in games
+released outside Japan, the title screen simply
+says "Batman" but the cover art reads "Batman:
+The Video Game"; this pack uses the package
+title for consistency with the NES pack.)
+
+¹ "Flugelheim" is misspelled as "Flugalheim"
+  in-game; this is fixed in the English tags
+  but preserved in the Japanese tags.
+² The Sound Test, accessed simply by holding
+  Up/Right and pressing Start at the title
+  screen, allows you to play each song in the
+  game... except, for some reason, for the boss
+  theme (the "Batman vs" stages). Fortunately,
+  whoever coded the Sound Test forgot to make
+  absolutely sure one couldn't write arbitrary
+  values to memory; as such, you can listen to
+  the boss theme by enabling the Game Genie
+  code CF1-A33 or the GameShark code 01CFA3C1
+  when the Sound Test is open. (Both will write
+  the value 0xCF to RAM address 0xC1A3, which
+  forces the sound selection to the boss theme,
+  after which you can cue it up.)
+
+
+Package history:
+1.00 2019-09-08 The Golden Horse: Initial
+ release.

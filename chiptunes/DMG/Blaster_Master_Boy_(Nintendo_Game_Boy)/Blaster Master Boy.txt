@@ -1,0 +1,49 @@
+***********************************************
+* VGM music package                           *
+* https://vgmrips.net/                        *
+***********************************************
+Game name:           Blaster Master Boy (U) /
+                     Blaster Master Jr. (E) /
+                     Bomber King:
+                     Scenario 2 (J)
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Takeaki Kunimoto (NES),
+                     Daisuke Inoue (NES),
+                     Shinichi Seya (GB)
+Game developer:      Sunsoft
+Game publisher:      Sunsoft
+Game release date:   1992-02 (U) /
+                     1991 (E) /
+                     1991-08-23 (J)
+
+Package created by:  Sonic of 8!
+Package version:     1.01
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Intro                            0:16   -
+02 Bomber King Theme                0:58   0:58
+03 Underground                      0:39   0:39
+04 Bonus Stage                      0:29   0:29
+05 Period Clear                     0:05   -
+06 Period Start                     0:04   -
+07 Boss Room                        0:26   0:26
+08 Ending ~ Staff Roll              1:54   -
+09 Game Over                        0:18   -
+
+Total Length                        5:09   7:40
+
+
+Notes:
+Composer breakdown from [GYFN-014] "kinoko"
+Takeaki Kunimoto History Vol.4 BOMBER KING.
+-marklincadet
+
+
+Package history:
+1.00 2013-09-25 Sonic of 8!: Initial release.
+1.01 2025-05-08 marklincadet: Credited Daisuke
+ Inoue, Developer: Aicom -> Sunsoft

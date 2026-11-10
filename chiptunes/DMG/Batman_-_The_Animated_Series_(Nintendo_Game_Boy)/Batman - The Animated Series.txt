@@ -1,0 +1,64 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Batman: The Animated
+                     Series
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Yoshiyuki Hagiwara,
+                     Yuko Kurahashi
+Game developer:      Konami
+Game publisher:      Konami
+Game release date:   1993-11 (U) / 1993 (E)
+
+Package created by:  The789Guy
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Intro                            0:59   -
+02 Cutscene 1                       0:10   0:10
+03 Batman Theme                     1:21   1:16
+04 Boss 1                           0:29   0:24
+05 Change Hero                      0:12   0:01
+06 Robin Theme                      1:06   1:06
+07 Boss 2                           0:20   0:12
+08 Cutscene 2                       0:55   0:48
+09 Mr. Freeze Level                 1:08   0:48
+10 Cutscene 3                       0:15   0:15
+11 Catwoman Level                   1:24   1:00
+12 Poison Ivy Level                 0:54   0:54
+13 The Riddler Level                0:56   0:48
+14 The Penguin Level                0:26   0:24
+15 Cutscene 4                       0:11   0:11
+16 Final Boss                       0:31   0:28
+17 Ending                           0:56   -
+
+Total Length                       12:11  20:55
+
+
+Notes:
+One of the greatest Konami soundtracks ever to
+grace the Game Boy DMG, it features a number of
+original tracks with the usual Konami style,
+along with a number of arrangements of Danny
+Elfman's Batman theme from the 1989 movie.
+
+Kurahashi is credited for "music image" while
+Hagiwara is solely credited for music
+composition. I don't know if "music image"
+means anything, but Kurahashi *is* credited in
+the GBS, so she's listed here as well.
+
+No Japanese tags here-- this game was not
+released in Japan.
+
+Titles sourced from feos tas' YouTube upload.
+(https://www.youtube.com/watch?v=rlrRJPXZutw)
+
+
+Package history:
+1.00 2023-01-19 The789Guy: Initial release.

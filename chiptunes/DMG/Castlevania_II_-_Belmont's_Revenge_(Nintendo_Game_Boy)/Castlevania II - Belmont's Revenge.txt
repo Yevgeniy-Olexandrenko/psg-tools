@@ -1,0 +1,79 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           Castlevania II: Belmont's
+                     Revenge (U, E) / Dracula
+                     Densetsu II (J)
+System:              Nintendo Game Boy /
+                     Nintendo Game Boy Color
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Hidehiro Funauchi
+Game developer:      Konami
+Game publisher:      Konami
+Game release date:   1991-07-12 (J) /
+                     1991-08 (U) /
+                     1992-11-26 (E) /
+                     1998-02-19 (J, SGB) /
+                     2000-07-26 (E, GBC)
+
+Package created by:  muteKI, The789Guy
+Package version:     1.02
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Opening                          1:05   -
+02 Castle (Password)                0:18   0:18
+03 Start                            0:03   -
+04 Journey to Chaos (Stage Select)  0:33   0:33
+05 New Messiah (Crystal Castle)     1:30   1:26
+06 Praying Hands (Cloud Castle)     1:34   1:17
+07 Ripe Seeds (Plant Castle)        1:17   1:09
+08 Psycho Warrior (Rock Castle)     1:42   1:25
+09 Road of Enemy (Before Boss BGM)  0:35   0:34
+10 Evil Gods (Boss Fight, Part 1)   0:08   -
+11 Evil Gods (Boss Fight, Part 2)   0:34   0:33
+12 Stage Clear                      0:03   -
+13 Castle #2 (Stage Map)            0:13   0:12
+14 Original Sin (Dracula's Castle
+   1)                               1:09   1:09
+15 Passepied (Dracula's Castle 2)   0:37   0:21
+16 Soleiyu's Room                   0:11   0:09
+17 Faith (Soleiyu Dialogue)         0:07   0:06
+18 Chromatische Phantasie (Soleiyu
+   Battle)                          1:00   1:00
+19 Road of Enemy #2 (Before
+   Dracula)                         0:29   0:27
+20 Sons of Satan (Dracula Battle)   0:42   0:42
+21 All Clear                        0:06   -
+22 Union (Ending)                   1:13   1:13
+23 The End of the Day (Staff Roll)  1:20   1:05
+24 Game Over                        0:04   -
+25 Road of Enemy (Alternate
+   Version)                         0:34   0:34
+
+Total Length                       17:10  31:24
+
+
+Notes:
+muteKI's other unfinished Castlevania pack.
+Once again, he was largely finished with the
+pack, there just needed to be a TXT.
+
+He also left out the various versions of the
+game in screenshots, so I solved that situation
+for him.
+
+It's also worth noting that the original
+version labeled the boss tracks as 10 and 10a
+respectively; that is not present in the final
+set.
+
+
+Package history:
+1.00 2012-12-20 muteKI: Initial release.
+1.01 2023-03-02 The789Guy: Public release.
+1.02 2025-10-12 BoxCubed: Fixed text file
+ system name.

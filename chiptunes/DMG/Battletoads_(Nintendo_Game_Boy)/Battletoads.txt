@@ -1,0 +1,52 @@
+***********************************************
+* VGM music package                           *
+* https://vgmrips.net/                        *
+***********************************************
+Game name:           Battletoads
+System:              Nintendo Game Boy
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        David Wise
+Game developer:      Rare
+Game publisher:      Tradewest
+Game release date:   1991-11
+
+Package created by:  Jlooky
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Title, Ending                    1:29   1:14
+02 The Dark Queen's Cutscene        0:15   0:13
+03 Professor T. Bird's Cutscene     0:14   0:11
+04 Boss' Cutscene                   0:19   0:13
+05 General Slaughter (Level 1)      1:14   1:14
+06 Rat Rocket (Level 2)             1:01   0:58
+07 Rat Rocket Boss                  0:36   0:34
+08 Darkling (Level 3)               1:01   0:52
+09 Wicked Wurm (Level 4)            1:08   1:02
+10 Wurm's Brain (Level 5)           1:10   1:02
+11 Big Blag (Level 6)               1:10   0:31
+12 Vermin (Level 7)                 1:03   1:03
+13 Robo-Manus (Level 8)             1:24   1:24
+14 Final Boss (Robo-Manus)          0:41   0:36
+
+Total Length                       12:43  23:51
+
+
+Notes:
+Despite this game having the same name as
+the NES game, this one is a completely
+different game. And the soundtrack is just
+as good, if not, better than the NES game's
+soundtrack! Track's 2-4 were a bit of a pain
+to trim, but it wasn't the end of the world
+or anything. This pack was ripped using
+NEZplug Version 0.9.4.8 + 2 + 19.20. And plus,
+this is my very first Game Boy rip.
+Anyways, enjoy!
+
+
+Package history:
+1.00 2023-09-15 Jlooky: Initial release.

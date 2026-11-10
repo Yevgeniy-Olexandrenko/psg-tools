@@ -1,0 +1,37 @@
+***********************************************
+* VGM music package                           *
+* http://vgmrips.net/                         *
+***********************************************
+Game name:           UEFA 2000
+System:              Nintendo Game Boy Color
+Music hardware:      Game Boy DMG (LR35902)
+
+Music author:        Alberto Jose González
+Game developer:      Bit Managers
+Game publisher:      Infogrames
+Game release date:   2000-07
+
+Package created by:  The789Guy
+Package version:     1.00
+
+Song list, in approximate game order:
+Song name                           Length:
+                                    Total  Loop
+01 Main Menu                        0:26   0:26
+02 Tactics                          0:16   0:16
+03 Statistics                       1:15   1:00
+04 Champion!                        1:12   0:59
+05 Unknown Jingle                   0:04   -
+
+Total Length                        3:14   5:54
+
+
+Notes:
+This pack was made with
+NEZplug Version 0.9.4.8 + 2 + 19.20 VGM mod.
+
+Titles come from the GBS set.
+
+
+Package history:
+1.00 2021-12-05 The789Guy: Initial release.
