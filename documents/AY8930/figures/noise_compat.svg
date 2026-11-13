@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="270" viewBox="0 0 860 270">
+<style>
+  .f-background { fill: #FFFFFF; } .s-background { stroke: #FFFFFF; }
+  .f-paper { fill: #FFFFFF; } .s-paper { stroke: #FFFFFF; }
+  .f-ink { fill: #1F2328; } .s-ink { stroke: #1F2328; }
+  .f-grey { fill: #E6E9ED; } .s-grey { stroke: #E6E9ED; }
+  .f-dark { fill: #59636E; } .s-dark { stroke: #59636E; }
+  .f-accent { fill: #CF222E; } .s-accent { stroke: #CF222E; }
+  @media (prefers-color-scheme: dark) {
+    .f-background { fill: #0D1117; } .s-background { stroke: #0D1117; }
+    .f-paper { fill: #0D1117; } .s-paper { stroke: #0D1117; }
+    .f-ink { fill: #E6EDF3; } .s-ink { stroke: #E6EDF3; }
+    .f-grey { fill: #30363D; } .s-grey { stroke: #30363D; }
+    .f-dark { fill: #9198A1; } .s-dark { stroke: #9198A1; }
+    .f-accent { fill: #FF7B72; } .s-accent { stroke: #FF7B72; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-ink" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="f-background" width="100%" height="100%"/>
+<text class="f-ink" x="430" y="26" font-family="Helvetica, Arial, sans-serif" font-size="15" text-anchor="middle" font-weight="bold">NOISE GENERATOR: COMPATIBILITY MODE</text>
+<text class="f-ink" x="20" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="start" font-weight="normal" font-style="italic">fCLK / 8</text>
+<line class="s-ink" x1="80" y1="90" x2="110" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-paper s-ink" x="110" y="60" width="180" height="60" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="200" y="86.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">NOISE PERIOD COUNTER</text>
+<text class="f-ink" x="200" y="101.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">R6 (5 BITS)</text>
+<line class="s-ink" x1="290" y1="90" x2="330" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-paper s-ink" x="330" y="65" width="60" height="50" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="360" y="94.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="bold">/ 2</text>
+<line class="s-ink" x1="390" y1="90" x2="450" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="420" y="82" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">SHIFT</text>
+<rect class="f-grey s-ink" x="450" y="72" width="340" height="36" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="474.286" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B16</text>
+<line class="s-ink" x1="498.571" y1="72" x2="498.571" y2="108" stroke-width="1"/>
+<text class="f-ink" x="522.857" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">...</text>
+<line class="s-ink" x1="547.143" y1="72" x2="547.143" y2="108" stroke-width="1"/>
+<text class="f-ink" x="571.429" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B4</text>
+<line class="s-ink" x1="595.714" y1="72" x2="595.714" y2="108" stroke-width="1"/>
+<text class="f-ink" x="620" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B3</text>
+<line class="s-ink" x1="644.286" y1="72" x2="644.286" y2="108" stroke-width="1"/>
+<text class="f-ink" x="668.571" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B2</text>
+<line class="s-ink" x1="692.857" y1="72" x2="692.857" y2="108" stroke-width="1"/>
+<text class="f-ink" x="717.143" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B1</text>
+<line class="s-ink" x1="741.429" y1="72" x2="741.429" y2="108" stroke-width="1"/>
+<text class="f-ink" x="765.714" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B0</text>
+<text class="f-ink" x="620" y="64" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal">17-BIT SHIFT REGISTER (RIGHT SHIFT)</text>
+<line class="s-ink" x1="790" y1="90" x2="830" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="830" y="128" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">TO MIXERS</text>
+<polyline class="s-ink" points="765.714,108 765.714,190 612,190" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="668.571,108 668.571,170 600,170 600,178" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<circle class="f-paper s-ink" cx="600" cy="190" r="11" stroke-width="1.5"/>
+<line class="s-ink" x1="589" y1="190" x2="611" y2="190" stroke-width="1.2"/>
+<line class="s-ink" x1="600" y1="179" x2="600" y2="201" stroke-width="1.2"/>
+<polyline class="s-ink" points="589,190 430,190 430,100 450,100" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="600" y="222" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal">B16 &#8592; B0 XOR B2</text>
+<text class="f-ink" x="110" y="250" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="start" font-weight="normal">The register shifts once for every 2 x R6 counts: fSHIFT = fCLK / (16 x NP). The output is B0.</text>
+</svg>

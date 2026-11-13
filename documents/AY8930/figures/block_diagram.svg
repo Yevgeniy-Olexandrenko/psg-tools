@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="510" viewBox="0 0 1000 510">
+<style>
+  .f-background { fill: #FFFFFF; } .s-background { stroke: #FFFFFF; }
+  .f-paper { fill: #FFFFFF; } .s-paper { stroke: #FFFFFF; }
+  .f-ink { fill: #1F2328; } .s-ink { stroke: #1F2328; }
+  .f-grey { fill: #E6E9ED; } .s-grey { stroke: #E6E9ED; }
+  .f-dark { fill: #59636E; } .s-dark { stroke: #59636E; }
+  .f-accent { fill: #CF222E; } .s-accent { stroke: #CF222E; }
+  @media (prefers-color-scheme: dark) {
+    .f-background { fill: #0D1117; } .s-background { stroke: #0D1117; }
+    .f-paper { fill: #0D1117; } .s-paper { stroke: #0D1117; }
+    .f-ink { fill: #E6EDF3; } .s-ink { stroke: #E6EDF3; }
+    .f-grey { fill: #30363D; } .s-grey { stroke: #30363D; }
+    .f-dark { fill: #9198A1; } .s-dark { stroke: #9198A1; }
+    .f-accent { fill: #FF7B72; } .s-accent { stroke: #FF7B72; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-ink" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="f-background" width="100%" height="100%"/>
+<text class="f-ink" x="500" y="26" font-family="Helvetica, Arial, sans-serif" font-size="15" text-anchor="middle" font-weight="bold">AY8930 BLOCK DIAGRAM</text>
+<rect class="f-paper s-ink" x="110" y="60" width="170" height="70" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="195" y="91.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="bold">BUS CONTROL</text>
+<text class="f-ink" x="195" y="107.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="normal">DECODE</text>
+<rect class="f-paper s-ink" x="110" y="160" width="170" height="90" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="195" y="193.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="bold">ADDRESS LATCH</text>
+<text class="f-ink" x="195" y="209.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="normal">AND CHIP SELECT</text>
+<text class="f-ink" x="195" y="225.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="normal">(DA7-DA4 = 0000)</text>
+<rect class="f-paper s-ink" x="110" y="420" width="170" height="70" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="195" y="451.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="bold">CLOCK DIVIDER</text>
+<text class="f-ink" x="195" y="467.55" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="normal">(1 OR 2)</text>
+<line class="s-ink" x1="70" y1="85" x2="110" y2="85" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="89" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">BDIR</text>
+<line class="s-ink" x1="70" y1="110" x2="110" y2="110" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="114" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">BC1</text>
+<line class="s-ink" x1="70" y1="185" x2="110" y2="185" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="189" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">DA7-DA0</text>
+<line class="s-ink" x1="70" y1="210" x2="110" y2="210" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">A8</text>
+<line class="s-ink" x1="70" y1="235" x2="110" y2="235" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="239" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal" text-decoration="overline">A9</text>
+<line class="s-ink" x1="70" y1="445" x2="110" y2="445" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="449" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">CLOCK</text>
+<line class="s-ink" x1="70" y1="470" x2="110" y2="470" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="66" y="474" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal" text-decoration="overline">SELECT</text>
+<line class="s-ink" x1="280" y1="95" x2="330" y2="95" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="280" y1="205" x2="330" y2="205" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-grey s-ink" x="330" y="60" width="180" height="250" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="420" y="90" font-family="Helvetica, Arial, sans-serif" font-size="13" text-anchor="middle" font-weight="bold">REGISTER ARRAY</text>
+<rect class="f-paper s-ink" x="345" y="105" width="150" height="80" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="420" y="134.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">BANK A</text>
+<text class="f-ink" x="420" y="149.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">16 x 8 BITS</text>
+<text class="f-ink" x="420" y="164.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">R0A-RFA</text>
+<rect class="f-paper s-ink" x="345" y="200" width="150" height="80" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="420" y="229.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">BANK B</text>
+<text class="f-ink" x="420" y="244.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">11 x 8 BITS</text>
+<text class="f-ink" x="420" y="259.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">R0B-RAB</text>
+<text class="f-ink" x="420" y="300" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">R13 SELECTS MODE AND BANK</text>
+<rect class="f-paper s-ink" x="345" y="345" width="150" height="56" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="420" y="369.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">I/O PORTS</text>
+<text class="f-ink" x="420" y="384.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">A AND B</text>
+<line class="s-ink" x1="420" y1="310" x2="420" y2="345" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="345" y1="362" x2="300" y2="362" stroke-width="1.5"/>
+<text class="f-ink" x="296" y="366" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">IOA7-IOA0</text>
+<line class="s-ink" x1="345" y1="386" x2="300" y2="386" stroke-width="1.5"/>
+<text class="f-ink" x="296" y="390" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="end" font-weight="normal">IOB7-IOB0</text>
+<rect class="f-paper s-ink" x="570" y="60" width="180" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="660" y="81.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">TONE GENERATORS</text>
+<text class="f-ink" x="660" y="96.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">A, B, C</text>
+<text class="f-ink" x="660" y="111.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">(PERIOD, DUTY CYCLE)</text>
+<rect class="f-paper s-ink" x="570" y="150" width="180" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="660" y="171.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">NOISE GENERATOR</text>
+<text class="f-ink" x="660" y="186.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">17-BIT LFSR,</text>
+<text class="f-ink" x="660" y="201.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">AND / OR MASKS</text>
+<rect class="f-paper s-ink" x="570" y="240" width="180" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="660" y="261.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">ENVELOPE</text>
+<text class="f-ink" x="660" y="276.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">GENERATORS A, B, C</text>
+<text class="f-ink" x="660" y="291.2" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">(32 STEPS)</text>
+<line class="s-ink" x1="510" y1="92" x2="570" y2="92" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="510" y1="182" x2="570" y2="182" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="510" y1="272" x2="570" y2="272" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="280,455 540,455 540,110 570,110" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="540" y1="200" x2="570" y2="200" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-ink" x1="540" y1="290" x2="570" y2="290" stroke-width="1.5" marker-end="url(#arrow)"/>
+<circle class="f-ink s-ink" cx="540" cy="200" r="3" stroke-width="1.5"/>
+<circle class="f-ink s-ink" cx="540" cy="290" r="3" stroke-width="1.5"/>
+<text class="f-ink" x="410" y="449" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal" font-style="italic">fCLK</text>
+<rect class="f-paper s-ink" x="800" y="60" width="160" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="880" y="88.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">MIXERS</text>
+<text class="f-ink" x="880" y="103.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">A, B, C</text>
+<rect class="f-paper s-ink" x="800" y="180" width="160" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="880" y="208.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">AMPLITUDE</text>
+<text class="f-ink" x="880" y="223.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">CONTROL</text>
+<rect class="f-paper s-ink" x="800" y="300" width="160" height="64" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="880" y="328.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">D/A CONVERTERS</text>
+<text class="f-ink" x="880" y="343.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">A, B, C (5 BITS)</text>
+<line class="s-ink" x1="750" y1="92" x2="800" y2="92" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="750,182 775,182 775,110 800,110" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="750,272 775,272 775,222 800,222" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="480,60 480,44 980,44 980,212 960,212" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="760" y="38" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">AMPLITUDE REGISTERS R8A-RAA</text>
+<line class="s-ink" x1="880" y1="124" x2="880" y2="180" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="886" y="156" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="start" font-weight="normal">GATE</text>
+<line class="s-ink" x1="880" y1="244" x2="880" y2="300" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="886" y="276" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="start" font-weight="normal">LEVEL</text>
+<line class="s-ink" x1="840" y1="364" x2="840" y2="410" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="840" y="426" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">A</text>
+<line class="s-ink" x1="880" y1="364" x2="880" y2="410" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="880" y="426" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">B</text>
+<line class="s-ink" x1="920" y1="364" x2="920" y2="410" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="920" y="426" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">C</text>
+<text class="f-ink" x="880" y="446" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal">ANALOG CHANNELS</text>
+</svg>

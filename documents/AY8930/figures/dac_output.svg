@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="716" height="460" viewBox="0 0 716 460">
+<style>
+  .f-background { fill: #FFFFFF; } .s-background { stroke: #FFFFFF; }
+  .f-paper { fill: #FFFFFF; } .s-paper { stroke: #FFFFFF; }
+  .f-ink { fill: #1F2328; } .s-ink { stroke: #1F2328; }
+  .f-grey { fill: #E6E9ED; } .s-grey { stroke: #E6E9ED; }
+  .f-dark { fill: #59636E; } .s-dark { stroke: #59636E; }
+  .f-accent { fill: #CF222E; } .s-accent { stroke: #CF222E; }
+  @media (prefers-color-scheme: dark) {
+    .f-background { fill: #0D1117; } .s-background { stroke: #0D1117; }
+    .f-paper { fill: #0D1117; } .s-paper { stroke: #0D1117; }
+    .f-ink { fill: #E6EDF3; } .s-ink { stroke: #E6EDF3; }
+    .f-grey { fill: #30363D; } .s-grey { stroke: #30363D; }
+    .f-dark { fill: #9198A1; } .s-dark { stroke: #9198A1; }
+    .f-accent { fill: #FF7B72; } .s-accent { stroke: #FF7B72; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-ink" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="f-background" width="100%" height="100%"/>
+<text class="f-ink" x="358" y="26" font-family="Helvetica, Arial, sans-serif" font-size="15" text-anchor="middle" font-weight="bold">D/A CONVERTER OUTPUT, 32 LEVELS</text>
+<line class="s-grey" x1="76" y1="380" x2="656" y2="380" stroke-width="1"/>
+<text class="f-ink" x="72" y="384" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">0.00</text>
+<line class="s-grey" x1="76" y1="300" x2="656" y2="300" stroke-width="1"/>
+<text class="f-ink" x="72" y="304" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">0.25</text>
+<line class="s-grey" x1="76" y1="220" x2="656" y2="220" stroke-width="1"/>
+<text class="f-ink" x="72" y="224" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">0.50</text>
+<line class="s-grey" x1="76" y1="140" x2="656" y2="140" stroke-width="1"/>
+<text class="f-ink" x="72" y="144" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">0.75</text>
+<line class="s-grey" x1="76" y1="60" x2="656" y2="60" stroke-width="1"/>
+<text class="f-ink" x="72" y="64" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">1.00</text>
+<rect class="f-dark s-dark" x="82" y="380" width="14" height="0" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="89" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">0</text>
+<rect class="f-dark s-dark" x="100" y="380" width="14" height="0" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="118" y="378.511" width="14" height="1.48928" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="136" y="377.529" width="14" height="2.47074" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="154" y="376.494" width="14" height="3.50591" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="161" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">4</text>
+<rect class="f-dark s-dark" x="172" y="375.532" width="14" height="4.46784" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="190" y="374.56" width="14" height="5.43954" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="208" y="373.594" width="14" height="6.40635" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="226" y="372.202" width="14" height="7.79797" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="233" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">8</text>
+<rect class="f-dark s-dark" x="244" y="370.498" width="14" height="9.5021" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="262" y="368.779" width="14" height="11.2209" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="280" y="367.075" width="14" height="12.925" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="298" y="364.468" width="14" height="15.5325" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="305" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">12</text>
+<rect class="f-dark s-dark" x="316" y="361.333" width="14" height="18.6673" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="334" y="358.222" width="14" height="21.7777" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="352" y="355.112" width="14" height="24.8881" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="370" y="350.395" width="14" height="29.6049" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="377" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">16</text>
+<rect class="f-dark s-dark" x="388" y="344.453" width="14" height="35.5474" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="406" y="338.481" width="14" height="41.5192" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="424" y="332.485" width="14" height="47.5154" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="442" y="323.466" width="14" height="56.5341" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="449" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">20</text>
+<rect class="f-dark s-dark" x="460" y="312.304" width="14" height="67.6963" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="478" y="301.156" width="14" height="78.844" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="496" y="290.047" width="14" height="89.9525" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="514" y="273.206" width="14" height="106.794" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="521" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">24</text>
+<rect class="f-dark s-dark" x="532" y="251.863" width="14" height="128.137" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="550" y="230.437" width="14" height="149.563" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="568" y="208.982" width="14" height="171.018" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="586" y="176.745" width="14" height="203.255" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="593" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">28</text>
+<rect class="f-dark s-dark" x="604" y="137.438" width="14" height="242.562" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="622" y="98.4234" width="14" height="281.577" rx="0" stroke-width="0.5"/>
+<rect class="f-dark s-dark" x="640" y="60" width="14" height="320" rx="0" stroke-width="0.5"/>
+<text class="f-ink" x="647" y="396" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">31</text>
+<polyline class="s-accent" points="89,380 107,378.201 125,377.861 143,377.458 161,376.979 179,376.41 197,375.733 215,374.928 233,373.972 251,372.836 269,371.486 287,369.881 305,367.973 323,365.706 341,363.012 359,359.809 377,356.003 395,351.48 413,346.104 431,339.714 449,332.12 467,323.095 485,312.368 503,299.62 521,284.468 539,266.46 557,245.057 575,219.62 593,189.388 611,153.457 629,110.754 647,60" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="5,3"/>
+<line class="s-ink" x1="80" y1="380" x2="656" y2="380" stroke-width="1.5"/>
+<text class="f-ink" x="368" y="416" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal">LEVEL (L4-L0 OR ENVELOPE E4-E0)</text>
+<text class="f-ink" x="0" y="0" transform="translate(30,220) rotate(-90)" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">OUTPUT VOLTAGE, NORMALIZED</text>
+<rect class="f-dark s-dark" x="90" y="66" width="14" height="10" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="110" y="75" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="start" font-weight="normal">psg-tools emulation (measured YM2149 levels)</text>
+<line class="s-accent" x1="90" y1="90" x2="104" y2="90" stroke-width="1.4" stroke-dasharray="5,3"/>
+<text class="f-ink" x="110" y="94" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="start" font-weight="normal">DS50010C nominal curve, 1.5 dB per level</text>
+</svg>

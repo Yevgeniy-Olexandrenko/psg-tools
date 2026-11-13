@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="682" height="420" viewBox="0 0 682 420">
+<style>
+  .f-background { fill: #FFFFFF; } .s-background { stroke: #FFFFFF; }
+  .f-paper { fill: #FFFFFF; } .s-paper { stroke: #FFFFFF; }
+  .f-ink { fill: #1F2328; } .s-ink { stroke: #1F2328; }
+  .f-grey { fill: #E6E9ED; } .s-grey { stroke: #E6E9ED; }
+  .f-dark { fill: #59636E; } .s-dark { stroke: #59636E; }
+  .f-accent { fill: #CF222E; } .s-accent { stroke: #CF222E; }
+  @media (prefers-color-scheme: dark) {
+    .f-background { fill: #0D1117; } .s-background { stroke: #0D1117; }
+    .f-paper { fill: #0D1117; } .s-paper { stroke: #0D1117; }
+    .f-ink { fill: #E6EDF3; } .s-ink { stroke: #E6EDF3; }
+    .f-grey { fill: #30363D; } .s-grey { stroke: #30363D; }
+    .f-dark { fill: #9198A1; } .s-dark { stroke: #9198A1; }
+    .f-accent { fill: #FF7B72; } .s-accent { stroke: #FF7B72; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-ink" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="f-background" width="100%" height="100%"/>
+<text class="f-ink" x="341" y="26" font-family="Helvetica, Arial, sans-serif" font-size="15" text-anchor="middle" font-weight="bold">DETAIL OF TWO CYCLES, SHAPE 1110 (CONT. ATT. ALT.)</text>
+<text class="f-ink" x="130" y="58" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="start" font-weight="bold">EXPANDED MODE: 32 LEVELS</text>
+<polyline class="s-ink" points="130,194 138,194 138,190 146,190 146,186 154,186 154,182 162,182 162,178 170,178 170,174 178,174 178,170 186,170 186,166 194,166 194,162 202,162 202,158 210,158 210,154 218,154 218,150 226,150 226,146 234,146 234,142 242,142 242,138 250,138 250,134 258,134 258,130 266,130 266,126 274,126 274,122 282,122 282,118 290,118 290,114 298,114 298,110 306,110 306,106 314,106 314,102 322,102 322,98 330,98 330,94 338,94 338,90 346,90 346,86 354,86 354,82 362,82 362,78 370,78 370,74 378,74 378,70 386,70 386,70 394,70 394,74 402,74 402,78 410,78 410,82 418,82 418,86 426,86 426,90 434,90 434,94 442,94 442,98 450,98 450,102 458,102 458,106 466,106 466,110 474,110 474,114 482,114 482,118 490,118 490,122 498,122 498,126 506,126 506,130 514,130 514,134 522,134 522,138 530,138 530,142 538,142 538,146 546,146 546,150 554,150 554,154 562,154 562,158 570,158 570,162 578,162 578,166 586,166 586,170 594,170 594,174 602,174 602,178 610,178 610,182 618,182 618,186 626,186 626,190 634,190 634,194 642,194" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+<line class="s-dark" x1="130" y1="194" x2="642" y2="194" stroke-width="0.8"/>
+<text class="f-ink" x="122" y="198" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">0</text>
+<text class="f-ink" x="122" y="138" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">15</text>
+<text class="f-ink" x="122" y="74" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">31</text>
+<line class="s-dark" x1="386" y1="66" x2="386" y2="198" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text class="f-ink" x="130" y="242" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="start" font-weight="bold">COMPATIBILITY MODE: 16 LEVELS (L0 = 1)</text>
+<polyline class="s-ink" points="130,374 138,374 138,374 146,374 146,366 154,366 154,366 162,366 162,358 170,358 170,358 178,358 178,350 186,350 186,350 194,350 194,342 202,342 202,342 210,342 210,334 218,334 218,334 226,334 226,326 234,326 234,326 242,326 242,318 250,318 250,318 258,318 258,310 266,310 266,310 274,310 274,302 282,302 282,302 290,302 290,294 298,294 298,294 306,294 306,286 314,286 314,286 322,286 322,278 330,278 330,278 338,278 338,270 346,270 346,270 354,270 354,262 362,262 362,262 370,262 370,254 378,254 378,254 386,254 386,254 394,254 394,254 402,254 402,262 410,262 410,262 418,262 418,270 426,270 426,270 434,270 434,278 442,278 442,278 450,278 450,286 458,286 458,286 466,286 466,294 474,294 474,294 482,294 482,302 490,302 490,302 498,302 498,310 506,310 506,310 514,310 514,318 522,318 522,318 530,318 530,326 538,326 538,326 546,326 546,334 554,334 554,334 562,334 562,342 570,342 570,342 578,342 578,350 586,350 586,350 594,350 594,358 602,358 602,358 610,358 610,366 618,366 618,366 626,366 626,374 634,374 634,374 642,374" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+<line class="s-dark" x1="130" y1="378" x2="642" y2="378" stroke-width="0.8"/>
+<text class="f-ink" x="122" y="378" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">1</text>
+<text class="f-ink" x="122" y="322" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">15</text>
+<text class="f-ink" x="122" y="258" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">31</text>
+<line class="s-dark" x1="386" y1="250" x2="386" y2="382" stroke-width="0.8" stroke-dasharray="3,3"/>
+<line class="s-dark" x1="130" y1="378" x2="130" y2="390" stroke-width="0.8"/>
+<line class="s-dark" x1="386" y1="378" x2="386" y2="390" stroke-width="0.8"/>
+<line class="s-dark" x1="130" y1="384" x2="386" y2="384" stroke-width="1" marker-end="url(#arrow)"/>
+<line class="s-dark" x1="386" y1="384" x2="130" y2="384" stroke-width="1" marker-end="url(#arrow)"/>
+<text class="f-dark" x="130" y="402" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="start" font-weight="normal">ONE CYCLE: 32 STEPS OF 8 x EP CLOCK CYCLES</text>
+</svg>

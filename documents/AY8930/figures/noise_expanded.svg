@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470">
+<style>
+  .f-background { fill: #FFFFFF; } .s-background { stroke: #FFFFFF; }
+  .f-paper { fill: #FFFFFF; } .s-paper { stroke: #FFFFFF; }
+  .f-ink { fill: #1F2328; } .s-ink { stroke: #1F2328; }
+  .f-grey { fill: #E6E9ED; } .s-grey { stroke: #E6E9ED; }
+  .f-dark { fill: #59636E; } .s-dark { stroke: #59636E; }
+  .f-accent { fill: #CF222E; } .s-accent { stroke: #CF222E; }
+  @media (prefers-color-scheme: dark) {
+    .f-background { fill: #0D1117; } .s-background { stroke: #0D1117; }
+    .f-paper { fill: #0D1117; } .s-paper { stroke: #0D1117; }
+    .f-ink { fill: #E6EDF3; } .s-ink { stroke: #E6EDF3; }
+    .f-grey { fill: #30363D; } .s-grey { stroke: #30363D; }
+    .f-dark { fill: #9198A1; } .s-dark { stroke: #9198A1; }
+    .f-accent { fill: #FF7B72; } .s-accent { stroke: #FF7B72; }
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-ink" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="f-background" width="100%" height="100%"/>
+<text class="f-ink" x="450" y="26" font-family="Helvetica, Arial, sans-serif" font-size="15" text-anchor="middle" font-weight="bold">NOISE GENERATOR: EXPANDED MODE</text>
+<text class="f-ink" x="20" y="94" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="start" font-weight="normal" font-style="italic">fCLK / 8</text>
+<line class="s-ink" x1="80" y1="90" x2="110" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-paper s-ink" x="110" y="60" width="170" height="60" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="195" y="86.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">NOISE PERIOD COUNTER</text>
+<text class="f-ink" x="195" y="101.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">R6A (8 BITS)</text>
+<line class="s-ink" x1="280" y1="90" x2="330" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="305" y="82" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">COUNT</text>
+<rect class="f-paper s-ink" x="330" y="60" width="170" height="60" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="415" y="86.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">NOISE VALUE COUNTER</text>
+<text class="f-ink" x="415" y="101.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">(COUNTS UP)</text>
+<line class="s-ink" x1="500" y1="90" x2="560" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-paper s-ink" x="560" y="60" width="110" height="60" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="615" y="86.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">COMPARE</text>
+<text class="f-ink" x="615" y="101.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">VALUE &#8805; V</text>
+<line class="s-ink" x1="670" y1="90" x2="740" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="705" y="82" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">REACHED</text>
+<rect class="f-paper s-ink" x="740" y="65" width="50" height="50" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="765" y="94.9" font-family="Helvetica, Arial, sans-serif" font-size="14" text-anchor="middle" font-weight="bold">T</text>
+<line class="s-ink" x1="790" y1="90" x2="870" y2="90" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="870" y="76" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="end" font-weight="normal">TO MIXERS</text>
+<polyline class="s-ink" points="705,90 705,140 415,140 415,120" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="560" y="155" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" font-weight="normal">CLEAR VALUE</text>
+<rect class="f-paper s-ink" x="540" y="190" width="150" height="50" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="615" y="211.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">OR MASK</text>
+<text class="f-ink" x="615" y="226.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">RAB</text>
+<rect class="f-paper s-ink" x="540" y="280" width="150" height="50" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="615" y="301.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="bold">AND MASK</text>
+<text class="f-ink" x="615" y="316.7" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">R9B</text>
+<line class="s-ink" x1="615" y1="190" x2="615" y2="120" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="f-ink" x="622" y="174" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="start" font-weight="normal" font-style="italic">V</text>
+<line class="s-ink" x1="615" y1="280" x2="615" y2="240" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="f-grey s-ink" x="110" y="360" width="400" height="36" rx="0" stroke-width="1.5"/>
+<text class="f-ink" x="135" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B16</text>
+<line class="s-ink" x1="160" y1="360" x2="160" y2="396" stroke-width="1"/>
+<text class="f-ink" x="185" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">...</text>
+<line class="s-ink" x1="210" y1="360" x2="210" y2="396" stroke-width="1"/>
+<text class="f-ink" x="235" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B8</text>
+<line class="s-ink" x1="260" y1="360" x2="260" y2="396" stroke-width="1"/>
+<text class="f-ink" x="285" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B7</text>
+<line class="s-ink" x1="310" y1="360" x2="310" y2="396" stroke-width="1"/>
+<text class="f-ink" x="335" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">...</text>
+<line class="s-ink" x1="360" y1="360" x2="360" y2="396" stroke-width="1"/>
+<text class="f-ink" x="385" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B2</text>
+<line class="s-ink" x1="410" y1="360" x2="410" y2="396" stroke-width="1"/>
+<text class="f-ink" x="435" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B1</text>
+<line class="s-ink" x1="460" y1="360" x2="460" y2="396" stroke-width="1"/>
+<text class="f-ink" x="485" y="382" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" font-weight="normal">B0</text>
+<text class="f-ink" x="310" y="352" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" font-weight="normal">17-BIT SHIFT REGISTER (RIGHT SHIFT)</text>
+<polyline class="s-ink" points="470,360 470,305 540,305" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="476" y="340" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="start" font-weight="normal">B7-B0</text>
+<polyline class="s-ink" points="720,90 720,378 510,378" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="726" y="300" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="start" font-weight="normal">SHIFT</text>
+<polyline class="s-ink" points="485,396 485,448 262,448" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline class="s-ink" points="385,396 385,426 250,426 250,436" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<circle class="f-paper s-ink" cx="250" cy="448" r="11" stroke-width="1.5"/>
+<line class="s-ink" x1="239" y1="448" x2="261" y2="448" stroke-width="1.2"/>
+<line class="s-ink" x1="250" y1="437" x2="250" y2="459" stroke-width="1.2"/>
+<polyline class="s-ink" points="239,448 90,448 90,370 110,370" fill="none" stroke-width="1.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="f-ink" x="130" y="464" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="start" font-weight="normal">B16 &#8592; B0 XOR B2</text>
+</svg>
