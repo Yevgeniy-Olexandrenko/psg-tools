@@ -57,7 +57,7 @@ class AY89XXPsg
 	{
 	public:
 		void Reset();
-		void Update();
+		void Update(bool isAY);
 		void SetPeriod(uint8_t fine, uint8_t coarse);
 		void SetShape(uint8_t shape);
 		int  GetVolume() const;

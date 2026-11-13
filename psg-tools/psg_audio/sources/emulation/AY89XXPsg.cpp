@@ -330,12 +330,13 @@ void AY89XXPsg::Process(double& outA, double& outB, double& outC)
 	// is 1, not 0, and can be modulated changing the volume.
 
 	bool isExp = is_expanded_mode();
+	bool isAY = (m_dacTable == AY_DAC_TABLE);
 	m_noise.Update(isExp, m_chipType == ChipType::AY8930);
 
 	for (int chan = 0; chan < NUM_CHANNELS; chan++)
 	{
 		m_tone[chan].Update(isExp);
-		m_envelope[chan].Update();
+		m_envelope[chan].Update(isAY);
 
 		uint8_t disableT = BIT(m_regs[AY_ENABLE], 0 + chan);
 		uint8_t disableN = BIT(m_regs[AY_ENABLE], 3 + chan);
@@ -586,17 +587,23 @@ void AY89XXPsg::EnvelopeUnit::Reset()
 	SetShape(0);
 }
 
-void AY89XXPsg::EnvelopeUnit::Update()
+void AY89XXPsg::EnvelopeUnit::Update(bool isAY)
 {
-	if (++m_counter >= m_period)
+	if (++m_counter >= (m_period ? m_period : 1))
 	{
 		m_counter = 0;
 
-		m_volume += envelopes[m_shape][m_segment][0];
-		if (m_volume < RB || m_volume > RT)
+		// on the AY-3-8910 the 16 step envelope with period 0 is
+		// twice as fast as with period 1 (as MAME), thus 2 of the 32 steps
+		int steps = (!m_period && isAY ? 2 : 1);
+		while (steps--)
 		{
-			m_segment ^= 1;
-			m_volume = envelopes[m_shape][m_segment][1];
+			m_volume += envelopes[m_shape][m_segment][0];
+			if (m_volume < RB || m_volume > RT)
+			{
+				m_segment ^= 1;
+				m_volume = envelopes[m_shape][m_segment][1];
+			}
 		}
 	}
 }
@@ -604,7 +611,6 @@ void AY89XXPsg::EnvelopeUnit::Update()
 void AY89XXPsg::EnvelopeUnit::SetPeriod(uint8_t fine, uint8_t coarse)
 {
 	m_period = fine | (coarse << 8);
-	m_period |= (m_period == 0);
 }
 
 void AY89XXPsg::EnvelopeUnit::SetShape(uint8_t shape)
