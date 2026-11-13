@@ -340,11 +340,26 @@ void AY89XXPsg::Process(double& outA, double& outB, double& outC)
 		uint8_t disableT = BIT(m_regs[AY_ENABLE], 0 + chan);
 		uint8_t disableN = BIT(m_regs[AY_ENABLE], 3 + chan);
 
-		int output = (m_chipType == ChipType::AY8930)
-			? (m_tone[chan].GetOutput() & ~disableT) | (m_noise.GetOutput() & ~disableN)
-			: (m_tone[chan].GetOutput() |  disableT) & (m_noise.GetOutput() |  disableN);
+		// the gates are parts of the update (0 to 1), see ToneUnit::Update:
+		// the AY8930 mixes them as OR, the others as AND
+		double gateT = m_tone[chan].GetOutput();
+		double gateN = m_noise.GetOutput();
+		double gate;
+		if (m_chipType == ChipType::AY8930)
+		{
+			if (disableT) gateT = 0;
+			if (disableN) gateN = 0;
+			gate = gateT + gateN - gateT * gateN;
+		}
+		else
+		{
+			if (disableT) gateT = 1;
+			if (disableN) gateN = 1;
+			gate = gateT * gateN;
+		}
 
-		if (output)
+		int output = 0;
+		if (gate > 0)
 		{
 			int tone_envelope = m_tone[chan].GetEField(isExp, m_chipType == ChipType::AY8914);
 
@@ -377,9 +392,10 @@ void AY89XXPsg::Process(double& outA, double& outB, double& outC)
 			}
 		}
 
-		if (chan == 0) outA = m_dacTable[output];
-		if (chan == 1) outB = m_dacTable[output];
-		if (chan == 2) outC = m_dacTable[output];
+		double out = m_dacTable[0] + gate * (m_dacTable[output] - m_dacTable[0]);
+		if (chan == 0) outA = out;
+		if (chan == 1) outB = out;
+		if (chan == 2) outC = out;
 	}
 }
 
@@ -394,19 +410,37 @@ void AY89XXPsg::ToneUnit::Reset()
 	m_counter = 0;
 	m_dutyCounter = 0;
 	m_output = 0;
+	m_gate = 0;
 }
 
 void AY89XXPsg::ToneUnit::Update(bool isExp)
 {
 	if (isExp)
 	{
-		m_counter += 32;
-		while (m_counter >= m_period)
+		// One update is 32 units, one duty step is 'period' units. With a period
+		// less than 32, more than one step occurs in one update, and the bit of the
+		// last step only does not give the sound: with period 1, the 32 steps go
+		// back to the same bit each update. Thus the output is the part of the
+		// update with the output at 1, as the low-pass filter of the audio hears it.
+		int left = 32, high = 0;
+		for (;;)
 		{
-			m_counter -= m_period;
-			m_dutyCounter = (m_dutyCounter + 1) & 0x1F;
-			m_output = BIT(m_dutyCycle, 0x1F - m_dutyCounter);
+			if (m_counter >= m_period)
+			{
+				m_counter -= m_period;
+				m_dutyCounter = (m_dutyCounter + 1) & 0x1F;
+				m_output = BIT(m_dutyCycle, 0x1F - m_dutyCounter);
+				continue;
+			}
+			if (!left) break;
+
+			int run = m_period - m_counter;
+			if (run > left) run = left;
+			if (m_output) high += run;
+			m_counter += run;
+			left -= run;
 		}
+		m_gate = high / 32.0;
 	}
 	else
 	{
@@ -415,6 +449,7 @@ void AY89XXPsg::ToneUnit::Update(bool isExp)
 			m_counter = 0;
 			m_output ^= true;
 		}
+		m_gate = m_output;
 	}
 }
 
@@ -435,9 +470,9 @@ void AY89XXPsg::ToneUnit::SetDuty(uint8_t duty)
 	m_dutyCycle = DUTY_CYCLES[(duty & 0x08) ? 0x08 : (duty & 0x0F)];
 }
 
-int AY89XXPsg::ToneUnit::GetOutput() const
+double AY89XXPsg::ToneUnit::GetOutput() const
 {
-	return m_output;
+	return m_gate;
 }
 
 int AY89XXPsg::ToneUnit::GetVolume(bool isExp) const

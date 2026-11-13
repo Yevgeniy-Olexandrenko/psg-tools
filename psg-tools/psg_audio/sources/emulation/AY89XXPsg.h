@@ -17,7 +17,8 @@ class AY89XXPsg
 		void SetPeriod(bool isExp, uint8_t fine, uint8_t coarse);
 		void SetVolume(uint8_t volume);
 		void SetDuty(uint8_t duty);
-		int  GetOutput() const;
+		// the part of the last update (0 to 1) with the output at 1
+		double GetOutput() const;
 		int  GetVolume(bool isExp) const;
 		int  GetEField(bool isExp, bool isWide) const;
 
@@ -28,6 +29,7 @@ class AY89XXPsg
 		int m_dutyCycle;
 		int m_output;
 		int m_volume;
+		double m_gate;
 	};
 
 	class NoiseUnit
