@@ -5,11 +5,10 @@
 #include <chrono>
 #include <vector>
 #include "processing/ProcessingChain.h"
-#include "stream/ChipBus.h"
+#include "stream/Chip.h"
 #include "LevelMeter.h"
 
 class Stream;
-class Frame;
 
 class Output
 {
@@ -51,14 +50,11 @@ public:
 	std::string toString() const;
 
 protected:
-	// the register writes of a frame for each chip
-	using ChipData  = std::vector<std::pair<uint8_t, uint8_t>>;
-	using FrameData = std::array<ChipData, 2>;
 	virtual const std::string GetDeviceName() const = 0;
 
 	virtual bool DeviceOpen() = 0;
 	virtual bool DeviceInit(const Stream& stream, Chip& dchip) = 0;
-	virtual bool DeviceWrite(const FrameData& data) = 0;
+	virtual bool DeviceWrite(const ChipPackets& packets) = 0;
 	virtual void DeviceClose() = 0;
 
 	// the time from the return of DeviceWrite to the sound of the frame
@@ -71,10 +67,8 @@ private:
 	Chip m_dchip;
 	bool m_alive;
 	ProcessingChain m_processing;
-	FrameData m_data;
-#ifdef Enable_ChipBus
-	ChipBus m_bus[2];
-#endif
+	ChipEncoder m_encoder;
+	ChipPackets m_packets;
 
 	// the player thread writes the times, the levels and the spectra
 	// of the frames, the GUI reads them when the frames are heard

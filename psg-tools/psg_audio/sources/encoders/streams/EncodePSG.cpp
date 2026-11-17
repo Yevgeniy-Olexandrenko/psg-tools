@@ -2,81 +2,60 @@
 
 bool EncodePSG::Open(const Stream& stream)
 {
-    if (CheckFileExt(stream, "psg"))
-    {
-        m_output.open(stream.file, std::fstream::binary);
-        if (m_output)
-        {
-            m_output << "PSG";
-            m_output << uint8_t(0x1A);
-            m_output << uint8_t(0x0A);
-            m_output << uint8_t(RoundFrameRate(stream.play.frameRate));
-            m_output << std::string(10, 0x00);
+	if (CheckFileExt(stream, "psg"))
+	{
+		m_output.open(stream.file, std::fstream::binary);
+		if (m_output)
+		{
+			m_output << "PSG";
+			m_output << uint8_t(0x1A);
+			m_output << uint8_t(0x0A);
+			m_output << uint8_t(RoundFrameRate(stream.play.frameRate));
+			m_output << std::string(10, 0x00);
 
-            m_skip = 0;
-            return true;
-        }
-    }
-    return false;
+			m_skip = 0;
+			m_encoder.Init(stream.dchip);
+			return true;
+		}
+	}
+	return false;
 }
 
 void EncodePSG::Encode(const Frame& frame)
 {
-    const auto OutputRegister = [&](int chip, Register reg)
-    {
-        if (frame[chip].IsChanged(reg))
-        {
-            uint8_t v1 = (chip << 7 | reg);
-            uint8_t v2 = frame[chip].Read(reg);
-            m_output << v1 << v2;
-        }
-    };
+	m_skip++;
+	if (frame.HasChanges())
+	{
+		WriteFrameBeginOrSkip();
 
-    m_skip++;
-    if (frame.HasChanges())
-    {
-        WriteFrameBeginOrSkip();
-
-        // write full dump of frame (two chips
-        // each in expanded mode if available)
-        for (int chip = 0; chip < 2; ++chip)
-        {
-            if (frame[chip].IsExpMode())
-            {
-                OutputRegister(chip, Register::Mode_Bank);
-                for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
-                {
-                    if ((reg & 0x0F) == Register::Mode_Bank) continue;
-                    OutputRegister(chip, reg);
-                }
-            }
-            else
-            {
-                for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
-                {
-                    OutputRegister(chip, reg);
-                }
-            }
-        }
-    }
+		ChipPacket packet;
+		for (int chip = 0; chip < 2; ++chip)
+		{
+			m_encoder.Encode(chip, frame[chip], packet);
+			for (const ChipRecord& record : packet)
+			{
+				m_output << uint8_t(chip << 7 | record.addr) << record.data;
+			}
+		}
+	}
 }
 
 void EncodePSG::Close(const Stream& stream)
 {
-    WriteFrameBeginOrSkip();
-    m_output.close();
+	WriteFrameBeginOrSkip();
+	m_output.close();
 }
 
 void EncodePSG::WriteFrameBeginOrSkip()
 {
-    if (m_skip)
-    {
-        // one 0xFE command skips up to 255 blocks of 4 frames
-        for (int blocks = m_skip / 4; blocks > 0; blocks -= 255)
-        {
-            m_output << uint8_t(0xFE) << uint8_t(std::min(blocks, 255));
-        }
-        if (int frames = m_skip % 4) m_output << std::string(frames, uint8_t(0xFF));
-        m_skip = 0;
-    }
+	if (m_skip)
+	{
+		// one 0xFE command skips up to 255 blocks of 4 frames
+		for (int blocks = m_skip / 4; blocks > 0; blocks -= 255)
+		{
+			m_output << uint8_t(0xFE) << uint8_t(std::min(blocks, 255));
+		}
+		if (int frames = m_skip % 4) m_output << std::string(frames, uint8_t(0xFF));
+		m_skip = 0;
+	}
 }

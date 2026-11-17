@@ -141,9 +141,6 @@
     <ClInclude Include="sources\stream\Chip.h">
       <Filter>Sources\stream</Filter>
     </ClInclude>
-    <ClInclude Include="sources\stream\ChipBus.h">
-      <Filter>Sources\stream</Filter>
-    </ClInclude>
     <ClInclude Include="sources\stream\Frame.h">
       <Filter>Sources\stream</Filter>
     </ClInclude>
@@ -351,9 +348,6 @@
       <Filter>Sources\encoders\specific</Filter>
     </ClCompile>
     <ClCompile Include="sources\stream\Chip.cpp">
-      <Filter>Sources\stream</Filter>
-    </ClCompile>
-    <ClCompile Include="sources\stream\ChipBus.cpp">
       <Filter>Sources\stream</Filter>
     </ClCompile>
     <ClCompile Include="sources\stream\Frame.cpp">

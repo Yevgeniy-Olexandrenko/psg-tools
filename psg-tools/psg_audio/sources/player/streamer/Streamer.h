@@ -17,7 +17,7 @@ protected:
 
 	bool DeviceOpen() override;
 	bool DeviceInit(const Stream& stream, Chip& dchip) override;
-	bool DeviceWrite(const FrameData& data) override;
+	bool DeviceWrite(const ChipPackets& packets) override;
 	void DeviceClose() override;
 
 private:
@@ -25,6 +25,6 @@ private:
 	SerialPort m_port;
 	FrameTimer m_timer;
 	std::string m_debugInfo;
-	std::vector<uint8_t> m_packet;
+	std::vector<uint8_t> m_data;
 	int m_chips;
 };

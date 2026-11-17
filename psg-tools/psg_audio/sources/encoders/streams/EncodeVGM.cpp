@@ -6,7 +6,7 @@
 namespace
 {
 	const uint32_t c_headerSize = 0x100;
-	const uint32_t c_version = 0x171;
+	const uint32_t c_version    = 0x171;
 	const uint32_t c_sampleRate = 44100;
 
 	// AY8910 chip types of VGM
@@ -14,14 +14,10 @@ namespace
 	const uint8_t c_typeAY8930 = 0x03;
 	const uint8_t c_typeYM2149 = 0x10;
 
-	// AY8910 flags: legacy output (the default) and ZX Spectrum like ABC panning
+	// AY8910 flags:
+	// legacy output (the default) and ZX Spectrum like ABC panning
 	const uint8_t c_flagLegacyOutput = 0x01;
-	const uint8_t c_flagStereoABC = 0x80;
-
-	bool IsShape(Register reg)
-	{
-		return (reg == Register::EA_Shape || reg == Register::EB_Shape || reg == Register::EC_Shape);
-	}
+	const uint8_t c_flagStereoABC    = 0x80;
 
 	void PutU16(std::vector<uint8_t>& data, uint32_t x)
 	{
@@ -54,7 +50,9 @@ bool EncodeVGM::Open(const Stream& stream)
 		m_wait = 0;
 		m_loopOffset = 0;
 		m_loopSamples = 0;
-		m_expMode[0] = m_expMode[1] = false;
+		m_encoder.Init(stream.dchip);
+		m_lastFrame.ResetData();
+		m_lastFrame.ResetChanges();
 		return true;
 	}
 	return false;
@@ -62,20 +60,16 @@ bool EncodeVGM::Open(const Stream& stream)
 
 void EncodeVGM::Encode(const Frame& frame)
 {
-	// At the loop, the chips keep the registers of the last frame.
-	// So the loop frame writes all the registers again.
-	bool loop = (m_loopFrameId && m_frameId == m_loopFrameId);
-	if (loop)
+	if (m_loopFrameId && m_frameId == m_loopFrameId)
 	{
 		WriteWait();
 		m_loopOffset = uint32_t(m_data.size());
 		m_loopSamples = SampleOf(m_frameId);
+		m_preLoopFrame = m_lastFrame;
 	}
 
-	for (int chip = 0; chip < m_chips; ++chip)
-	{
-		WriteChip(frame, chip, loop);
-	}
+	WriteFrame(frame);
+	m_lastFrame = frame;
 
 	++m_frameId;
 	m_wait += (SampleOf(m_frameId) - SampleOf(m_frameId - 1));
@@ -84,6 +78,27 @@ void EncodeVGM::Encode(const Frame& frame)
 void EncodeVGM::Close(const Stream& stream)
 {
 	WriteWait();
+	if (m_loopFrameId)
+	{
+		// The jump to the loop frame comes from the registers of the last frame.
+		// These writes give the chips the registers before the loop frame, as
+		// on the first pass. A shape goes only if it is different: a write
+		// restarts the envelope.
+		Frame preLoop = m_preLoopFrame;
+		preLoop.ResetChanges();
+		Frame frame = m_lastFrame;
+		frame.ResetChanges();
+		frame += preLoop;
+		for (int chip = 0; chip < m_chips; ++chip)
+		{
+			for (Register reg : { Register::EA_Shape, Register::EB_Shape, Register::EC_Shape })
+			{
+				uint8_t shape = m_preLoopFrame[chip].GetData(reg);
+				if (frame[chip].GetData(reg) != shape) frame[chip].Update(reg, shape);
+			}
+		}
+		WriteFrame(frame);
+	}
 	m_data.push_back(0x66); // end of sound data
 
 	uint32_t totalSamples = SampleOf(m_frameId);
@@ -163,41 +178,21 @@ void EncodeVGM::Close(const Stream& stream)
 	}
 }
 
-void EncodeVGM::WriteChip(const Frame& frame, int chip, bool loop)
+void EncodeVGM::WriteFrame(const Frame& frame)
 {
-	const auto& regs = frame[chip];
-	const auto Write = [&](Register reg)
+	ChipPacket packet;
+	for (int chip = 0; chip < m_chips; ++chip)
 	{
-		// The loop frame does not write an unchanged shape: a write restarts the envelope.
-		if (regs.IsChanged(reg) || (loop && !IsShape(reg)))
+		m_encoder.Encode(chip, frame[chip], packet);
+		if (!packet.empty()) WriteWait();
+
+		for (const ChipRecord& record : packet)
 		{
-			WriteRegister(chip, reg, regs.Read(reg));
+			m_data.push_back(0xA0);
+			m_data.push_back(uint8_t(chip << 7 | record.addr));
+			m_data.push_back(record.data);
 		}
-	};
-
-	// A change of the AY8930 mode resets the registers, so R13 goes first.
-	// Else R13 goes last: the shape restarts the envelope after its period is set.
-	bool modeChange = (regs.IsExpMode() != m_expMode[chip]);
-	m_expMode[chip] = regs.IsExpMode();
-	if (modeChange) Write(Register::Mode_Bank);
-
-	for (Register reg = Register::BankA_Fst; reg < Register::Mode_Bank; ++reg) Write(reg);
-
-	// The expanded mode registers go as 0x10-0x1A, as in the PSG format.
-	if (regs.IsExpMode())
-	{
-		for (Register reg = Register::EB_Fine; reg <= Register::N_OrMask; ++reg) Write(reg);
 	}
-
-	if (!modeChange) Write(Register::Mode_Bank);
-}
-
-void EncodeVGM::WriteRegister(int chip, Register reg, uint8_t data)
-{
-	WriteWait();
-	m_data.push_back(0xA0);
-	m_data.push_back(uint8_t(chip << 7 | reg));
-	m_data.push_back(data);
 }
 
 void EncodeVGM::WriteWait()

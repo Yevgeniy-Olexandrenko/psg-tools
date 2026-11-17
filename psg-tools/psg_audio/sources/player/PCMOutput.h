@@ -13,7 +13,7 @@ public:
 
 protected:
 	void PCMInit(Chip& dchip);
-	void PCMWrite(const FrameData& data);
+	void PCMWrite(const ChipPackets& packets);
 	void PCMFill(float* buffer, size_t samples);
 
 private:

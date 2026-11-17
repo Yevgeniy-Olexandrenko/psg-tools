@@ -10,13 +10,13 @@ PCMOutput::~PCMOutput()
 {
 }
 
-void PCMOutput::PCMWrite(const FrameData& data)
+void PCMOutput::PCMWrite(const ChipPackets& packets)
 {
 	for (int chip = 0; chip < 2 && m_psg[chip]; ++chip)
 	{
-		for (const auto& [reg, val] : data[chip])
+		for (const ChipRecord& record : packets[chip])
 		{
-			m_psg[chip]->Write(reg, val);
+			m_psg[chip]->Write(record.addr, record.data);
 		}
 	}
 }

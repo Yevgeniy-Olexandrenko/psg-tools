@@ -93,13 +93,13 @@ bool WaveFile::DeviceInit(const Stream& stream, Chip& dchip)
 	return false;
 }
 
-bool WaveFile::DeviceWrite(const FrameData& data)
+bool WaveFile::DeviceWrite(const ChipPackets& packets)
 {
 	constexpr float sampleMax = float(std::numeric_limits<int16_t>::max());
 	constexpr float sampleMin = float(std::numeric_limits<int16_t>::min());
 
 	if (m_realTime) m_timer.Wait();
-	PCMOutput::PCMWrite(data);
+	PCMOutput::PCMWrite(packets);
 
 	// render PCM for 1 frame time, the fractional part
 	// of samples per frame is carried to the next frame

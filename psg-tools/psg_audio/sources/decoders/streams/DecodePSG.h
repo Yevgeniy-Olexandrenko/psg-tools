@@ -1,6 +1,7 @@
 #pragma once
 
 #include "decoders/Decoder.h"
+#include "stream/Chip.h"
 
 class DecodePSG : public Decoder
 {
@@ -15,11 +16,12 @@ class DecodePSG : public Decoder
 	#pragma pack(pop)
 
 public:
-	bool Open   (Stream& stream) override;
-	bool Decode (Frame&  frame ) override;
-	void Close  (Stream& stream) override;
+	bool Open(Stream& stream) override;
+	bool Decode(Frame& frame) override;
+	void Close(Stream& stream) override;
 
 private:
 	std::ifstream m_input;
+	ChipDecoder m_decoder;
 	int m_skip;
 };

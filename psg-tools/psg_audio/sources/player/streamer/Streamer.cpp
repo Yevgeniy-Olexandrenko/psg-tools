@@ -63,17 +63,17 @@ bool Streamer::DeviceInit(const Stream& stream, Chip& dchip)
 	return true;
 }
 
-bool Streamer::DeviceWrite(const FrameData& data)
+bool Streamer::DeviceWrite(const ChipPackets& packets)
 {
-	// prepare packet
-	m_packet.clear();
+	// prepare packet data
+	m_data.clear();
 	for (int chip = 0; chip < m_chips; ++chip)
 	{
-		m_packet.push_back(chip ? 0xFE : 0xFF);
-		for (const auto& [reg, val] : data[chip])
+		m_data.push_back(chip ? 0xFE : 0xFF);
+		for (const ChipRecord& record : packets[chip])
 		{
-			m_packet.push_back(reg);
-			m_packet.push_back(val);
+			m_data.push_back(record.addr);
+			m_data.push_back(record.data);
 		}
 	}
 
@@ -81,8 +81,8 @@ bool Streamer::DeviceWrite(const FrameData& data)
 	m_timer.Wait();
 
 	// send packet
-	auto dataSize = int(m_packet.size());
-	auto sentSize = m_port.SendBinary(reinterpret_cast<const char*>(m_packet.data()), dataSize);
+	auto dataSize = int(m_data.size());
+	auto sentSize = m_port.SendBinary(reinterpret_cast<const char*>(m_data.data()), dataSize);
 	return (sentSize == dataSize);
 }
 

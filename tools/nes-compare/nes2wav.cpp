@@ -467,26 +467,11 @@ namespace
     ////////////////////////////////////////////////////////////////////////////
 
     // writes the changed registers of a frame, as Output::Write does
-    void WriteFrame(AY89XXPsg& psg, const Frame::Registers& regs)
+    void WriteFrame(AY89XXPsg& psg, ChipEncoder& encoder, const Frame::Registers& regs)
     {
-        bool switchBanks = false;
-        if (regs.IsExpMode())
-        {
-            for (Register reg = Register::BankB_Fst; reg < Register::BankB_Lst; ++reg)
-            {
-                if (regs.IsChanged(reg))
-                {
-                    if (!switchBanks) psg.Write(Register::Mode_Bank, regs.GetData(Register::Mode_Bank) | 0x10);
-                    switchBanks = true;
-                    psg.Write(reg & 0x0F, regs.GetData(reg));
-                }
-            }
-            if (switchBanks) psg.Write(Register::Mode_Bank, regs.GetData(Register::Mode_Bank));
-        }
-        for (Register reg = Register::BankA_Fst; reg <= Register::BankA_Lst; ++reg)
-        {
-            if (regs.IsChanged(reg) && !(switchBanks && reg == Register::Mode_Bank)) psg.Write(reg, regs.GetData(reg));
-        }
+        ChipPacket packet;
+        encoder.Encode(0, regs, packet);
+        for (const ChipRecord& record : packet) psg.Write(record.addr, record.data);
     }
 
     // level steps below 20 Hz: the output of a 2-20 Hz band-pass changes per frame
@@ -530,6 +515,10 @@ namespace
         std::unique_ptr<ChipYM2149> ym(ay8930 ? nullptr : new ChipYM2149(ChipClock, SampleRate));
         std::unique_ptr<ChipAY8930> ay(ay8930 ? new ChipAY8930(ChipClock, SampleRate) : nullptr);
         AY89XXPsg& psg = (ay8930 ? static_cast<AY89XXPsg&>(*ay) : *ym);
+        Chip chips;
+        chips.first.model = (ay8930 ? Chip::Model::AY8930 : Chip::Model::YM2149);
+        ChipEncoder encoder;
+        encoder.Init(chips);
 
         RP2A03Apu apu;
         apu.Init(SampleRate, vgm.nesClock);
@@ -564,7 +553,7 @@ namespace
                             if (regs.IsChanged(Register::t_period[ch])) c |= 8;
                             causes[ch].push_back(c);
                         }
-                        WriteFrame(psg, regs);
+                        WriteFrame(psg, encoder, regs);
                         frame.ResetChanges();
                     }
                     sim.Simulate(1);
@@ -641,6 +630,10 @@ namespace
         std::unique_ptr<ChipYM2149> ym(ay8930 ? nullptr : new ChipYM2149(ChipClock, SampleRate));
         std::unique_ptr<ChipAY8930> ay(ay8930 ? new ChipAY8930(ChipClock, SampleRate) : nullptr);
         AY89XXPsg& psg = (ay8930 ? static_cast<AY89XXPsg&>(*ay) : *ym);
+        Chip chips;
+        chips.first.model = (ay8930 ? Chip::Model::AY8930 : Chip::Model::YM2149);
+        ChipEncoder encoder;
+        encoder.Init(chips);
 
         Frame frame;
         std::vector<float> pcm;
@@ -657,7 +650,7 @@ namespace
                     {
                         sim.Convert(frame);
                         const auto& regs = frame[0];
-                        WriteFrame(psg, regs);
+                        WriteFrame(psg, encoder, regs);
                         uint8_t volumeB = regs.GetData(Register::volume[1]);
                         psg.Write(Register::volume[1], (volumeB & regs.emask()) ? 0 : volumeB);
                         frame.ResetChanges();

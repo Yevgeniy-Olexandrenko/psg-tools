@@ -20,13 +20,13 @@ protected:
 
 	bool DeviceOpen() override;
 	bool DeviceInit(const Stream& stream, Chip& dchip) override;
-	bool DeviceWrite(const FrameData& data) override;
+	bool DeviceWrite(const ChipPackets& packets) override;
 	void FillBuffer(std::vector<float>& buffer) override;
 	void DeviceClose() override;
 	double GetDeviceLatency() const override;
 
 private:
-	std::deque<FrameData> m_queue;
+	std::deque<ChipPackets> m_queue;
 	std::mutex m_mutex;
 	std::condition_variable m_queueNotFull;
 	bool m_active;

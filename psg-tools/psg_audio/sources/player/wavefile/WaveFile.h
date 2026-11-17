@@ -25,7 +25,7 @@ protected:
 
 	bool DeviceOpen() override;
 	bool DeviceInit(const Stream& stream, Chip& dchip) override;
-	bool DeviceWrite(const FrameData& data) override;
+	bool DeviceWrite(const ChipPackets& packets) override;
 	void DeviceClose() override;
 
 private:
