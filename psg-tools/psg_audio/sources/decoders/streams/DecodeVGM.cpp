@@ -5,6 +5,7 @@
 #include "simulation/SimAY8910.h"
 #include "simulation/SimRP2A03.h"
 #include "simulation/SimSN76489.h"
+#include "simulation/SimLR35902.h"
 #include "simulation/SimHybrid.h"
 #include "debug/DebugOutput.h"
 
@@ -68,6 +69,7 @@ bool DecodeVGM::Open(Stream& stream)
         std::vector<ChipSim::Type> chips;
         if (header.version >= 0x161 && header.nesApuClock) chips.push_back(ChipSim::Type::RP2A03);
         if (header.sn76489Clock) chips.push_back(ChipSim::Type::SN76489);
+        if (header.version >= 0x161 && header.gbDmgClock) chips.push_back(ChipSim::Type::LR35902);
         if (header.version >= 0x151 && header.ay8910Clock) chips.push_back(ChipSim::Type::AY8910);
 
         // Two different chips play on two PSGs, one simulator on each PSG. Reject
@@ -133,6 +135,15 @@ bool DecodeVGM::Open(Stream& stream)
                             auto outputType = (model == Chip::Model::AY8930 ?
                                 SimRP2A03::OutputType::AY8930Chip : SimRP2A03::OutputType::SingleChip);
                             static_cast<SimRP2A03*>(sim)->ConfigureOutput(outputType, model);
+                        }
+                        else if (chips[psg] == ChipSim::Type::LR35902)
+                        {
+                            clock = (header.gbDmgClock & 0x3FFFFFFF);
+                            if (compatible) model = Chip::Model::YM2149;
+
+                            auto outputType = (model == Chip::Model::AY8930 ?
+                                SimLR35902::OutputType::AY8930Chip : SimLR35902::OutputType::SingleChip);
+                            static_cast<SimLR35902*>(sim)->ConfigureOutput(outputType, model);
                         }
 
                         if (psg) stream.schip.second.model = model;
@@ -226,6 +237,29 @@ bool DecodeVGM::Open(Stream& stream)
                         stream.schip.second.model = stream.schip.first.model;
                     }
                     static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType, stream.schip.first.model);
+                }
+
+                else if (m_simulator->type() == ChipSim::Type::LR35902)
+                {
+                    clockRate = (header.gbDmgClock & 0x3FFFFFFF);
+
+                    // the destination clock, model and output, as for the NES APU
+                    stream.schip.clock = (stream.dchip.clockKnown ? stream.dchip.clock : Chip::Clock::F1773400);
+                    stream.schip.first.model = (stream.dchip.first.model != Chip::Model::Compatible ?
+                        stream.dchip.first.model : Chip::Model::YM2149);
+                    stream.schip.output = (stream.dchip.outputKnown ? stream.dchip.output : Chip::Output::Mono);
+
+                    auto outputType = SimLR35902::OutputType::SingleChip;
+                    if (stream.schip.first.model == Chip::Model::AY8930)
+                    {
+                        outputType = SimLR35902::OutputType::AY8930Chip;
+                    }
+                    else if (stream.dchip.count == 2)
+                    {
+                        outputType = SimLR35902::OutputType::DoubleChip;
+                        stream.schip.second.model = stream.schip.first.model;
+                    }
+                    static_cast<SimLR35902*>(m_simulator.get())->ConfigureOutput(outputType, stream.schip.first.model);
                 }
 
                 // use the recording rate when it is known
@@ -385,7 +419,7 @@ void DecodeVGM::Close(Stream& stream)
     {
         stream.play.frameRate = (44100 * count / time);
     }
-    stream.Finalize(m_loop);
+    stream.Finalize(m_loop, true);
     delete[] m_data;
     dbg.close();
 }
@@ -402,7 +436,7 @@ bool DecodeVGM::HasOtherChips(const Header& header)
         header.rf5c68Clock, header.ym2203Clock, header.ym2608Clock, header.ym2610bClock,
         header.ym3812Clock, header.ym3526Clock, header.y8950Clock, header.ymf262Clock,
         header.ymf278bClock, header.ymf271Clock, header.ymz280bClock, header.rf5c164Clock,
-        header.pwmClock, header.gbDmgClock, header.multiPcmClock, header.upd7759Clock,
+        header.pwmClock, header.multiPcmClock, header.upd7759Clock,
         header.okim6258Clock, header.oki6295Clock, header.k051649Clock, header.k054539Clock,
         header.huc6280Clock, header.c140Clock, header.k053260Clock, header.pokeyClock,
         header.qsoundClock, header.scspClock, header.wswanClock, header.vsuClock,
@@ -425,7 +459,7 @@ bool DecodeVGM::HasOtherChips(const Header& header)
 
 bool DecodeVGM::HasDualChips(const Header& header)
 {
-    return ((header.sn76489Clock | header.ay8910Clock | header.nesApuClock) & 0x40000000);
+    return ((header.sn76489Clock | header.ay8910Clock | header.nesApuClock | header.gbDmgClock) & 0x40000000);
 }
 
 Chip::Model DecodeVGM::AYModel(const Header& header)
@@ -460,6 +494,7 @@ std::shared_ptr<ChipSim> DecodeVGM::CreateSimulator(ChipSim::Type type)
     case ChipSim::Type::SN76489: return std::make_shared<SimSN76489>();
     case ChipSim::Type::AY8910:  return std::make_shared<SimAY8910>();
     case ChipSim::Type::RP2A03:  return std::make_shared<SimRP2A03>();
+    case ChipSim::Type::LR35902: return std::make_shared<SimLR35902>();
     default: return nullptr;
     }
 }
@@ -509,6 +544,20 @@ int DecodeVGM::DecodeBlock()
         else if (m_dataPtr[0] == 0xA0)
         {
             if (ChipSim* sim = m_simulator->Find(ChipSim::Type::AY8910))
+            {
+                uint8_t aa = m_dataPtr[1];
+                uint8_t dd = m_dataPtr[2];
+                sim->Write((aa & 0x80) >> 7, aa & 0x7F, dd);
+                ++m_writes;
+                dbg.print_message("r%02X:%02X ", aa, dd);
+            }
+            m_dataPtr += 2;
+        }
+
+        // Game Boy DMG, write value dd to register aa
+        else if (m_dataPtr[0] == 0xB3)
+        {
+            if (ChipSim* sim = m_simulator->Find(ChipSim::Type::LR35902))
             {
                 uint8_t aa = m_dataPtr[1];
                 uint8_t dd = m_dataPtr[2];

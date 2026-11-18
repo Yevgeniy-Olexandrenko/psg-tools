@@ -213,6 +213,9 @@
     <ClInclude Include="sources\emulation\RP2A03Apu.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="sources\emulation\LR35902Apu.h">
+      <Filter>Sources\emulation</Filter>
+    </ClInclude>
     <ClInclude Include="sources\emulation\RP2A03Cpu.h">
       <Filter>Sources\emulation</Filter>
     </ClInclude>
@@ -226,6 +229,9 @@
       <Filter>Sources\simulation</Filter>
     </ClInclude>
     <ClInclude Include="sources\simulation\SimHybrid.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\simulation\SimLR35902.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
     <ClInclude Include="sources\simulation\SimRP2A03.h">
@@ -407,16 +413,25 @@
     <ClCompile Include="sources\emulation\RP2A03Apu.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
+    <ClCompile Include="sources\emulation\LR35902Apu.cpp">
+      <Filter>Sources\emulation</Filter>
+    </ClCompile>
     <ClCompile Include="sources\emulation\RP2A03Cpu.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\emulation\AY89XXPsg.cpp">
       <Filter>Sources\emulation</Filter>
     </ClCompile>
+    <ClCompile Include="sources\simulation\ChipSim.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
     <ClCompile Include="sources\simulation\SimAY8910.cpp">
       <Filter>Sources\simulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimHybrid.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimLR35902.cpp">
       <Filter>Sources\simulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimRP2A03.cpp">

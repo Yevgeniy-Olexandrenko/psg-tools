@@ -34,15 +34,11 @@ private:
 
     template<Register::Value shape_reg, Register::Period period_reg>
     void ConvertTriangle(const State& state, Frame& frame, uint8_t& mixer, uint8_t* volumes);
-    void UpdateVolumes(Frame::Registers& regs, const uint8_t* volumes);
 
     void    PlaceNoise(State& state);
     uint8_t SharedNoiseChannels(const State& state, float& gain) const;
     void    MixNoise(const State& state, uint8_t& mixer, uint8_t* volumes) const;
-    uint16_t YMNoisePeriod(const State& state) const;
-    void    UpdateAY8930Noise(const State& state, Frame::Registers& regs) const;
     bool    ShortNoiseAsTone(const State& state) const;
-    void    ShortNoiseMasks(const State& state, uint8_t& orMask, uint8_t& period) const;
 
     struct DmcTone;
 
@@ -53,13 +49,10 @@ private:
     int  DmcDuty(const DmcTone& tone, double rate, int index);
     void ConvertDmcChip(Frame::Registers& regs);
 
-    float   VolumeToLevel(uint8_t volume) const;
-    uint8_t LevelToVolume(float   level ) const;
     float   PulseLevel   (const State& state, int index) const;
     uint8_t PulseVolume  (const State& state, int index) const;
     float   NoiseLevel   (const State& state) const;
     uint8_t NoiseVolume  (const State& state) const;
-    float   ShortNoiseGain(const State& state) const;
 
 private:
     OutputType m_outputType;
@@ -82,9 +75,5 @@ private:
     int m_dmcElapsed;               // output samples since the sample started
     int m_frameSamples;             // output samples of a frame
 
-    // output levels of the volumes of the destination chip
-    const float* m_levels;
-    int m_levelsCount;
-    int m_levelsStep;
-    float m_psgTriangleRms;
+    float m_psgTriangleRms; // of the envelope triangle of the destination chip
 };

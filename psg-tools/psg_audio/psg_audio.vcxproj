@@ -48,6 +48,7 @@
     <ClInclude Include="sources\emulation\machines\VGMMachine.h" />
     <ClInclude Include="sources\emulation\Memory.h" />
     <ClInclude Include="sources\emulation\RP2A03Apu.h" />
+    <ClInclude Include="sources\emulation\LR35902Apu.h" />
     <ClInclude Include="sources\emulation\RP2A03Cpu.h" />
     <ClInclude Include="sources\emulation\AY89XXPsg.h" />
     <ClInclude Include="sources\emulation\Z80Cpu.h" />
@@ -81,6 +82,7 @@
     <ClInclude Include="sources\simulation\ChipSim.h" />
     <ClInclude Include="sources\simulation\SimAY8910.h" />
     <ClInclude Include="sources\simulation\SimHybrid.h" />
+    <ClInclude Include="sources\simulation\SimLR35902.h" />
     <ClInclude Include="sources\simulation\SimRP2A03.h" />
     <ClInclude Include="sources\simulation\SimSN76489.h" />
     <ClInclude Include="sources\stream\Chip.h" />
@@ -117,6 +119,7 @@
     <ClCompile Include="sources\emulation\machines\NSFMachine.cpp" />
     <ClCompile Include="sources\emulation\machines\VGMMachine.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Apu.cpp" />
+    <ClCompile Include="sources\emulation\LR35902Apu.cpp" />
     <ClCompile Include="sources\emulation\RP2A03Cpu.cpp" />
     <ClCompile Include="sources\emulation\AY89XXPsg.cpp" />
     <ClCompile Include="sources\emulation\Z80Cpu.cpp" />
@@ -143,8 +146,10 @@
     <ClCompile Include="sources\processing\FrameProcessor.cpp" />
     <ClCompile Include="sources\processing\ProcessingChain.cpp" />
     <ClCompile Include="sources\PSGAudio.cpp" />
+    <ClCompile Include="sources\simulation\ChipSim.cpp" />
     <ClCompile Include="sources\simulation\SimAY8910.cpp" />
     <ClCompile Include="sources\simulation\SimHybrid.cpp" />
+    <ClCompile Include="sources\simulation\SimLR35902.cpp" />
     <ClCompile Include="sources\simulation\SimRP2A03.cpp" />
     <ClCompile Include="sources\simulation\SimSN76489.cpp" />
     <ClCompile Include="sources\stream\Chip.cpp" />
