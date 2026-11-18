@@ -167,6 +167,6 @@ bool DecodeYM::Decode(Frame& frame)
 
 void DecodeYM::Close(Stream& stream)
 {
-    stream.Finalize(m_loop);
+    stream.Finalize(m_loop, true);
     m_data.clear();
 }

@@ -112,6 +112,6 @@ bool DecodeVTX::Decode(Frame& frame)
 
 void DecodeVTX::Close(Stream& stream)
 {
-	stream.Finalize(m_loop);
+	stream.Finalize(m_loop, true);
 	m_data.clear();
 }

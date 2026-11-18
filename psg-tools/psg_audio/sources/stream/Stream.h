@@ -88,7 +88,9 @@ public:
 public:
     bool AddFrame(const Frame& frame);
     const Frame& GetFrame(FrameId frameId) const;
-    void Finalize(FrameId loopFrameId);
+    // findLoop: the frames come from a register stream, which can
+    // hold more than one pass of a looped song (see FindLoop)
+    void Finalize(FrameId loopFrameId, bool findLoop = false);
 
     void GetDuration(int& hh, int& mm, int& ss, int& ms) const;
     void GetDuration(int& hh, int& mm, int& ss) const;
@@ -106,6 +108,7 @@ public:
     void print_footer  (std::ostream& stream) const override;
 
 private:
+    void FindLoop(FrameId& loopFrameId);
     void ConfigureDestinationChip();
 
 public:

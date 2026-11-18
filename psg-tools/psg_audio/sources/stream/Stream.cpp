@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include "Stream.h"
@@ -8,6 +9,40 @@ namespace
     const int k_prefDurationSS = 0;
     const int k_maxExtraLoops  = 3;
     const int k_maxSilenceSec  = 1;
+    const int k_minLoopSec     = 4;
+
+    // The key of a frame for the loop search: the registers that make the sound.
+    // A shape register keeps the last shape written. In the first pass, it can
+    // come from the intro; in the next passes, from the end of the song. Thus
+    // the shape counts only when a channel plays the envelope or the shape is
+    // written (a write restarts the envelope).
+    uint64_t GetLoopKey(const Frame& frame)
+    {
+        uint64_t key = 0xCBF29CE484222325; // FNV-1a
+        const auto Mix = [&](uint8_t data) { key = (key ^ data) * 0x100000001B3; };
+
+        for (int chip = 0; chip < 2; ++chip)
+        {
+            const Frame::Registers& regs = frame[chip];
+            for (Register reg = Register::BankA_Fst; reg <= Register::BankB_Lst; ++reg)
+            {
+                if (reg == Register::EA_Shape || reg == Register::EB_Shape || reg == Register::EC_Shape) continue;
+                Mix(regs.GetData(reg));
+            }
+
+            // the mode bits are in the register of the shape of envelope A
+            Mix(regs.GetData(Register::Mode_Bank) & 0xF0);
+
+            for (int chan = 0; chan < 3; ++chan)
+            {
+                Register shape = (regs.IsExpMode() ? Register::e_shape[chan] : Register::E_Shape);
+                bool written = regs.IsChanged(shape);
+                Mix(written);
+                Mix(written || regs.IsEnvelopeEnabled(chan) ? regs.GetData(shape) & 0x0F : 0xFF);
+            }
+        }
+        return key;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,13 +250,87 @@ const Frame& Stream::GetFrame(FrameId frameId) const
     return m_frames[frameId];
 }
 
-void Stream::Finalize(FrameId loopFrameId)
+void Stream::Finalize(FrameId loopFrameId, bool findLoop)
 {
+    if (findLoop) FindLoop(loopFrameId);
     m_loopFrameId = (loopFrameId < framesCount ? loopFrameId : 0);
     loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount));
 
     play.Prepare(loopFrameId, framesCount - loopFrameId, lastFrameId);
     ConfigureDestinationChip();
+}
+
+// A recording of more than one pass of a looped song ends with repeats: it
+// loops from frame L with period P when frame[i] == frame[i + P] for i >= L.
+// The Z-function of the reversed stream gives, for each P, the number of
+// frames at the end that are equal to the frames P before them. Of the periods
+// with one full repeat or more, the true loop starts first. A pattern played
+// twice near the end starts later; multiples of the period start at the same
+// frame. The frames after the first repeat are cut.
+void Stream::FindLoop(FrameId& loopFrameId)
+{
+    const size_t count = m_frames.size();
+    const size_t minPeriod = size_t(play.frameRate * k_minLoopSec);
+    if (!minPeriod || count < 2 * minPeriod) return;
+
+    // the keys of the frames in the reverse order
+    std::vector<uint64_t> keys(count);
+    for (size_t i = 0; i < count; ++i)
+    {
+        keys[i] = GetLoopKey(m_frames[count - 1 - i]);
+    }
+
+    std::vector<uint32_t> z(count, 0);
+    for (size_t i = 1, l = 0, r = 0; i < count; ++i)
+    {
+        size_t len = (i < r ? std::min(r - i, size_t(z[i - l])) : 0);
+        while (i + len < count && keys[len] == keys[i + len]) ++len;
+        if (i + len > r) { l = i; r = i + len; }
+        z[i] = uint32_t(len);
+    }
+
+    // Running counts of the audible frames and of the frames that are not
+    // equal to the frame before. They find a silent or frozen loop in O(1).
+    std::vector<uint32_t> audible(count + 1, 0), changed(count + 1, 0);
+    for (size_t i = 0; i < count; ++i)
+    {
+        size_t r = (count - 1 - i);
+        audible[i + 1] = audible[i] + m_frames[i].IsAudible();
+        changed[i + 1] = changed[i] + (i && keys[r] != keys[r + 1]);
+    }
+
+    size_t bestLoop = count, bestPeriod = 0;
+    for (size_t period = minPeriod; period <= count / 2; ++period)
+    {
+        if (z[period] < period) continue;
+        size_t loop = (count - period - z[period]);
+        size_t end = (loop + period);
+
+        if (loop < bestLoop
+            && audible[end] > audible[loop]
+            && changed[end] > changed[loop + 1])
+        {
+            bestLoop = loop;
+            bestPeriod = period;
+        }
+    }
+
+    // In a song, the loop is longer than the intro. A short repeat
+    // late in a song is a pattern played two times, not a loop.
+    if (!bestPeriod || bestPeriod < bestLoop) return;
+
+    if (loopFrameId > 2 && loopFrameId < count)
+    {
+        // The file has a loop: keep it, and cut only full passes after it.
+        // Thus the repeats must start at the loop or before it, and the frames
+        // from the loop to the end must be full periods. One pass has one
+        // period from the loop to the end, and nothing is cut.
+        if (bestLoop > loopFrameId || (count - loopFrameId) % bestPeriod) return;
+        bestLoop = loopFrameId;
+    }
+
+    m_frames.resize(bestLoop + bestPeriod);
+    loopFrameId = FrameId(bestLoop);
 }
 
 void Stream::GetDuration(int& hh, int& mm, int& ss, int& ms) const
