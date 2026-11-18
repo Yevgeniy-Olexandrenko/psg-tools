@@ -23,5 +23,5 @@ public:
 private:
 	std::ifstream m_input;
 	ChipDecoder m_decoder;
-	int m_skip;
+	int m_opened; // frames that the markers opened and that are not decoded yet
 };

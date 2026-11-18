@@ -1,4 +1,16 @@
+#include <algorithm>
 #include "DecodePSG.h"
+
+// PSG: a header of 16 bytes (or of 4 bytes: then 0xFF follows the
+// signature), then a stream of bytes:
+//   0xFF     opens a frame
+//   0xFE N   opens N * 4 frames (N = 0: no frame, the frame continues)
+//   0xFD     ends the music
+//   R V      writes V to register R: 0x00-0x0F of the first chip,
+//            0x80-0x8F of the second chip (TurboSound). Other R are
+//            writes to other devices (MSX); the decoder skips them.
+// The writes go to the last frame opened. Writes before the first marker
+// go to frame 0. A file that starts with silence starts with 0xFE.
 
 namespace
 {
@@ -8,74 +20,64 @@ namespace
 bool DecodePSG::Open(Stream& stream)
 {
 	m_input.open(stream.file, std::fstream::binary);
-	if (m_input)
+
+	Header header;
+	if (m_input.read((char*)(&header), sizeof(header)) && header.m_sig == PSGSignature)
 	{
-		Header header;
-		m_input.read((char*)(&header), sizeof(header));
-
-		if (m_input && header.m_sig == PSGSignature)
+		stream.info.type = "PSG stream";
+		if (header.m_ver == 0xFF)
 		{
-			stream.info.type = "PSG stream";
-			// frame rate byte is defined since version 10
-			stream.play.frameRate = (header.m_ver >= 10 && header.m_fps ? header.m_fps : 50);
-
-			m_skip = 0;
-			m_decoder.Init();
-			return true;
+			// a header of 4 bytes: the data starts at the version byte
+			m_input.seekg(offsetof(Header, m_ver));
+			stream.play.frameRate = 50;
 		}
+		else
+		{
+			// the frame rate byte is in version 10 and later
+			stream.play.frameRate = (header.m_ver >= 10 && header.m_fps ? header.m_fps : 50);
+		}
+
+		m_opened = 0;
+		m_decoder.Init();
+		return true;
 	}
 	return false;
 }
 
 bool DecodePSG::Decode(Frame& frame)
 {
-	if (m_skip) m_skip--;
-	else
+	// Read the markers before the writes. Use only peek() to look ahead:
+	// unget() can fail at the end of the file buffer.
+	while (!m_opened)
 	{
-		// skip frame begin marker 0xFF or
-		// pending argument of 0xFE command
-		if (!m_input.ignore(1)) return false;
+		int marker = m_input.peek();
+		if (marker == EOF || marker == 0xFD) return false;
+		if (marker < 0xFD) m_opened = 1; // writes before the first marker
+		else if (m_input.get() == 0xFF) m_opened = 1;
+		else m_opened = std::max(m_input.get(), 0) * 4;
+	}
 
-		// loop through register values
-		// until next frame marker
-		for(uint8_t v1, v2;;)
+	// of the frames opened together, only the last frame has writes
+	if (--m_opened) return true;
+
+	// read the writes up to the next marker; 0xFE N is also a pair
+	for (int reg; (reg = m_input.peek()) != EOF && reg != 0xFF && reg != 0xFD; )
+	{
+		m_input.ignore(1);
+		int data = m_input.get();
+		if (data == EOF) break;
+
+		if (reg == 0xFE)
 		{
-			if (m_input.peek() == EOF ) break;
-			if (m_input.peek() == 0xFF) break;
-			if (m_input.peek() == 0xFD)
-			{
-				// end of music, ignore the rest of the file
-				m_input.seekg(0, m_input.end);
-				break;
-			}
-			if (m_input.peek() == 0xFE)
-			{
-				// skip 0xFE command byte
-				m_input.ignore(1);
+			if ((m_opened = data * 4)) break;
+			continue; // 0xFE 0: no frame, the frame continues
+		}
 
-				// peek next byte if available
-				if (m_input.peek() == EOF) return false;
-				v2 = uint8_t(m_input.peek());
-
-				// zero frames to skip, continue the current frame
-				if (!v2)
-				{
-					m_input.ignore(1);
-					continue;
-				}
-
-				// setup number of frames to skip
-				m_skip = (v2 * 4 - 1);
-				break;
-			}
-
-			// read register and value
-			m_input.get((char&)v1);
-			if (!m_input.get((char&)v2)) return false;
-
-			// update frame state
-			int chip = (v1 >> 7);
-			ChipRecord record{ uint8_t(v1 & 0x7F), v2 };
+		// registers 0x00-0x0F and 0x80-0x8F only
+		if ((reg & 0x70) == 0)
+		{
+			int chip = (reg >> 7);
+			ChipRecord record{ uint8_t(reg & 0x0F), uint8_t(data) };
 			m_decoder.Decode(chip, record, frame[chip]);
 		}
 	}
@@ -96,5 +98,5 @@ void DecodePSG::Close(Stream& stream)
 	if (stream.IsSecondChipUsed() && !stream.schip.second.modelKnown)
 		stream.schip.second.model = stream.schip.first.model;
 
-	stream.Finalize(0);
+	stream.Finalize(0, true);
 }
