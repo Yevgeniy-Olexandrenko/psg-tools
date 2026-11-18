@@ -219,20 +219,13 @@ void ChipDecoder::Init()
 
 void ChipDecoder::Decode(int chip, const ChipRecord& record, Frame::Registers& regs)
 {
-	if (record.addr <= Register::BankB_Lst)
+	if (record.addr == Register::Mode_Bank)
 	{
-		if ((record.addr & 0x0F) == Register::Mode_Bank)
-		{
-			m_bankB[chip] = ((record.data & 0xF0) == 0xB0);
-			regs.Update(Register::Mode_Bank, record.data);
-		}
-		else if (record.addr < Register::Mode_Bank)
-		{
-			regs.Update(m_bankB[chip] ? Register::BankB_Fst + record.addr : record.addr, record.data);
-		}
-		else if (record.addr >= Register::EB_Fine && record.addr <= Register::N_OrMask)
-		{
-			regs.Update(record.addr, record.data);
-		}
+		m_bankB[chip] = ((record.data & 0xF0) == 0xB0);
+		regs.Update(Register::Mode_Bank, record.data);
+	}
+	else if (record.addr < Register::Mode_Bank)
+	{
+		regs.Update(m_bankB[chip] ? Register::BankB_Fst + record.addr : record.addr, record.data);
 	}
 }

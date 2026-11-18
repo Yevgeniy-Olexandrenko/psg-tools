@@ -86,7 +86,7 @@ private:
 	Mode m_mode[2]{ Mode::Unknown, Mode::Unknown };
 };
 
-// The writes to a chip -> frame. Also takes the flat bank B addresses.
+// The writes to a chip (addresses 0x00-0x0F) -> frame.
 class ChipDecoder
 {
 public:
