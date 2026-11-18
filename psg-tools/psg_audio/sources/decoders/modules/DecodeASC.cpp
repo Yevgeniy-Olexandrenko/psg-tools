@@ -37,7 +37,7 @@ namespace
 bool DecodeASC::Open(Stream& stream)
 {
     bool isDetected = false;
-    if (CheckFileExt(stream, { "asc" }))
+    if (CheckFileExt(stream, { "asc", "as0" }))
     {
         std::ifstream fileStream;
         fileStream.open(stream.file, std::fstream::binary);

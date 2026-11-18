@@ -36,7 +36,7 @@
 // debug
 #include "debug/DebugOutput.h"
 
-const std::string FileDecoder::FileTypes{ "asc|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
+const std::string FileDecoder::FileTypes{ "asc|as0|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg|rsf|vgm|vgz|vtx|ym|wav" };
 
 static DebugOutput<DBG_DECODING> dbg;
