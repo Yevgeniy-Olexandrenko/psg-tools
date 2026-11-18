@@ -49,8 +49,8 @@ void FilelistConverter::Convert()
                 if (star != std::string::npos)
                     outputName.replace(star, 1, inputName);
 
-                m_outputPath.replace_filename(outputName);
-                m_outputPath.replace_extension(outputType);
+                // append the type: input names can have dots, as in "M16.2.psm"
+                m_outputPath.replace_filename(outputName + outputType);
 
                 std::filesystem::create_directories(m_outputPath.parent_path());
                 ConvertFile();

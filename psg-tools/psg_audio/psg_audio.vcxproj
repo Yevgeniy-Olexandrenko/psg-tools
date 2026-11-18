@@ -27,6 +27,8 @@
     <ClInclude Include="sources\decoders\modules\DecodeASC.h" />
     <ClInclude Include="sources\decoders\modules\DecodeMID.h" />
     <ClInclude Include="sources\decoders\modules\DecodePSC.h" />
+    <ClInclude Include="sources\decoders\modules\DecodePSM.h" />
+    <ClInclude Include="sources\decoders\modules\DecodePT1.h" />
     <ClInclude Include="sources\decoders\modules\DecodePT2.h" />
     <ClInclude Include="sources\decoders\modules\DecodePT3.h" />
     <ClInclude Include="sources\decoders\modules\DecodeSQT.h" />
@@ -95,6 +97,8 @@
     <ClCompile Include="sources\decoders\modules\DecodeASC.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeMID.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodePSC.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodePSM.cpp" />
+    <ClCompile Include="sources\decoders\modules\DecodePT1.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodePT2.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodePT3.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeSQT.cpp" />

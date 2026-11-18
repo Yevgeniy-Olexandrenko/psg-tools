@@ -3,6 +3,8 @@
 // module decoders
 #include "decoders/modules/DecodeASC.h"
 #include "decoders/modules/DecodePSC.h"
+#include "decoders/modules/DecodePSM.h"
+#include "decoders/modules/DecodePT1.h"
 #include "decoders/modules/DecodePT2.h"
 #include "decoders/modules/DecodePT3.h"
 #include "decoders/modules/DecodeSQT.h"
@@ -36,7 +38,7 @@
 // debug
 #include "debug/DebugOutput.h"
 
-const std::string FileDecoder::FileTypes{ "asc|as0|psc|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
+const std::string FileDecoder::FileTypes{ "asc|as0|psc|psm|pt1|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym" };
 const std::string FileEncoder::FileTypes{ "psg|rsf|vgm|vgz|vtx|ym|wav" };
 
 static DebugOutput<DBG_DECODING> dbg;
@@ -48,6 +50,8 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 		// modules
 		std::shared_ptr<Decoder>(new DecodeASC()),
 		std::shared_ptr<Decoder>(new DecodePSC()),
+		std::shared_ptr<Decoder>(new DecodePSM()),
+		std::shared_ptr<Decoder>(new DecodePT1()),
 		std::shared_ptr<Decoder>(new DecodePT2()),
 		std::shared_ptr<Decoder>(new DecodePT3()),
 		std::shared_ptr<Decoder>(new DecodeSQT()),

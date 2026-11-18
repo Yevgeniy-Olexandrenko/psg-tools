@@ -72,6 +72,12 @@
     <ClInclude Include="sources\decoders\modules\DecodePSC.h">
       <Filter>Sources\decoders\modules</Filter>
     </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodePSM.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\modules\DecodePT1.h">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClInclude>
     <ClInclude Include="sources\decoders\modules\DecodePT2.h">
       <Filter>Sources\decoders\modules</Filter>
     </ClInclude>
@@ -279,6 +285,12 @@
       <Filter>Sources\decoders\modules</Filter>
     </ClCompile>
     <ClCompile Include="sources\decoders\modules\DecodePSC.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodePSM.cpp">
+      <Filter>Sources\decoders\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\modules\DecodePT1.cpp">
       <Filter>Sources\decoders\modules</Filter>
     </ClCompile>
     <ClCompile Include="sources\decoders\modules\DecodePT2.cpp">
