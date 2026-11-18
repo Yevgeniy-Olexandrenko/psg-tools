@@ -435,6 +435,24 @@ Chip::Model DecodeVGM::AYModel(const Header& header)
     return Chip::Model::AY8910;
 }
 
+int DecodeVGM::CommandSize(uint8_t command)
+{
+    // the size of the operands of a command, 0 for an unknown command
+    if (command >= 0x30 && command <= 0x3F) return 1;
+    if (command >= 0x40 && command <= 0x4E) return 2;
+    if (command >= 0x4F && command <= 0x50) return 1;
+    if (command >= 0x51 && command <= 0x5F) return 2;
+    if (command == 0x68) return 11;
+    if (command == 0x90 || command == 0x91 || command == 0x95) return 4;
+    if (command == 0x92) return 5;
+    if (command == 0x93) return 10;
+    if (command == 0x94) return 1;
+    if (command >= 0xA0 && command <= 0xBF) return 2;
+    if (command >= 0xC0 && command <= 0xDF) return 3;
+    if (command >= 0xE0) return 4;
+    return 0;
+}
+
 std::shared_ptr<ChipSim> DecodeVGM::CreateSimulator(ChipSim::Type type)
 {
     switch (type)
@@ -560,6 +578,19 @@ int DecodeVGM::DecodeBlock()
         else if ((m_dataPtr[0] & 0xF0) == 0x70)
         {
             samples = (1 + (m_dataPtr[0] & 0x0F));
+        }
+
+        // YM2612 port 0 address 2A write from the data bank, then wait n samples
+        else if ((m_dataPtr[0] & 0xF0) == 0x80)
+        {
+            samples = (m_dataPtr[0] & 0x0F);
+        }
+
+        // Skip the other commands of known size: writes to chips without a simulator,
+        // DAC stream control (Furnace adds it to AY8930 VGMs), PCM RAM writes, seeks
+        else if (int size = CommandSize(m_dataPtr[0]))
+        {
+            m_dataPtr += size;
         }
 
         // Unknown command, stop decoding
