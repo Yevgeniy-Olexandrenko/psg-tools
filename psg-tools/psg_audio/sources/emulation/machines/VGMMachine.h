@@ -7,8 +7,8 @@ class VGMMachine : public Machine
 {
 public:
 	virtual void Init() = 0;
-	virtual void Write(int chip, addr_t reg, data_t data) = 0;
-	virtual void DataBlock(addr_t addr, size_t size) = 0;
+	virtual void Write(int chip, uint16_t reg, uint8_t data) = 0;
+	virtual void DataBlock(uint16_t addr, size_t size) = 0;
 	virtual void Simulate(int samples) = 0;
 	virtual void Convert(Frame& frame) = 0;
 };

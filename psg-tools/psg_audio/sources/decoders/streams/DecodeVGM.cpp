@@ -272,21 +272,13 @@ bool DecodeVGM::Open(Stream& stream)
                 stream.play.frameRate = frameRate;
 
                 if (!hybrid) m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
-                m_samplesPerFrame = (44100 / frameRate);
+                m_cutter.reset(new FrameCutter(44100 / frameRate));
                 m_waitSamples = 0;
 
                 m_loop = 0;
                 m_loopTime = (header.loopSamples ? int(header.totalSamples - header.loopSamples) : -1);
-                m_time = 0;
                 m_frames = 0;
                 m_writes = 0;
-                m_written = false;
-                m_sinceWrite = 0;
-                m_sinceFrame = m_samplesPerFrame;
-                m_burstTime = 0;
-                m_updateTime = -1;
-                m_updateTimes.assign(2 * m_samplesPerFrame, 0);
-                m_updates = 0;
 
                 // GD3 tags reading
                 if (uint8_t* gd3Offset = m_data + header.gd3Offset)
@@ -345,46 +337,20 @@ bool DecodeVGM::Open(Stream& stream)
 
 bool DecodeVGM::Decode(Frame& frame)
 {
-    // a player writes the registers once per frame, in a burst with short pauses inside,
-    // and waits for the next frame: a frame is taken at the start of the long pause after
-    // a burst, as the player has just set it, and every frame while nothing is written;
-    // a burst too close to the last frame is a late part of its update
-    const int longPause = (m_samplesPerFrame / 4);
-    const int noUpdate = (m_samplesPerFrame + m_samplesPerFrame / 2);
-
+    // the frames are cut at the updates of the player (see FrameCutter)
     while (true)
     {
         if (!m_waitSamples)
         {
             int writes = m_writes;
             if (!(m_waitSamples = DecodeBlock())) return false;
-            if (m_writes != writes)
-            {
-                if (!m_written) m_burstTime = m_time;
-                m_written = true;
-                m_sinceWrite = 0;
-            }
+            if (m_writes != writes) m_cutter->OnWrite();
         }
 
-        bool update = (m_written && m_sinceWrite + m_waitSamples >= longPause);
-        if (update && m_sinceFrame < longPause) update = m_written = false;
-
-        if (update || m_sinceFrame >= noUpdate)
+        if (m_cutter->IsFrameEnd(m_waitSamples))
         {
-            // count the times between the updates in a row, from the start of
-            // a burst: the player starts it at the frame, its length varies
-            if (update && m_updateTime >= 0 && m_burstTime - m_updateTime <= noUpdate)
-            {
-                m_updateTimes[m_burstTime - m_updateTime]++;
-                m_updates++;
-            }
-            m_updateTime = (update ? m_burstTime : -1);
-
             m_simulator->Convert(frame);
-            m_sinceFrame = (update ? 0 : m_sinceFrame - m_samplesPerFrame);
-            m_written = false;
-
-            if (m_loopTime >= 0 && m_time >= m_loopTime)
+            if (m_loopTime >= 0 && m_cutter->GetTime() >= m_loopTime)
             {
                 m_loop = m_frames;
                 m_loopTime = -1;
@@ -393,32 +359,17 @@ bool DecodeVGM::Decode(Frame& frame)
             return true;
         }
 
-        int samples = std::min(m_waitSamples, noUpdate - m_sinceFrame);
+        int samples = m_cutter->Advance(m_waitSamples);
         m_simulator->Simulate(samples);
         m_waitSamples -= samples;
-        m_sinceWrite  += samples;
-        m_sinceFrame  += samples;
-        m_time        += samples;
     }
 }
 
 void DecodeVGM::Close(Stream& stream)
 {
-    // The most common time between the updates in a row is the frame time, if most of
-    // the updates come at about this time. The mean of these times, which vary by a few
-    // samples, gives the real frame rate instead of the 50 or 60 Hz of the header.
-    int mode = int(std::max_element(m_updateTimes.begin(), m_updateTimes.end()) - m_updateTimes.begin());
-    int count = 0;
-    double time = 0;
-    for (int t = std::max(mode - 2, 0); t <= mode + 2 && t < int(m_updateTimes.size()); ++t)
-    {
-        count += m_updateTimes[t];
-        time += double(t) * m_updateTimes[t];
-    }
-    if (count >= 50 && 2 * count >= m_updates)
-    {
-        stream.play.frameRate = (44100 * count / time);
-    }
+    // the rate of the updates instead of the 50 or 60 Hz of the header
+    FrameRate frameRate;
+    if (m_cutter->GetFrameRate(frameRate)) stream.play.frameRate = frameRate;
     stream.Finalize(m_loop, true);
     delete[] m_data;
     dbg.close();

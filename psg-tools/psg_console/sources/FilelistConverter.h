@@ -31,4 +31,5 @@ private:
 
     Filelist::Path m_inputPath;
     Filelist::Path m_outputPath;
+    std::string m_outputType;
 };

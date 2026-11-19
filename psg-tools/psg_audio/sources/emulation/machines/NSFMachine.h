@@ -1,8 +1,11 @@
 #pragma once
 
 #include "emulation/Machine.h"
-#include "emulation/Memory.h"
+#include "emulation/RP2A03Cpu.h"
 
+// TODO: the machine of the NSF files (the next format): the RP2A03 CPU, 2K of
+// RAM, the ROM in 4K banks (the registers 0x5FF8-0x5FFF switch them through
+// the page table of the bus), the APU registers 0x4000-0x4017 go to SimRP2A03.
 class NSFMachine : public Machine
 {
 public:
@@ -28,25 +31,4 @@ public:
         uint8_t  reserved[4];        // 7C reserved
     };
     #pragma pack(pop)
-
-    bool PowerOn(const Header& header);
-
-private:
-    void OnSolidRomRead(addr_t addr, data_t& data);
-    void OnMapperRegWrite(addr_t addr, data_t& data);
-    void OnMappedRomRead(addr_t addr, data_t& data);
-
-private:
-    uint32_t m_music_offset;
-    uint32_t m_music_length;
-
-    bool m_format; // false - NTSC; true - PAL
-    uint32_t m_playback_rate;
-    uint32_t m_clock_rate;
-
-    RAM<0x0000, 0x07FF> m_cpuRAM;
-    RAM<0x6000, 0x7FFF> m_prgRAM;
-
-    bool m_bank_switched;
-    data_t m_bank[8];
 };

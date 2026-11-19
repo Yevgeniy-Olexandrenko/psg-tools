@@ -89,8 +89,10 @@ public:
     bool AddFrame(const Frame& frame);
     const Frame& GetFrame(FrameId frameId) const;
     // findLoop: the frames come from a register stream, which can
-    // hold more than one pass of a looped song (see FindLoop)
-    void Finalize(FrameId loopFrameId, bool findLoop = false);
+    // hold more than one pass of a looped song (see FindLoop).
+    // length: the frames to keep when no loop is found (0 keeps all). A
+    // decoder that plays the song past its length to find the loop gives it.
+    void Finalize(FrameId loopFrameId, bool findLoop = false, size_t length = 0);
 
     void GetDuration(int& hh, int& mm, int& ss, int& ms) const;
     void GetDuration(int& hh, int& mm, int& ss) const;
@@ -108,12 +110,17 @@ public:
     void print_footer  (std::ostream& stream) const override;
 
 private:
-    void FindLoop(FrameId& loopFrameId);
+    bool FindLoop(FrameId& loopFrameId);
     void ConfigureDestinationChip();
 
 public:
     File file;
     Info info;
+
+    // A track of a container file (AY, NSF): its number from 1 and the
+    // number of the tracks in the file. Zeros for the other files.
+    int trackNumber = 0;
+    int tracksCount = 0;
     Play play;
 
     Chip schip; // source chip configuration defined by stream

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <random>
 #include "Filelist.h"
+#include "TrackPath.h"
+#include "PSGAudio.h"
 
 namespace
 {
@@ -64,6 +66,15 @@ Filelist::Filelist(const std::string& exts, const Path& path)
 
 void Filelist::Append(const Path& path)
 {
+    // a track of a container is not a file on the disk, glob does not find it
+    Path file;
+    int number;
+    if (TrackPath::Split(std::filesystem::absolute(path), file, number))
+    {
+        InsertFile(std::filesystem::absolute(path));
+        return;
+    }
+
     for (auto path : glob::glob(path.string()))
     {
         if (path.is_relative())
@@ -134,20 +145,43 @@ bool Filelist::EraseFile(const Path& path)
 
 bool Filelist::InsertFile(const Path& path)
 {
-    if (std::filesystem::is_regular_file(path))
+    // a track of a container file
+    Path file;
+    int number;
+    if (TrackPath::Split(path, file, number))
     {
-        auto extension = GetExtension(path);
-        if (std::find(m_exts.begin(), m_exts.end(), extension) != m_exts.end())
+        return (HasKnownExtension(file) && InsertPath(path));
+    }
+
+    if (std::filesystem::is_regular_file(path) && HasKnownExtension(path))
+    {
+        // a container file with more than one track gives its tracks
+        int tracks = FileDecoder::CountTracks(path);
+        if (tracks > 1)
         {
-            if (std::filesystem::exists(path))
+            bool inserted = false;
+            for (int track = 1; track <= tracks; ++track)
             {
-                if (m_hashes.insert(std::filesystem::hash_value(path)).second)
-                {
-                    m_files.push_back(path);
-                    return true;
-                }
+                inserted |= InsertPath(TrackPath::Make(path, track));
             }
+            return inserted;
         }
+        return InsertPath(path);
+    }
+    return false;
+}
+
+bool Filelist::HasKnownExtension(const Path& path) const
+{
+    return (std::find(m_exts.begin(), m_exts.end(), GetExtension(path)) != m_exts.end());
+}
+
+bool Filelist::InsertPath(const Path& path)
+{
+    if (m_hashes.insert(std::filesystem::hash_value(path)).second)
+    {
+        m_files.push_back(path);
+        return true;
     }
     return false;
 }

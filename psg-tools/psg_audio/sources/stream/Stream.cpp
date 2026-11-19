@@ -250,9 +250,12 @@ const Frame& Stream::GetFrame(FrameId frameId) const
     return m_frames[frameId];
 }
 
-void Stream::Finalize(FrameId loopFrameId, bool findLoop)
+void Stream::Finalize(FrameId loopFrameId, bool findLoop, size_t length)
 {
-    if (findLoop) FindLoop(loopFrameId);
+    if (findLoop && !FindLoop(loopFrameId) && length && length < m_frames.size())
+    {
+        m_frames.resize(length);
+    }
     m_loopFrameId = (loopFrameId < framesCount ? loopFrameId : 0);
     loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount));
 
@@ -267,11 +270,11 @@ void Stream::Finalize(FrameId loopFrameId, bool findLoop)
 // with one full repeat or more, the true loop starts first. A pattern played
 // twice near the end starts later; multiples of the period start at the same
 // frame. The frames after the first repeat are cut.
-void Stream::FindLoop(FrameId& loopFrameId)
+bool Stream::FindLoop(FrameId& loopFrameId)
 {
     const size_t count = m_frames.size();
     const size_t minPeriod = size_t(play.frameRate * k_minLoopSec);
-    if (!minPeriod || count < 2 * minPeriod) return;
+    if (!minPeriod || count < 2 * minPeriod) return false;
 
     // the keys of the frames in the reverse order
     std::vector<uint64_t> keys(count);
@@ -317,7 +320,7 @@ void Stream::FindLoop(FrameId& loopFrameId)
 
     // In a song, the loop is longer than the intro. A short repeat
     // late in a song is a pattern played two times, not a loop.
-    if (!bestPeriod || bestPeriod < bestLoop) return;
+    if (!bestPeriod || bestPeriod < bestLoop) return false;
 
     if (loopFrameId > 2 && loopFrameId < count)
     {
@@ -325,12 +328,13 @@ void Stream::FindLoop(FrameId& loopFrameId)
         // Thus the repeats must start at the loop or before it, and the frames
         // from the loop to the end must be full periods. One pass has one
         // period from the loop to the end, and nothing is cut.
-        if (bestLoop > loopFrameId || (count - loopFrameId) % bestPeriod) return;
+        if (bestLoop > loopFrameId || (count - loopFrameId) % bestPeriod) return false;
         bestLoop = loopFrameId;
     }
 
     m_frames.resize(bestLoop + bestPeriod);
     loopFrameId = FrameId(bestLoop);
+    return true;
 }
 
 void Stream::GetDuration(int& hh, int& mm, int& ss, int& ms) const

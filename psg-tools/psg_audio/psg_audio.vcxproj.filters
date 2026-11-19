@@ -22,6 +22,9 @@
     <Filter Include="Sources\decoders\streams">
       <UniqueIdentifier>{a91bf3ad-1701-4d74-8cf9-7fe2426e64f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\decoders\machines">
+      <UniqueIdentifier>{6d2f8a41-3b7c-4e59-9a1d-c5e0f7b28d36}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Sources\encoders\specific">
       <UniqueIdentifier>{2f0de7df-e016-4a21-aefa-1ef5c53e36cd}</UniqueIdentifier>
     </Filter>
@@ -117,7 +120,13 @@
     <ClInclude Include="sources\decoders\streams\DecodeYM.h">
       <Filter>Sources\decoders\streams</Filter>
     </ClInclude>
+    <ClInclude Include="sources\decoders\machines\DecodeAY.h">
+      <Filter>Sources\decoders\machines</Filter>
+    </ClInclude>
     <ClInclude Include="sources\decoders\Decoder.h">
+      <Filter>Sources\decoders</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\decoders\FrameCutter.h">
       <Filter>Sources\decoders</Filter>
     </ClInclude>
     <ClInclude Include="sources\encoders\Encoder.h">
@@ -195,6 +204,9 @@
     <ClInclude Include="sources\filelist\Filelist.h">
       <Filter>Sources\filelist</Filter>
     </ClInclude>
+    <ClInclude Include="sources\filelist\TrackPath.h">
+      <Filter>Sources\filelist</Filter>
+    </ClInclude>
     <ClInclude Include="sources\filelist\FilelistTraversal.h">
       <Filter>Sources\filelist</Filter>
     </ClInclude>
@@ -254,9 +266,6 @@
     </ClInclude>
     <ClInclude Include="sources\emulation\machines\VGMMachine.h">
       <Filter>Sources\emulation\machines</Filter>
-    </ClInclude>
-    <ClInclude Include="sources\emulation\Memory.h">
-      <Filter>Sources\emulation</Filter>
     </ClInclude>
     <ClInclude Include="sources\utils\BitStream.h">
       <Filter>Sources\utils</Filter>
@@ -338,7 +347,13 @@
     <ClCompile Include="sources\decoders\streams\DecodeYM.cpp">
       <Filter>Sources\decoders\streams</Filter>
     </ClCompile>
+    <ClCompile Include="sources\decoders\machines\DecodeAY.cpp">
+      <Filter>Sources\decoders\machines</Filter>
+    </ClCompile>
     <ClCompile Include="sources\decoders\Decoder.cpp">
+      <Filter>Sources\decoders</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\decoders\FrameCutter.cpp">
       <Filter>Sources\decoders</Filter>
     </ClCompile>
     <ClCompile Include="sources\encoders\Encoder.cpp">
@@ -402,6 +417,9 @@
       <Filter>Sources\player\streamer</Filter>
     </ClCompile>
     <ClCompile Include="sources\filelist\Filelist.cpp">
+      <Filter>Sources\filelist</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\filelist\TrackPath.cpp">
       <Filter>Sources\filelist</Filter>
     </ClCompile>
     <ClCompile Include="sources\filelist\FilelistTraversal.cpp">

@@ -15,6 +15,9 @@ public:
 	static const std::string FileTypes;
 	bool Decode(const std::filesystem::path& path, Stream& stream);
 
+	// The number of the tracks in a container file (see TrackPath), 0 for other files.
+	static int CountTracks(const std::filesystem::path& path);
+
 protected:
 	virtual void OnFrameDecoded(const Stream& stream, FrameId frameId) {}
 	virtual bool IsAbortRequested() const { return false; }

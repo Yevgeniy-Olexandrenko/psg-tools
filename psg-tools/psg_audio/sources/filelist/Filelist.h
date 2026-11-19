@@ -32,6 +32,9 @@ public:
 	bool ExportPlaylist();
 
 private:
+	bool HasKnownExtension(const Path& path) const;
+	bool InsertPath(const Path& path);
+
 	void ImportDirectory(const Path& path);
 	void ImportPlaylistM3U(const Path& path);
 	void ImportPlaylistAYL(const Path& path);

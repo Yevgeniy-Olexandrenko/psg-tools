@@ -1,5 +1,6 @@
 #include "FilelistConverter.h"
 #include "ConsoleGUI.h"
+#include "filelist/TrackPath.h"
 
 FilelistConverter::FilelistConverter(Chip& chip, FilelistTraversal& filelist, Filelist::Path& output, Duration duration, Termination& termination)
     : m_chip(chip)
@@ -40,23 +41,13 @@ void FilelistConverter::Convert()
         if (!outputType.empty())
         {
             std::for_each(outputType.begin(), outputType.end(), ::tolower);
+            m_outputType = outputType;
             while (!m_termination && m_filelist.GetNextFile(m_inputPath))
             {
-                std::string inputName = m_inputPath.stem().string();
-                std::string outputName = m_output.stem().string();
-
-                size_t star = outputName.find('*');
-                if (star != std::string::npos)
-                    outputName.replace(star, 1, inputName);
-
-                // append the type: input names can have dots, as in "M16.2.psm"
-                m_outputPath.replace_filename(outputName + outputType);
-
-                std::filesystem::create_directories(m_outputPath.parent_path());
                 ConvertFile();
 
                 // single file case
-                if (star == std::string::npos) break;
+                if (m_output.stem().string().find('*') == std::string::npos) break;
             }
         }
     }
@@ -77,6 +68,16 @@ void FilelistConverter::ConvertFile()
 
     if (Decode(m_inputPath, stream))
     {
+        // the name of a track of a container file comes from the decoded stream
+        std::string outputName = m_output.stem().string();
+        size_t star = outputName.find('*');
+        if (star != std::string::npos)
+            outputName.replace(star, 1, TrackPath::OutputStem(m_inputPath, stream));
+
+        // append the type: input names can have dots, as in "M16.2.psm"
+        m_outputPath.replace_filename(outputName + m_outputType);
+        std::filesystem::create_directories(m_outputPath.parent_path());
+
         if (Encode(m_outputPath, stream, m_duration))
         {
             gui::CommitFile(GetFileView(), stream, m_outputPath.string());

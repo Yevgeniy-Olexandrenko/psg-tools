@@ -93,6 +93,11 @@ public:
 	void Init();
 	void Decode(int chip, const ChipRecord& record, Frame::Registers& regs);
 
+	// Reads a chip address (0x00-0x0F) back from the registers, as the chip
+	// gives it: through the selected bank, with the unused bits zero. The
+	// I/O ports (0x0E, 0x0F) and the addresses above give 0xFF.
+	uint8_t Read(int chip, uint8_t addr, const Frame::Registers& regs) const;
+
 private:
 	bool m_bankB[2]{ false, false };
 };

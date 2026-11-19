@@ -217,6 +217,13 @@ void ChipDecoder::Init()
 	m_bankB[0] = m_bankB[1] = false;
 }
 
+uint8_t ChipDecoder::Read(int chip, uint8_t addr, const Frame::Registers& regs) const
+{
+	if (addr == Register::Mode_Bank) return regs.GetData(Register::Mode_Bank);
+	if (addr < Register::Mode_Bank) return regs.GetData(m_bankB[chip] ? Register::BankB_Fst + addr : addr);
+	return 0xFF;
+}
+
 void ChipDecoder::Decode(int chip, const ChipRecord& record, Frame::Registers& regs)
 {
 	if (record.addr == Register::Mode_Bank)

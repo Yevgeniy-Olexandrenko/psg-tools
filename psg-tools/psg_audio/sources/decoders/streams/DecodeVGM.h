@@ -3,6 +3,7 @@
 #include <memory>
 #include "decoders/Decoder.h"
 #include "simulation/ChipSim.h"
+#include "decoders/FrameCutter.h"
 
 class DecodeVGM : public Decoder
 {
@@ -102,21 +103,13 @@ private:
     uint8_t* m_dataPtr;
 
     int m_loop;
-    int m_samplesPerFrame;
     int m_waitSamples;
 
-    int  m_time;       // samples simulated
-    int  m_loopTime;   // of the loop start, -1 without a loop
-    int  m_frames;     // decoded
-    int  m_writes;     // to the registers of the simulated chip
-    bool m_written;    // since the last frame
-    int  m_sinceWrite; // samples
-    int  m_sinceFrame; // samples
+    int m_loopTime; // of the loop start, -1 without a loop
+    int m_frames;   // decoded
+    int m_writes;   // to the registers of the simulated chip
 
-    int  m_burstTime;   // of the first write after the last frame
-    int  m_updateTime;  // of the burst of the last frame with an update, -1 after a frame without it
-    int  m_updates;     // after another update
-    std::vector<int> m_updateTimes; // number of updates by time after another update
+    std::unique_ptr<FrameCutter> m_cutter;
 
     std::shared_ptr<ChipSim> m_simulator;
 };

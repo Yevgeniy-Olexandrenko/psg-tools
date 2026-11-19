@@ -24,6 +24,7 @@
     <ClInclude Include="sources\debug\DebugPayload.h" />
     <ClInclude Include="sources\debug\DebugStatistics.h" />
     <ClInclude Include="sources\decoders\Decoder.h" />
+    <ClInclude Include="sources\decoders\FrameCutter.h" />
     <ClInclude Include="sources\decoders\modules\DecodeASC.h" />
     <ClInclude Include="sources\decoders\modules\DecodeMID.h" />
     <ClInclude Include="sources\decoders\modules\DecodePSC.h" />
@@ -42,11 +43,11 @@
     <ClInclude Include="sources\decoders\streams\DecodeVGM.h" />
     <ClInclude Include="sources\decoders\streams\DecodeVTX.h" />
     <ClInclude Include="sources\decoders\streams\DecodeYM.h" />
+    <ClInclude Include="sources\decoders\machines\DecodeAY.h" />
     <ClInclude Include="sources\emulation\Machine.h" />
     <ClInclude Include="sources\emulation\machines\AYMachine.h" />
     <ClInclude Include="sources\emulation\machines\NSFMachine.h" />
     <ClInclude Include="sources\emulation\machines\VGMMachine.h" />
-    <ClInclude Include="sources\emulation\Memory.h" />
     <ClInclude Include="sources\emulation\RP2A03Apu.h" />
     <ClInclude Include="sources\emulation\LR35902Apu.h" />
     <ClInclude Include="sources\emulation\RP2A03Cpu.h" />
@@ -61,6 +62,7 @@
     <ClInclude Include="sources\encoders\streams\EncodeVTX.h" />
     <ClInclude Include="sources\encoders\streams\EncodeYM.h" />
     <ClInclude Include="sources\filelist\Filelist.h" />
+    <ClInclude Include="sources\filelist\TrackPath.h" />
     <ClInclude Include="sources\filelist\FilelistTraversal.h" />
     <ClInclude Include="sources\player\emulator\Emulator.h" />
     <ClInclude Include="sources\player\emulator\WaveAudio.h" />
@@ -96,6 +98,7 @@
   <ItemGroup>
     <ClCompile Include="sources\debug\DebugStatistics.cpp" />
     <ClCompile Include="sources\decoders\Decoder.cpp" />
+    <ClCompile Include="sources\decoders\FrameCutter.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeASC.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodeMID.cpp" />
     <ClCompile Include="sources\decoders\modules\DecodePSC.cpp" />
@@ -114,6 +117,7 @@
     <ClCompile Include="sources\decoders\streams\DecodeVGM.cpp" />
     <ClCompile Include="sources\decoders\streams\DecodeVTX.cpp" />
     <ClCompile Include="sources\decoders\streams\DecodeYM.cpp" />
+    <ClCompile Include="sources\decoders\machines\DecodeAY.cpp" />
     <ClCompile Include="sources\emulation\Machine.cpp" />
     <ClCompile Include="sources\emulation\machines\AYMachine.cpp" />
     <ClCompile Include="sources\emulation\machines\NSFMachine.cpp" />
@@ -132,6 +136,7 @@
     <ClCompile Include="sources\encoders\streams\EncodeVTX.cpp" />
     <ClCompile Include="sources\encoders\streams\EncodeYM.cpp" />
     <ClCompile Include="sources\filelist\Filelist.cpp" />
+    <ClCompile Include="sources\filelist\TrackPath.cpp" />
     <ClCompile Include="sources\filelist\FilelistTraversal.cpp" />
     <ClCompile Include="sources\player\emulator\Emulator.cpp" />
     <ClCompile Include="sources\player\emulator\WaveAudio.cpp" />
