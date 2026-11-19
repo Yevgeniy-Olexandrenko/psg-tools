@@ -27,7 +27,12 @@ void SimHybrid::Reset()
 
 void SimHybrid::Write(int chip, Register reg, uint8_t data)
 {
-	// The decoder writes to the simulator that Find returns.
+	if (chip == 0 || chip == 1) m_sims[chip]->Write(0, reg, data);
+}
+
+uint8_t SimHybrid::Read(int chip, Register reg)
+{
+	return (chip == 0 || chip == 1 ? m_sims[chip]->Read(0, reg) : 0xFF);
 }
 
 void SimHybrid::Simulate(int samples)

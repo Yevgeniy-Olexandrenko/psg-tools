@@ -92,7 +92,10 @@ public:
     // hold more than one pass of a looped song (see FindLoop).
     // length: the frames to keep when no loop is found (0 keeps all). A
     // decoder that plays the song past its length to find the loop gives it.
-    void Finalize(FrameId loopFrameId, bool findLoop = false, size_t length = 0);
+    // loopKeys: a key of each frame for the loop search, instead of the keys
+    // of its registers (a machine gives the keys of the writes of its player).
+    void Finalize(FrameId loopFrameId, bool findLoop = false, size_t length = 0,
+        const std::vector<uint64_t>* loopKeys = nullptr);
 
     void GetDuration(int& hh, int& mm, int& ss, int& ms) const;
     void GetDuration(int& hh, int& mm, int& ss) const;
@@ -110,7 +113,7 @@ public:
     void print_footer  (std::ostream& stream) const override;
 
 private:
-    bool FindLoop(FrameId& loopFrameId);
+    bool FindLoop(FrameId& loopFrameId, const std::vector<uint64_t>* loopKeys);
     void ConfigureDestinationChip();
 
 public:

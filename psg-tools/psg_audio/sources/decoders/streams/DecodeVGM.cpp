@@ -2,11 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include <zlib/zlib.h>
-#include "simulation/SimAY8910.h"
-#include "simulation/SimRP2A03.h"
-#include "simulation/SimSN76489.h"
-#include "simulation/SimLR35902.h"
-#include "simulation/SimHybrid.h"
+#include "simulation/SimFactory.h"
 #include "debug/DebugOutput.h"
 
 static DebugOutput<DBG_DECODE_VGM> dbg;
@@ -65,32 +61,39 @@ bool DecodeVGM::Open(Stream& stream)
             memset((uint8_t*)(&header) + headerSize, 0, sizeof(header) - headerSize);
         }
 
-        // Chips that have a simulator, in the order of priority.
-        std::vector<ChipSim::Type> chips;
-        if (header.version >= 0x161 && header.nesApuClock) chips.push_back(ChipSim::Type::RP2A03);
-        if (header.sn76489Clock) chips.push_back(ChipSim::Type::SN76489);
-        if (header.version >= 0x161 && header.gbDmgClock) chips.push_back(ChipSim::Type::LR35902);
-        if (header.version >= 0x151 && header.ay8910Clock) chips.push_back(ChipSim::Type::AY8910);
+        // Chips that have a simulator, in the order of priority (see SimFactory).
+        // PAL (1662607 Hz) and Dendy (1773448 Hz) NES play at 50 Hz.
+        std::vector<SimFactory::Source> chips;
+        int frameRate = 60;
+        if (header.version >= 0x161 && header.nesApuClock)
+        {
+            int clock = (header.nesApuClock & 0x3FFFFFFF);
+            if (clock / 1000 == 1662 || clock / 1000 == 1773) frameRate = 50;
+            chips.push_back({ ChipSim::Type::RP2A03, clock });
+        }
+        if (header.sn76489Clock)
+        {
+            int clock = (header.sn76489Clock & 0x3FFFFFFF);
+            chips.push_back({ ChipSim::Type::SN76489, clock, Chip::Model::Unknown, bool(header.sn76489Clock & 0x40000000) });
+        }
+        if (header.version >= 0x161 && header.gbDmgClock)
+        {
+            chips.push_back({ ChipSim::Type::LR35902, int(header.gbDmgClock & 0x3FFFFFFF) });
+        }
+        if (header.version >= 0x151 && header.ay8910Clock)
+        {
+            int clock = (header.ay8910Clock & 0x3FFFFFFF);
+            if (header.ay8910Flags & 0x10) clock /= 2;
+            chips.push_back({ ChipSim::Type::AY8910, clock, AYModel(header), bool(header.ay8910Clock & 0x40000000) });
+        }
 
         // Two different chips play on two PSGs, one simulator on each PSG. Reject
-        // them if the user selects one PSG or if a dual chip needs a third PSG.
-        bool oneChosen = (stream.dchip.first.model != Chip::Model::Compatible && !stream.dchip.second.modelKnown);
-        bool hybrid = (chips.size() == 2);
-        bool playable = (chips.size() == 1 || (hybrid && !oneChosen && !HasDualChips(header)));
+        // them if a dual chip needs a third PSG, or if the user selects one PSG.
+        bool playable = (chips.size() == 1 || (chips.size() == 2 && !HasDualChips(header)));
 
-        if (header.ident == VGMSignature && playable && !HasOtherChips(header))
+        if (header.ident == VGMSignature && playable && !HasOtherChips(header)
+            && (m_simulator = SimFactory::Create(chips, stream)))
         {
-            if (hybrid)
-            {
-                std::shared_ptr<ChipSim> sims[2];
-                for (int psg = 0; psg < 2; ++psg) sims[psg] = CreateSimulator(chips[psg]);
-                m_simulator.reset(new SimHybrid(sims[0], sims[1]));
-            }
-            else
-            {
-                m_simulator = CreateSimulator(chips[0]);
-            }
-
             int fileSize = 0x04 + header.eofOffset;
             m_data = new uint8_t[fileSize];
 
@@ -98,91 +101,10 @@ bool DecodeVGM::Open(Stream& stream)
             {
                 m_dataPtr = m_data + dataOffset;
 
-                int clockRate = 0;
-                int frameRate = 60;
-
-                if (hybrid)
+                // A single AY8910: ZX Spectrum like pan configuration (left, center,
+                // right), otherwise the outputs of all channels are mixed together.
+                if (chips.size() == 1 && chips[0].type == ChipSim::Type::AY8910)
                 {
-                    // Both PSGs use the destination clock, the ZX Spectrum clock by default.
-                    stream.schip.clock = (stream.dchip.clockKnown ? stream.dchip.clock : Chip::Clock::F1773400);
-                    stream.schip.output = (stream.dchip.outputKnown ? stream.dchip.output : Chip::Output::Mono);
-
-                    // Each simulator plays its chip on one PSG of the destination model.
-                    for (int psg = 0; psg < 2; ++psg)
-                    {
-                        ChipSim* sim = m_simulator->Find(chips[psg]);
-                        Chip::Model model = stream.dchip.model(psg);
-                        bool compatible = (model == Chip::Model::Compatible || model == Chip::Model::Unknown);
-                        int clock = 0;
-
-                        if (chips[psg] == ChipSim::Type::SN76489)
-                        {
-                            clock = (header.sn76489Clock & 0x3FFFFFFF);
-                            if (compatible) model = Chip::Model::AY8910;
-                        }
-                        else if (chips[psg] == ChipSim::Type::AY8910)
-                        {
-                            clock = (header.ay8910Clock & 0x3FFFFFFF);
-                            if (header.ay8910Flags & 0x10) clock /= 2;
-                            if (compatible) model = AYModel(header);
-                        }
-                        else if (chips[psg] == ChipSim::Type::RP2A03)
-                        {
-                            clock = (header.nesApuClock & 0x3FFFFFFF);
-                            if (clock / 1000 == 1662 || clock / 1000 == 1773) frameRate = 50;
-                            if (compatible) model = Chip::Model::YM2149;
-
-                            auto outputType = (model == Chip::Model::AY8930 ?
-                                SimRP2A03::OutputType::AY8930Chip : SimRP2A03::OutputType::SingleChip);
-                            static_cast<SimRP2A03*>(sim)->ConfigureOutput(outputType, model);
-                        }
-                        else if (chips[psg] == ChipSim::Type::LR35902)
-                        {
-                            clock = (header.gbDmgClock & 0x3FFFFFFF);
-                            if (compatible) model = Chip::Model::YM2149;
-
-                            auto outputType = (model == Chip::Model::AY8930 ?
-                                SimLR35902::OutputType::AY8930Chip : SimLR35902::OutputType::SingleChip);
-                            static_cast<SimLR35902*>(sim)->ConfigureOutput(outputType, model);
-                        }
-
-                        if (psg) stream.schip.second.model = model;
-                        else stream.schip.first.model = model;
-                        sim->ConfigureClock(clock, stream.schip.clockValue);
-                    }
-                }
-
-                else if (m_simulator->type() == ChipSim::Type::SN76489)
-                {
-                    clockRate = (header.sn76489Clock & 0x3FFFFFFF);
-                    auto twoChips = bool(header.sn76489Clock & 0x40000000);
-
-                    Chip::Model model = Chip::Model::AY8910;
-                    stream.schip.first.model = model;
-                    stream.schip.clockValue = clockRate / 2;
-                    if (twoChips) stream.schip.second.model = model;
-                    //stream.schip.output(Chip::Output::Mono);
-
-                    // TODO
-                }
-                
-                else if (m_simulator->type() == ChipSim::Type::AY8910)
-                {
-                    clockRate = (header.ay8910Clock & 0x3FFFFFFF);
-                    if (header.ay8910Flags & 0x10) clockRate /= 2;
-                    // TODO: detect frame rate
-
-                    // detect chip model and count
-                    Chip::Model model = AYModel(header);
-                    auto twoChips = bool(header.ay8910Clock & 0x40000000);
-          
-                    // setup chip model, clock rate and 2nd chip if needed
-                    stream.schip.first.model = model;
-                    stream.schip.clockValue = clockRate;
-                    if (twoChips) stream.schip.second.model = model;
-
-                    // ZX Spectrum like pan configuration (left, center, right),
-                    // otherwise the outputs of all channels are mixed together
                     if (header.ay8910Flags & 0x80)
                     {
                         stream.schip.output = Chip::Output::Stereo;
@@ -194,74 +116,6 @@ bool DecodeVGM::Open(Stream& stream)
                     }
                 }
 
-                else if (m_simulator->type() == ChipSim::Type::RP2A03)
-                {
-                    clockRate = (header.nesApuClock & 0x3FFFFFFF);
-                    // PAL (1662607 Hz) and Dendy (1773448 Hz) play at 50 Hz
-                    if (clockRate / 1000 == 1662 || clockRate / 1000 == 1773) frameRate = 50;
-
-                    // setup chip clock rate (ZX Spectrum clock used by default)
-                    if (stream.dchip.clockKnown)
-                        stream.schip.clock = stream.dchip.clock;
-                    else
-                        stream.schip.clock = Chip::Clock::F1773400;
-
-                    // setup first chip (YM2149 used by default)
-                    if (stream.dchip.first.model != Chip::Model::Compatible)
-                        stream.schip.first.model = stream.dchip.first.model;
-                    else
-                        stream.schip.first.model = Chip::Model::YM2149;
-
-                    // setup output Strereo or Mono (Mono used by default)
-                    if (stream.dchip.outputKnown)
-                        stream.schip.output = stream.dchip.output;
-                    else
-                        stream.schip.output = Chip::Output::Mono;
-
-                    // configure simulator output type and update chip if required
-                    auto outputType = SimRP2A03::OutputType::SingleChip;
-                    if (stream.dchip.first.model == Chip::Model::AY8930)
-                    {
-                        outputType = SimRP2A03::OutputType::AY8930Chip;
-                        stream.schip.first.model = Chip::Model::AY8930;
-                        if (stream.dchip.count == 2 && stream.dchip.second.model == Chip::Model::AY8930)
-                        {
-                            // two AY8930: the 2nd one plays the DMC
-                            outputType = SimRP2A03::OutputType::AY8930DoubleChip;
-                            stream.schip.second.model = Chip::Model::AY8930;
-                        }
-                    }
-                    else if (stream.dchip.count == 2)
-                    {
-                        outputType = SimRP2A03::OutputType::DoubleChip;
-                        stream.schip.second.model = stream.schip.first.model;
-                    }
-                    static_cast<SimRP2A03*>(m_simulator.get())->ConfigureOutput(outputType, stream.schip.first.model);
-                }
-
-                else if (m_simulator->type() == ChipSim::Type::LR35902)
-                {
-                    clockRate = (header.gbDmgClock & 0x3FFFFFFF);
-
-                    // the destination clock, model and output, as for the NES APU
-                    stream.schip.clock = (stream.dchip.clockKnown ? stream.dchip.clock : Chip::Clock::F1773400);
-                    stream.schip.first.model = (stream.dchip.first.model != Chip::Model::Compatible ?
-                        stream.dchip.first.model : Chip::Model::YM2149);
-                    stream.schip.output = (stream.dchip.outputKnown ? stream.dchip.output : Chip::Output::Mono);
-
-                    auto outputType = SimLR35902::OutputType::SingleChip;
-                    if (stream.schip.first.model == Chip::Model::AY8930)
-                    {
-                        outputType = SimLR35902::OutputType::AY8930Chip;
-                    }
-                    else if (stream.dchip.count == 2)
-                    {
-                        outputType = SimLR35902::OutputType::DoubleChip;
-                        stream.schip.second.model = stream.schip.first.model;
-                    }
-                    static_cast<SimLR35902*>(m_simulator.get())->ConfigureOutput(outputType, stream.schip.first.model);
-                }
-
                 // use the recording rate when it is known
                 if (header.version >= 0x101 && header.rate)
                 {
@@ -271,7 +125,6 @@ bool DecodeVGM::Open(Stream& stream)
                 stream.info.type = "VGM stream";
                 stream.play.frameRate = frameRate;
 
-                if (!hybrid) m_simulator->ConfigureClock(clockRate, stream.schip.clockValue);
                 m_cutter.reset(new FrameCutter(44100 / frameRate));
                 m_waitSamples = 0;
 
@@ -436,18 +289,6 @@ int DecodeVGM::CommandSize(uint8_t command)
     if (command >= 0xC0 && command <= 0xDF) return 3;
     if (command >= 0xE0) return 4;
     return 0;
-}
-
-std::shared_ptr<ChipSim> DecodeVGM::CreateSimulator(ChipSim::Type type)
-{
-    switch (type)
-    {
-    case ChipSim::Type::SN76489: return std::make_shared<SimSN76489>();
-    case ChipSim::Type::AY8910:  return std::make_shared<SimAY8910>();
-    case ChipSim::Type::RP2A03:  return std::make_shared<SimRP2A03>();
-    case ChipSim::Type::LR35902: return std::make_shared<SimLR35902>();
-    default: return nullptr;
-    }
 }
 
 int DecodeVGM::DecodeBlock()

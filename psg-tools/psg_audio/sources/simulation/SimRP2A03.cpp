@@ -196,6 +196,12 @@ void SimRP2A03::Write(int chip, Register reg, uint8_t data)
     }
 }
 
+uint8_t SimRP2A03::Read(int chip, Register reg)
+{
+    // the status register: the length counters and the DMC
+    return (chip == 0 ? RP2A03Apu::Read(0x4000 | reg) : 0xFF);
+}
+
 void SimRP2A03::WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size)
 {
     RP2A03Apu::WriteMemory(addr, data, size);

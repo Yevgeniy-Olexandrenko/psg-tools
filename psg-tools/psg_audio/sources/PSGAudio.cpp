@@ -21,6 +21,7 @@
 
 // machine decoders
 #include "decoders/machines/DecodeAY.h"
+#include "decoders/machines/DecodeNSF.h"
 
 // specific encoders
 #include "encoders/specific/EncodeWAV.h"
@@ -41,14 +42,15 @@
 // debug
 #include "debug/DebugOutput.h"
 
-const std::string FileDecoder::FileTypes{ "asc|as0|psc|psm|pt1|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym|ay" };
+const std::string FileDecoder::FileTypes{ "asc|as0|psc|psm|pt1|pt2|pt3|ts|sqt|stc|stp|vt2|txt|psg|rsf|vgm|vgz|vtx|ym|ay|nsf" };
 const std::string FileEncoder::FileTypes{ "psg|rsf|vgm|vgz|vtx|ym|wav" };
 
 static DebugOutput<DBG_DECODING> dbg;
 
 int FileDecoder::CountTracks(const std::filesystem::path& path)
 {
-	return DecodeAY::CountTracks(path);
+	int tracks = DecodeAY::CountTracks(path);
+	return (tracks ? tracks : DecodeNSF::CountTracks(path));
 }
 
 bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
@@ -76,6 +78,7 @@ bool FileDecoder::Decode(const std::filesystem::path& path, Stream& stream)
 
 		// machines
 		std::shared_ptr<Decoder>(new DecodeAY()),
+		std::shared_ptr<Decoder>(new DecodeNSF()),
 	};
 
 	auto FindDecoderAndDecode = [&]() -> bool

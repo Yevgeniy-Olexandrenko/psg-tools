@@ -147,21 +147,19 @@ bool Frame::HasChanges() const
     return false;
 }
 
+// A channel sounds with the envelope, or with its tone or noise at a volume
+// above 0. Without them, it gives a constant level, which sounds only when it
+// changes: a digital sound written as volumes, frame by frame.
 bool Frame::IsAudible() const
 {
     for (const Registers& regs : m_regs)
     {
         for (int chan = 0; chan < 3; ++chan)
         {
-            uint8_t mixer = regs.GetData(Register::Mixer);
-            uint8_t volEn = regs.GetData(Register::volume[chan]);
+            if (regs.IsEnvelopeEnabled(chan)) return true;
 
-            bool enableT = ~(mixer & regs.tmask(chan));
-            bool enableN = ~(mixer & regs.nmask(chan));
-            bool enableE =  (volEn & regs.emask());
-            bool enableV =  (volEn & regs.vmask());
-
-            if (((enableT || enableN) && enableV) || enableE) return true;
+            bool gated = (regs.IsToneEnabled(chan) || regs.IsNoiseEnabled(chan));
+            if (gated ? regs.GetVolume(chan) > 0 : regs.IsChanged(Register::volume[chan])) return true;
         }
     }
     return false;

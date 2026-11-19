@@ -93,7 +93,6 @@ private:
     static bool HasOtherChips(const Header& header);
     static bool HasDualChips(const Header& header);
     static Chip::Model AYModel(const Header& header);
-    static std::shared_ptr<ChipSim> CreateSimulator(ChipSim::Type type);
     static int CommandSize(uint8_t command);
 
     int  DecodeBlock();

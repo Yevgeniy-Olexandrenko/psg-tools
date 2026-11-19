@@ -95,7 +95,7 @@ void AYMachine::Execute(uint64_t cycle)
 		uint32_t tact = uint32_t(m_cycle % k_frameTacts);
 		if (tact < k_intLength && m_cpu.CanInterrupt())
 		{
-			OnInterrupt();
+			EndUpdate();
 			m_cycle += m_cpu.Interrupt();
 		}
 		else if (m_cpu.IsHalted() && tact + 4 >= k_intLength)

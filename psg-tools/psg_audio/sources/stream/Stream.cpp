@@ -11,6 +11,12 @@ namespace
     const int k_maxSilenceSec  = 1;
     const int k_minLoopSec     = 4;
 
+    // A loop at this frame or before is no loop: the whole song repeats, and
+    // it plays once. A player or a logger can start such a loop after a few
+    // frames. A loop has a use only after an intro: the player repeats it to
+    // make a short song longer. Real intros are 0.1 s at least (6 frames).
+    const FrameId k_noLoopFrame = 5;
+
     // The key of a frame for the loop search: the registers that make the sound.
     // A shape register keeps the last shape written. In the first pass, it can
     // come from the intro; in the next passes, from the end of the song. Thus
@@ -250,14 +256,14 @@ const Frame& Stream::GetFrame(FrameId frameId) const
     return m_frames[frameId];
 }
 
-void Stream::Finalize(FrameId loopFrameId, bool findLoop, size_t length)
+void Stream::Finalize(FrameId loopFrameId, bool findLoop, size_t length, const std::vector<uint64_t>* loopKeys)
 {
-    if (findLoop && !FindLoop(loopFrameId) && length && length < m_frames.size())
+    if (findLoop && !FindLoop(loopFrameId, loopKeys) && length && length < m_frames.size())
     {
         m_frames.resize(length);
     }
-    m_loopFrameId = (loopFrameId < framesCount ? loopFrameId : 0);
-    loopFrameId = (m_loopFrameId > 2 ? m_loopFrameId : FrameId(framesCount));
+    m_loopFrameId = (loopFrameId > k_noLoopFrame && loopFrameId < framesCount ? loopFrameId : 0);
+    loopFrameId = (m_loopFrameId ? m_loopFrameId : FrameId(framesCount));
 
     play.Prepare(loopFrameId, framesCount - loopFrameId, lastFrameId);
     ConfigureDestinationChip();
@@ -270,17 +276,21 @@ void Stream::Finalize(FrameId loopFrameId, bool findLoop, size_t length)
 // with one full repeat or more, the true loop starts first. A pattern played
 // twice near the end starts later; multiples of the period start at the same
 // frame. The frames after the first repeat are cut.
-bool Stream::FindLoop(FrameId& loopFrameId)
+//
+// A machine can give its own keys: the writes of its player, which repeat
+// while the state of a chip that runs on its own can drift from pass to pass.
+bool Stream::FindLoop(FrameId& loopFrameId, const std::vector<uint64_t>* loopKeys)
 {
     const size_t count = m_frames.size();
     const size_t minPeriod = size_t(play.frameRate * k_minLoopSec);
     if (!minPeriod || count < 2 * minPeriod) return false;
+    if (loopKeys && loopKeys->size() != count) loopKeys = nullptr;
 
     // the keys of the frames in the reverse order
     std::vector<uint64_t> keys(count);
     for (size_t i = 0; i < count; ++i)
     {
-        keys[i] = GetLoopKey(m_frames[count - 1 - i]);
+        keys[i] = (loopKeys ? (*loopKeys)[count - 1 - i] : GetLoopKey(m_frames[count - 1 - i]));
     }
 
     std::vector<uint32_t> z(count, 0);
@@ -322,7 +332,7 @@ bool Stream::FindLoop(FrameId& loopFrameId)
     // late in a song is a pattern played two times, not a loop.
     if (!bestPeriod || bestPeriod < bestLoop) return false;
 
-    if (loopFrameId > 2 && loopFrameId < count)
+    if (loopFrameId > k_noLoopFrame && loopFrameId < count)
     {
         // The file has a loop: keep it, and cut only full passes after it.
         // Thus the repeats must start at the loop or before it, and the frames

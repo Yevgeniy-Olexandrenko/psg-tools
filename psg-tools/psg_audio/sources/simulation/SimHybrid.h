@@ -14,7 +14,9 @@ public:
 	ChipSim* Find(Type type) override;
 
 	void Reset() override;
+	// The writes and the reads of chip i go to chip 0 of simulator i.
 	void Write(int chip, Register reg, uint8_t data) override;
+	uint8_t Read(int chip, Register reg) override;
 	void Simulate(int samples) override;
 	void Convert(Frame& frame) override;
 

@@ -1,6 +1,12 @@
 #include <algorithm>
 #include "Machine.h"
 
+namespace
+{
+	const uint64_t k_keyBasis = 0xCBF29CE484222325; // FNV-1a
+	const uint64_t k_keyPrime = 0x100000001B3;
+}
+
 Bus::Bus()
 {
 	Map(0x0000, 0x10000, nullptr, nullptr);
@@ -25,16 +31,17 @@ void Machine::ConfigureTiming(std::shared_ptr<ChipSim> sim, uint32_t cpuClock, i
 void Machine::StartFrames()
 {
 	m_cutter.reset(new FrameCutter(m_frameTime));
-	m_start = m_sample = m_frameStart = m_lastInterrupt = ToSample(GetCycle());
-	// the player is on the interrupts until it takes none for longer than a frame
-	m_onInterrupts = true;
-	m_pending = m_interrupt = false;
-	m_frames = m_interruptFrames = 0;
+	m_start = m_sample = m_frameStart = m_lastUpdateEnd = ToSample(GetCycle());
+	// the frames end at EndUpdate until there is none for longer than 1.5 frames
+	m_onUpdates = true;
+	m_pending = m_updateEnd = false;
+	m_frames = m_updateFrames = 0;
+	m_writesKey = m_frameKey = k_keyBasis;
 }
 
 bool Machine::GetFrameRate(FrameRate& frameRate) const
 {
-	if (2 * m_interruptFrames >= m_frames) return false;
+	if (2 * m_updateFrames >= m_frames) return false;
 	if (m_cutter->GetFrameRate(frameRate)) return true;
 
 	// The updates have no clear rate, but they can come more often than the
@@ -53,10 +60,10 @@ void Machine::WriteChip(int chip, Register reg, uint8_t data)
 	m_pendingData = data;
 }
 
-void Machine::OnInterrupt()
+void Machine::EndUpdate()
 {
-	m_interrupt = true;
-	m_interruptCycle = GetCycle();
+	m_updateEnd = true;
+	m_updateEndCycle = GetCycle();
 }
 
 void Machine::RunFrame(Frame& frame)
@@ -69,34 +76,34 @@ void Machine::RunFrame(Frame& frame)
 		{
 			Execute(GetCycle() + uint64_t(m_frameTime) * m_cpuClock / 44100);
 		}
-		uint64_t cycle = (m_pending ? m_pendingCycle : m_interrupt ? m_interruptCycle : GetCycle());
+		uint64_t cycle = (m_pending ? m_pendingCycle : m_updateEnd ? m_updateEndCycle : GetCycle());
 		int64_t next = ToSample(cycle);
 		int wait = int(next > m_sample ? next - m_sample : 0);
 
-		if (m_interrupt && !wait)
+		if (m_updateEnd && !wait)
 		{
-			// the first interrupt after the start ends no frame
-			m_interrupt = false;
-			m_lastInterrupt = m_sample;
-			m_onInterrupts = true;
+			// the first end of an update right at the start ends no frame
+			m_updateEnd = false;
+			m_lastUpdateEnd = m_sample;
+			m_onUpdates = true;
 			if (m_sample > m_frameStart)
 			{
 				m_cutter->EndFrame();
-				m_interruptFrames++;
+				m_updateFrames++;
 				EndFrame(frame);
 				return;
 			}
 			continue;
 		}
 
-		// without the interrupts for longer than a frame, the cutter ends the frames
-		const int noInterrupt = (m_frameTime + m_frameTime / 2);
-		if (m_onInterrupts && m_sample - m_lastInterrupt > noInterrupt)
+		// without the ends of the updates for 1.5 frames, the cutter ends the frames
+		const int noUpdate = (m_frameTime + m_frameTime / 2);
+		if (m_onUpdates && m_sample - m_lastUpdateEnd > noUpdate)
 		{
-			m_onInterrupts = false;
+			m_onUpdates = false;
 			m_cutter->EndFrame(int(m_sample - m_frameStart));
 		}
-		if (!m_onInterrupts && m_cutter->IsFrameEnd(wait))
+		if (!m_onUpdates && m_cutter->IsFrameEnd(wait))
 		{
 			EndFrame(frame);
 			return;
@@ -104,12 +111,16 @@ void Machine::RunFrame(Frame& frame)
 		if (m_pending && !wait)
 		{
 			m_sim->Write(m_pendingChip, m_pendingReg, m_pendingData);
+			for (uint8_t byte : { uint8_t(m_pendingChip), m_pendingReg, m_pendingData })
+			{
+				m_frameKey = (m_frameKey ^ byte) * k_keyPrime;
+			}
 			m_cutter->OnWrite();
 			m_pending = false;
 			continue;
 		}
-		int samples = (m_onInterrupts
-			? int(std::min<int64_t>(wait, m_lastInterrupt + noInterrupt + 1 - m_sample))
+		int samples = (m_onUpdates
+			? int(std::min<int64_t>(wait, m_lastUpdateEnd + noUpdate + 1 - m_sample))
 			: m_cutter->Advance(wait));
 		if (samples > 0)
 		{
@@ -124,4 +135,6 @@ void Machine::EndFrame(Frame& frame)
 	m_sim->Convert(frame);
 	m_frameStart = m_sample;
 	m_frames++;
+	m_writesKey = m_frameKey;
+	m_frameKey = k_keyBasis;
 }

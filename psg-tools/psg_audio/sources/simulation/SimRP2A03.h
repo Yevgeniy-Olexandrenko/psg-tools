@@ -21,6 +21,7 @@ public:
 
     void Reset() override;
     void Write(int chip, Register reg, uint8_t data) override;
+    uint8_t Read(int chip, Register reg) override;
     void WriteMemory(uint16_t addr, const uint8_t* data, uint32_t size) override;
     void Simulate(int samples) override;
     void Convert(Frame& frame) override;

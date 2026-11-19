@@ -47,10 +47,10 @@ private:
 // A machine runs the code of a music file on its CPU. The CPU writes to the
 // sound chips, and a simulator (the same as for VGM) turns the writes into the
 // registers of the destination chips. The machine runs without a break and
-// gives the frames in one pass. While the CPU takes the interrupts, the player
-// runs on them, and a frame ends at each interrupt. While it does not take
-// them (a player with its own timing), a FrameCutter cuts the frames at the
-// updates of the player, or every frame of the hardware without them.
+// gives the frames in one pass. The machine knows where an update of the
+// player ends (EndUpdate), and a frame ends there. Without such ends for
+// longer than 1.5 frames (a player with its own timing), a FrameCutter cuts
+// the frames at the updates of the player, or every frame without them.
 class Machine : public Bus
 {
 public:
@@ -59,14 +59,20 @@ public:
 
 	// The rate of the frames: the rate of the updates of the player, or the mean
 	// rate of the frames when the updates have no clear rate. False when most
-	// frames end at the interrupts: then the rate is that of the hardware.
+	// frames end at EndUpdate: then the rate is that of the machine.
 	bool GetFrameRate(FrameRate& frameRate) const;
 
 	// The time of the frames given, in samples of 44.1 kHz.
 	int GetTime() const { return int(m_sample - m_start); }
 
+	// The key of the writes to the chips in the last frame given (the chips,
+	// the registers and the data in their order). The code of a player gives
+	// the same writes in each pass of a looped song, while the state of a
+	// chip that runs on its own can drift from pass to pass.
+	uint64_t GetWritesKey() const { return m_writesKey; }
+
 protected:
-	// cpuClock: Hz, frameRate: the interrupts of the hardware a second.
+	// cpuClock: Hz, frameRate: the updates of the player a second (nominal).
 	void ConfigureTiming(std::shared_ptr<ChipSim> sim, uint32_t cpuClock, int frameRate);
 
 	// Starts the frames from the current state of the machine (after a reset).
@@ -76,11 +82,13 @@ protected:
 	virtual void Execute(uint64_t cycle) = 0;
 	virtual uint64_t GetCycle() const = 0;
 
-	// The CPU writes to a chip or takes an interrupt. The event waits, so the
-	// frame cutter knows the time to it, and Execute stops at it.
+	// The CPU writes to a chip, or the player ends an update: AYMachine at each
+	// interrupt, NSFMachine at each return from play. A frame ends at the end
+	// of an update and holds all its writes. An event waits for the simulator,
+	// so the frame cutter knows the time to it. Execute stops at an event.
 	void WriteChip(int chip, Register reg, uint8_t data);
-	void OnInterrupt();
-	bool HasPendingEvent() const { return (m_pending || m_interrupt); }
+	void EndUpdate();
+	bool HasPendingEvent() const { return (m_pending || m_updateEnd); }
 
 	// The state of the chip after the writes up to now.
 	uint8_t ReadChip(int chip, Register reg) { return m_sim->Read(chip, reg); }
@@ -99,13 +107,15 @@ private:
 	int64_t m_start = 0;
 	int64_t m_sample = 0;     // of the simulator
 	int64_t m_frameStart = 0; // the end of the last frame
-	int64_t m_lastInterrupt = 0;
-	bool m_onInterrupts = false;
+	int64_t m_lastUpdateEnd = 0;
+	bool m_onUpdates = false; // the frames end at EndUpdate
 	int m_frames = 0;
-	int m_interruptFrames = 0;
+	int m_updateFrames = 0;
+	uint64_t m_writesKey = 0; // of the last frame given
+	uint64_t m_frameKey = 0;  // of the writes in the current frame
 
-	bool     m_interrupt = false;
-	uint64_t m_interruptCycle = 0;
+	bool     m_updateEnd = false;
+	uint64_t m_updateEndCycle = 0;
 
 	bool     m_pending = false;
 	uint64_t m_pendingCycle = 0;

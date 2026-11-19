@@ -44,6 +44,7 @@
     <ClInclude Include="sources\decoders\streams\DecodeVTX.h" />
     <ClInclude Include="sources\decoders\streams\DecodeYM.h" />
     <ClInclude Include="sources\decoders\machines\DecodeAY.h" />
+    <ClInclude Include="sources\decoders\machines\DecodeNSF.h" />
     <ClInclude Include="sources\emulation\Machine.h" />
     <ClInclude Include="sources\emulation\machines\AYMachine.h" />
     <ClInclude Include="sources\emulation\machines\NSFMachine.h" />
@@ -84,6 +85,7 @@
     <ClInclude Include="sources\simulation\ChipSim.h" />
     <ClInclude Include="sources\simulation\SimAY8910.h" />
     <ClInclude Include="sources\simulation\SimHybrid.h" />
+    <ClInclude Include="sources\simulation\SimFactory.h" />
     <ClInclude Include="sources\simulation\SimLR35902.h" />
     <ClInclude Include="sources\simulation\SimRP2A03.h" />
     <ClInclude Include="sources\simulation\SimSN76489.h" />
@@ -118,6 +120,7 @@
     <ClCompile Include="sources\decoders\streams\DecodeVTX.cpp" />
     <ClCompile Include="sources\decoders\streams\DecodeYM.cpp" />
     <ClCompile Include="sources\decoders\machines\DecodeAY.cpp" />
+    <ClCompile Include="sources\decoders\machines\DecodeNSF.cpp" />
     <ClCompile Include="sources\emulation\Machine.cpp" />
     <ClCompile Include="sources\emulation\machines\AYMachine.cpp" />
     <ClCompile Include="sources\emulation\machines\NSFMachine.cpp" />
@@ -154,6 +157,7 @@
     <ClCompile Include="sources\simulation\ChipSim.cpp" />
     <ClCompile Include="sources\simulation\SimAY8910.cpp" />
     <ClCompile Include="sources\simulation\SimHybrid.cpp" />
+    <ClCompile Include="sources\simulation\SimFactory.cpp" />
     <ClCompile Include="sources\simulation\SimLR35902.cpp" />
     <ClCompile Include="sources\simulation\SimRP2A03.cpp" />
     <ClCompile Include="sources\simulation\SimSN76489.cpp" />

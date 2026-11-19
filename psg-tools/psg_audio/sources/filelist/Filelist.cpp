@@ -75,7 +75,14 @@ void Filelist::Append(const Path& path)
         return;
     }
 
-    for (auto path : glob::glob(path.string()))
+    // A path that exists is taken as it is: its name can have the special
+    // characters of glob ("[RAF World]" would be a set of characters).
+    std::error_code error;
+    std::vector<Path> paths;
+    if (std::filesystem::exists(path, error)) paths.push_back(path);
+    else paths = glob::glob(path.string());
+
+    for (auto path : paths)
     {
         if (path.is_relative())
         {

@@ -123,6 +123,9 @@
     <ClInclude Include="sources\decoders\machines\DecodeAY.h">
       <Filter>Sources\decoders\machines</Filter>
     </ClInclude>
+    <ClInclude Include="sources\decoders\machines\DecodeNSF.h">
+      <Filter>Sources\decoders\machines</Filter>
+    </ClInclude>
     <ClInclude Include="sources\decoders\Decoder.h">
       <Filter>Sources\decoders</Filter>
     </ClInclude>
@@ -243,6 +246,9 @@
     <ClInclude Include="sources\simulation\SimHybrid.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
+    <ClInclude Include="sources\simulation\SimFactory.h">
+      <Filter>Sources\simulation</Filter>
+    </ClInclude>
     <ClInclude Include="sources\simulation\SimLR35902.h">
       <Filter>Sources\simulation</Filter>
     </ClInclude>
@@ -350,6 +356,9 @@
     <ClCompile Include="sources\decoders\machines\DecodeAY.cpp">
       <Filter>Sources\decoders\machines</Filter>
     </ClCompile>
+    <ClCompile Include="sources\decoders\machines\DecodeNSF.cpp">
+      <Filter>Sources\decoders\machines</Filter>
+    </ClCompile>
     <ClCompile Include="sources\decoders\Decoder.cpp">
       <Filter>Sources\decoders</Filter>
     </ClCompile>
@@ -447,6 +456,9 @@
       <Filter>Sources\simulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimHybrid.cpp">
+      <Filter>Sources\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\simulation\SimFactory.cpp">
       <Filter>Sources\simulation</Filter>
     </ClCompile>
     <ClCompile Include="sources\simulation\SimLR35902.cpp">

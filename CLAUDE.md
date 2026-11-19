@@ -128,9 +128,10 @@ changes the console window size and lays everything out for the current size.
 
 ### Core data model (`psg_audio/sources/stream/`)
 
-- `Stream` is the whole song: a vector of `Frame`s (one per interrupt, usually 50 Hz), `info`
-  (title/artist/...), `play` (frame rate, loop), plus two chip configs. `schip` is the source chip
-  as the file describes it; `dchip` is the destination chip the user asked for on the command line.
+- `Stream` is the whole song: a vector of `Frame`s (one per update of the player, usually 50 Hz),
+  `info` (title/artist/...), `play` (frame rate, loop), plus two chip configs. `schip` is the source
+  chip as the file describes it; `dchip` is the destination chip the user asked for on the command
+  line.
 - `Frame` holds registers for up to two chips (TurboSound). Each chip has 25 registers: bank A
   `0x00–0x0D` is the standard AY set, bank B `0x10–0x1A` is the AY8930 expanded mode (see
   `Register.h`). A frame tracks both the register data and a per-register "changed" diff. Encoders
@@ -161,26 +162,31 @@ changes the console window size and lays everything out for the current size.
      simulators in `simulation/` (`SimRP2A03`, `SimSN76489`, `SimLR35902` for the Game Boy,
      `SimAY8910`), which convert another chip's state into AY frames with clock-ratio period
      scaling. `ChipSim.cpp` holds what the simulators share: the level tables of the destination
-     chips, the duty gains of pulses, the noise and periodic noise conversions. A VGM with two
-     different supported chips plays on two PSGs through `SimHybrid`, one simulator on each; a VGM
-     with a chip that has no simulator, or with more chips than the PSGs can take, is rejected.
+     chips, the duty gains of pulses, the noise and periodic noise conversions. `SimFactory`
+     creates the simulators of a file's chips and sets the source chips of the stream (VGM, NSF).
+     A VGM with two different supported chips plays on two PSGs through `SimHybrid`, one simulator
+     on each; a VGM with a chip that has no simulator, or with more chips than the PSGs can take,
+     is rejected.
    - `decoders/machines/`: formats with the code of a player, which a machine in
-     `emulation/machines/` runs (`DecodeAY` on `AYMachine`). `NSFMachine` (next) and `VGMMachine`
-     are drafts. All decoding is one pass: no decoder runs a song in advance to learn something
-     about it.
+     `emulation/machines/` runs (`DecodeAY` on `AYMachine`, `DecodeNSF` on `NSFMachine`).
+     `VGMMachine` is a draft. All decoding is one pass: no decoder runs a song in advance to learn
+     something about it.
      - **Machine.** A `Machine` is a `Bus` (a page table of 256 pages of 256 bytes for reads and
        writes; unmapped pages and the Z80 ports go to virtual handlers) with a CPU (`Z80Cpu`,
-       `RP2A03Cpu`: instruction-level cores with cycle counts) and a `ChipSim`. The CPU writes to
-       the chips with the cycle of the write and reads them back through `ChipSim::Read` (the state
-       in the simulator); `RunFrame` gives the frame from the simulator.
+       `RP2A03Cpu`: instruction-level cores with cycle counts; `Z80Cpu` passes ZEXALL, `RP2A03Cpu`
+       the Klaus Dormann 6502 functional test without decimal mode) and a `ChipSim`. The CPU writes
+       to the chips with the cycle of the write and reads them back through `ChipSim::Read` (the
+       state in the simulator); `RunFrame` gives the frame from the simulator.
      - **Frames.** The CPU runs without a break, ahead of the simulator up to its next write or
-       interrupt. While the CPU takes the interrupts, the player runs on them, and each interrupt
-       ends a frame. While it takes none for longer than 1.5 frames (a player with its own timing,
-       with interrupts disabled), `FrameCutter` (`decoders/`, shared with `DecodeVGM`) cuts the
-       frames: at the start of the long pause after each burst of writes (an update of the player),
-       and every frame while nothing is written. The times between the updates give the frame rate
-       of the stream (200 Hz at most); without a clear rate, the mean rate of the frames keeps the
-       tempo. The formats that keep a whole number take the rounded rate.
+       the end of an update of the player (`EndUpdate`): the interrupt for `AYMachine` (the player
+       runs on the interrupts), the return from play for `NSFMachine`. Each end of an update ends
+       a frame, with all the writes of the update. Without such ends for longer than 1.5 frames (a
+       player with its own timing, with interrupts disabled), `FrameCutter` (`decoders/`, shared
+       with `DecodeVGM`) cuts the frames: at the start of the long pause after each burst of writes
+       (an update of the player), and every frame while nothing is written. The times between the
+       updates give the frame rate of the stream (200 Hz at most); without a clear rate, the mean
+       rate of the frames keeps the tempo. The formats that keep a whole number take the rounded
+       rate.
      - **AYMachine.** It sets up the memory and the loader at address 0 as the format describes. The
        format has no timing, so the machine takes a Z80 at 3.5 MHz with 50 frames a second (70000
        T-states a frame) and an interrupt of 32 T-states, the same for ZX and CPC songs. The Z80 has
@@ -199,20 +205,58 @@ changes the console window size and lays everything out for the current size.
        a frame; a rate within 0.5 Hz of 50 is taken as 50. It plays a song two times its length from
        the file (10 minutes at most, 5 minutes without a length) and calls `Finalize(0, true,
        length)`: without a loop, the stream is cut to the length.
-   - Container files (AY, later NSF) hold several tracks. `Filelist` gives each track as its own
+     - **NSFMachine.** As the spec (nesdev.org/wiki/NSF) describes, checked against libgme and
+       NSFPlay. 2K RAM (mirrored), 8K RAM at 0x6000, the program in 0x8000-0xFFFF: in 4K banks that
+       0x5FF8-0x5FFF select (a bank past the end of the file reads zeros), else loaded at the load
+       address. The program size of 0x7D-0x7F (NSF2) leaves out the appended metadata. The bank
+       switch also copies the bank to the DMC memory of `SimRP2A03`. The APU registers go to chip 0
+       of the simulator (0x4015 is read back), the Sunsoft 5B (0xC000 selects, 0xE000 writes; an AY
+       at CPU clock / 2) to chip 1. The sound of the other expansion chips is not played, but what
+       the CPU sees of them is kept: FDS (0x6000-0xDFFF writable, banks 0x5FF6/0x5FF7 with bank
+       switching, a load address from 0x6000, the wave RAM), MMC5 (ExRAM 0x5C00-0x5FF5, the
+       multiplier 0x5205/0x5206), N163 (128 bytes of RAM through 0x4800, address at 0xF800). The APU
+       starts as the spec describes (0x4015 = 0x0F, 0x4017 = 0x40). The machine calls init (A =
+       song, X = PAL, Y = 0: no NSF2 features), then play at the rate of the header; bit 0 of 0x7A
+       selects PAL, also in a file for both systems. A play period of 0 is the frame of the hardware
+       (29780.5 or 33247.5 cycles). A routine returns to an address without code, where the CPU
+       waits. A tick that comes while a routine runs is skipped (the spec allows it, as libgme
+       does). The return from play ends an update: the frame has all the writes of play, as
+       `FrameCutter` cuts a VGM, which `SimRP2A03` is tuned for. An init or play that never returns
+       leaves the frames to `FrameCutter`.
+     - **DecodeNSF.** `SimFactory` prepares the simulators: the APU on the 1st PSG, the 5B on the
+       2nd one, or not played when the user selects one PSG. The file has no lengths: it decodes 5
+       minutes at most (as AY songs without a length) and ends after 3 s of silence
+       (`Frame::IsAudible`), keeping 1 s of it as the player does. The stream rate is the rate of
+       the header (16666 us gives 60.00 Hz, the real NES 60.10 Hz). The loop is searched by the
+       writes of the player, not by the frames (`Machine::GetWritesKey`, the `loopKeys` of
+       `Finalize`): the frame sequencer of the APU runs on its own (29830 cycles against the play
+       period of 29828), so the frames of the passes can differ by a few percent while the writes
+       repeat. The search is exact: a tolerance (1% of the frames) was tried on 286 tracks; it
+       found 2 more loops (drivers with a fractional tempo, as Darkwing Duck) but moved 22 loops
+       into the intro, whose first pass really differs. Compared with the VGM rips of the same
+       songs, the 5B is equal and the APU differs where the VGM logger dropped repeated writes: a
+       game that writes 0x4017 every frame restarts the frame sequencer each time (SMB), which the
+       NSF keeps, as the hardware does. Test files: `chiptunes/NSF` (plain APU drivers, PAL, 5B,
+       and the expansion chips that are not played).
+   - Container files (AY, NSF) hold several tracks. `Filelist` gives each track as its own
      path, the file path with the track number after it (`TrackPath`: `file.ay#03`, two digits at
-     least), and the playlists keep these paths. `FileDecoder::CountTracks` counts the tracks. The
-     decoder of a container takes the track from the path. The converter names the output
-     `<container>_#03` (`TrackPath::k_nameSeparator`), and the file header of the GUI shows the
-     number after the extension in bright magenta.
+     least), and the playlists keep these paths. A path from the command line that exists is taken
+     as it is, else as a glob pattern: names such as "Silius [RAF World].nsf" have the brackets of
+     glob. `FileDecoder::CountTracks` counts the tracks. The decoder of a container takes the track
+     from the path. The converter names the output `<container>_#03` (`TrackPath::k_nameSeparator`),
+     and the file header of the GUI shows the number after the extension in bright magenta.
    - Any register stream (PSG, RSF, VGM, VTX, YM) can hold more than one pass of a looped song:
      other players record so, and so does `--duration Playback`. The stream decoders call
      `Stream::Finalize(loop, true)`, which searches for the repeats at the end (`FindLoop`, a
      Z-function over frame keys), sets the loop and cuts the extra passes. It accepts only a loop
      body at least as long as the intro and at least 4 seconds long. A loop from the file (past
-     frame 2) stays: then only whole periods after it are cut, so a one-pass file keeps its length.
+     frame 5) stays: then only whole periods after it are cut, so a one-pass file keeps its length.
      Without a loop in the file, a one-pass song that ends with an exact repeat of its own part gets
-     a loop too; that loop sounds the same, only the length changes.
+     a loop too; that loop sounds the same, only the length changes. A loop at frame 5 or before
+     (`k_noLoopFrame`) is no loop: the whole song repeats (loggers put such loops after the first 1
+     or 2 frames of the driver start), so it is cut to one pass, plays once, and the encoders write
+     no loop. Real intros are 0.1 s at least (SMB "Underground": 0.8 s). A loop exists only to make
+     a short song with an intro play longer (`Play::Prepare` adds passes of the loop).
 2. **Process**: `FrameProcessor` subclasses in `processing/` turn source-chip frames into
    destination-chip frames: `ChannelsOutputEnable`, `ChipClockRateConvert`, `ChannelsLayoutChange`
    (stereo layout), `AY8930EnvelopeFix`. Playback chains them in a `ProcessingChain` inside
