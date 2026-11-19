@@ -44,6 +44,7 @@ void SimAY8910::Reset()
 	m_frame.ResetData();
 	m_frame.ResetChanges();
 	m_decoder.Init();
+	m_bankB[0] = m_bankB[1] = false;
 	for (auto& chip : m_channels)
 	{
 		for (Channel& channel : chip) channel.phase = 0;
@@ -70,6 +71,7 @@ void SimAY8910::ResetFrame()
 void SimAY8910::Write(int chip, Register reg, uint8_t data)
 {
 	m_decoder.Decode(chip, { reg, data }, m_frame[chip]);
+	if (reg == Register::Mode_Bank) m_bankB[chip] = ((data & 0xF0) == 0xB0);
 
 	const Frame::Registers& regs = m_frame[chip];
 	for (int chan = 0; chan < 3; ++chan)
@@ -86,7 +88,11 @@ void SimAY8910::Write(int chip, Register reg, uint8_t data)
 
 uint8_t SimAY8910::Read(int chip, Register reg)
 {
-	return m_decoder.Read(chip, reg, m_frame[chip]);
+	// the register of the selected bank, with the unused bits zero;
+	// the I/O ports (0x0E, 0x0F) and the addresses above give 0xFF
+	if (reg > Register::Mode_Bank) return 0xFF;
+	if (reg < Register::Mode_Bank && m_bankB[chip]) reg = Register::BankB_Fst + reg;
+	return m_frame[chip].GetData(reg);
 }
 
 void SimAY8910::Simulate(int samples)

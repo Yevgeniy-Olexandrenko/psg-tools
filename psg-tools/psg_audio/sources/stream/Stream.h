@@ -116,11 +116,6 @@ private:
 public:
     File file;
     Info info;
-
-    // A track of a container file (AY, NSF): its number from 1 and the
-    // number of the tracks in the file. Zeros for the other files.
-    int trackNumber = 0;
-    int tracksCount = 0;
     Play play;
 
     Chip schip; // source chip configuration defined by stream

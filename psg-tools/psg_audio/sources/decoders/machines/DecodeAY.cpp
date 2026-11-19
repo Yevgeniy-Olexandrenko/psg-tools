@@ -157,8 +157,6 @@ bool DecodeAY::Open(Stream& stream)
 	stream.info.title = name;
 	stream.info.artist = file.String(file.Pointer(12));
 	stream.info.comment = file.String(file.Pointer(14));
-	stream.trackNumber = song + 1;
-	stream.tracksCount = file.Songs();
 	stream.play.frameRate = k_lengthRate;
 	return true;
 }
@@ -177,12 +175,7 @@ void DecodeAY::Close(Stream& stream)
 	bool cpc = (m_machine && m_machine->GetSystem() == AYMachine::System::CPC);
 	stream.schip.clock = (cpc ? Chip::Clock::F1000000 : Chip::Clock::F1773400);
 
-	std::string type = (cpc ? "AY file (Amstrad CPC)" : "AY file (ZX Spectrum)");
-	if (stream.tracksCount > 1)
-	{
-		type += ", song " + std::to_string(stream.trackNumber) + " of " + std::to_string(stream.tracksCount);
-	}
-	stream.info.type = type;
+	stream.info.type = (cpc ? "AY machine (Amstrad CPC)" : "AY machine (ZX Spectrum)");
 
 	// A rate within 1% of the interrupts is a player in time with them:
 	// its updates jitter by a few T-states.

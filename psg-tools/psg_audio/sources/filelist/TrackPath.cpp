@@ -1,12 +1,18 @@
 #include "TrackPath.h"
-#include "stream/Stream.h"
 
 namespace TrackPath
 {
+	std::string Number(int number)
+	{
+		std::string digits = std::to_string(number);
+		if (digits.size() < 2) digits.insert(0, 2 - digits.size(), '0');
+		return k_numberMark + digits;
+	}
+
 	Path Make(const Path& file, int number)
 	{
 		Path path = file;
-		path += (k_numberMark + std::to_string(number));
+		path += Number(number);
 		return path;
 	}
 
@@ -35,26 +41,11 @@ namespace TrackPath
 		return true;
 	}
 
-	std::string OutputStem(const Path& path, const Stream& stream)
+	std::string OutputStem(const Path& path)
 	{
 		Path file;
 		int number;
 		if (!Split(path, file, number)) return path.stem().string();
-
-		// the characters that file names cannot have become '_'
-		std::string name = stream.info.title;
-		for (char& c : name)
-		{
-			if (uint8_t(c) < 0x20 || std::string("\\/:*?\"<>|").find(c) != std::string::npos) c = '_';
-		}
-		while (!name.empty() && (name.back() == ' ' || name.back() == '.')) name.pop_back();
-
-		if (name.empty())
-		{
-			size_t digits = std::max<size_t>(2, std::to_string(std::max(stream.tracksCount, number)).size());
-			name = std::to_string(number);
-			name.insert(0, digits - name.size(), '0');
-		}
-		return file.stem().string() + k_nameSeparator + name;
+		return file.stem().string() + k_nameSeparator + Number(number);
 	}
 }

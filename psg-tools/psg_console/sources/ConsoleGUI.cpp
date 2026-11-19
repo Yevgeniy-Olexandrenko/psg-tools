@@ -12,6 +12,7 @@
 #include "ConsoleGUI.h"
 #include "Console.h"
 #include "Screen.h"
+#include "filelist/TrackPath.h"
 
 namespace gui
 {
@@ -212,11 +213,17 @@ namespace gui
     {
         std::string number = std::to_string(file.index + 1);
         std::string amount = std::to_string(file.amount);
-        std::wstring name = file.path.stem().wstring();
-        std::wstring ext = file.path.extension().wstring();
+
+        // a track of a container file: "name.ext #03"
+        TrackPath::Path path = file.path;
+        std::string track;
+        int trackNumber;
+        if (TrackPath::Split(file.path, path, trackNumber)) track = ' ' + TrackPath::Number(trackNumber);
+        std::wstring name = path.stem().wstring();
+        std::wstring ext = path.extension().wstring();
 
         // " ---[ 1/10 name.ext ]--" stretched to the canvas width
-        int fixed = int(9 + number.length() + amount.length() + ext.length());
+        int fixed = int(9 + number.length() + amount.length() + ext.length() + track.length());
         limit(name, canvas.w - fixed - 2);
         int dashes = std::max(0, canvas.w - fixed - int(name.length()));
 
@@ -229,6 +236,7 @@ namespace gui
         canvas.draw(' ');
         canvas.color(file.favorite ? FG_MAGENTA : FG_WHITE).draw(name);
         canvas.color(FG_DARK_GREY).draw(ext);
+        canvas.color(FG_MAGENTA).draw(track);
         canvas.color(FG_CYAN).draw(" ]");
         canvas.color(FG_BLUE).draw("--");
     }

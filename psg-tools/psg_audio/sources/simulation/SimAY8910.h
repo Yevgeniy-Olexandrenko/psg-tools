@@ -47,6 +47,7 @@ private:
 	Frame m_frame;
 	ChipDecoder m_decoder;
 	std::unique_ptr<ChipClockRateConvert> m_convert;
+	bool     m_bankB[2]{}; // the AY8930 bank of the reads
 	Channel  m_channels[2][3];
 	uint64_t m_clockRest; // of the conversion from samples to clocks
 };

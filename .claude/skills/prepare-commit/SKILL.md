@@ -89,3 +89,11 @@ Reply in the user's language. Tell:
 - how the comments changed, in short;
 - what was built and checked, and what was not;
 - the open questions that the user must decide.
+
+## 6. Commit message
+
+End the report with a short commit message for the user to copy, in a
+fenced code block: one line in English, not longer than about 70
+characters, in the style of the recent commits (`git log --oneline -10`),
+that names the main changes. Add a body of a few short lines only when
+one line cannot cover the change. Do not commit with it.

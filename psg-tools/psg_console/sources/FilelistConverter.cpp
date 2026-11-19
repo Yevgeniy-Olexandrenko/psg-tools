@@ -68,11 +68,10 @@ void FilelistConverter::ConvertFile()
 
     if (Decode(m_inputPath, stream))
     {
-        // the name of a track of a container file comes from the decoded stream
         std::string outputName = m_output.stem().string();
         size_t star = outputName.find('*');
         if (star != std::string::npos)
-            outputName.replace(star, 1, TrackPath::OutputStem(m_inputPath, stream));
+            outputName.replace(star, 1, TrackPath::OutputStem(m_inputPath));
 
         // append the type: input names can have dots, as in "M16.2.psm"
         m_outputPath.replace_filename(outputName + m_outputType);

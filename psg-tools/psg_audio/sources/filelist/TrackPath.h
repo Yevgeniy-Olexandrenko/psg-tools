@@ -3,11 +3,9 @@
 #include <string>
 #include <filesystem>
 
-class Stream;
-
 // A container file (AY, NSF) holds several tracks. The file list keeps each
-// track as the path of the file with "#N" after its name, N from 1, and the
-// playlists keep it so too: "music/Some File.ay#3".
+// track as the path of the file with the track number after its name, and
+// the playlists keep it so too: "music/Some File.ay#03".
 namespace TrackPath
 {
 	using Path = std::filesystem::path;
@@ -15,10 +13,13 @@ namespace TrackPath
 	// The mark of the track number after the file name.
 	const char k_numberMark = '#';
 
-	// The output file of a track: <container name><separator><track name>, for
-	// example "Some File_#Ingame". A track without a name takes its number:
-	// "Some File_#03", with the leading zeros of the largest number (two digits at least).
-	const std::string k_nameSeparator = "_#";
+	// The output file of a track: <container name><separator><track number>,
+	// for example "Some File_#03".
+	const std::string k_nameSeparator = "_";
+
+	// The track number as the paths and the names show it: "#01" to "#99",
+	// more digits for the numbers above.
+	std::string Number(int number);
 
 	Path Make(const Path& file, int number);
 
@@ -26,7 +27,7 @@ namespace TrackPath
 	// for other paths, also for a real file with "#N" at the end of its name.
 	bool Split(const Path& path, Path& file, int& number);
 
-	// The stem of an output file for the input path: the container name and the
-	// track name (from the decoded stream) for a track, else the stem of the path.
-	std::string OutputStem(const Path& path, const Stream& stream);
+	// The stem of an output file for the input path: the container name and
+	// the track number for a track, else the stem of the path.
+	std::string OutputStem(const Path& path);
 }

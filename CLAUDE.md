@@ -1,28 +1,46 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Rules
 
-- Never commit to this repository (no `git commit`, `git push`, amend, merge, or rebase), even when a task seems finished. The user reviews every change and commits it themselves, so leave all changes uncommitted in the working tree.
+- Never commit to this repository (no `git commit`, `git push`, amend, merge, or rebase), even when
+  a task seems finished. The user reviews every change and commits it themselves, so leave all
+  changes uncommitted in the working tree.
 
 ## What this is
 
-PSG Tools is a Windows-only C++17 console app that plays and converts chiptunes for AY-3-8910 / YM2149 / AY8930 sound chips. It reads ZX Spectrum tracker modules (PT2, PT3, ASC, STC, ...), register-dump formats (PSG, RSF, VTX, YM), VGM/VGZ (including SN76489 and NES APU tunes, which it converts to AY) and AY files, whose Z80 code it runs on an emulated machine. It can play them through a software emulator or stream them to "AYM Streamer" hardware over a COM port, and it can convert them to register-stream formats.
+PSG Tools is a Windows-only C++17 console app that plays and converts chiptunes for AY-3-8910 /
+YM2149 / AY8930 sound chips. It reads ZX Spectrum tracker modules (PT2, PT3, ASC, STC, ...),
+register-dump formats (PSG, RSF, VTX, YM), VGM/VGZ (including SN76489 and NES APU tunes, which it
+converts to AY) and AY files, whose Z80 code it runs on an emulated machine. It can play them
+through a software emulator or stream them to "AYM Streamer" hardware over a COM port, and it can
+convert them to register-stream formats.
 
 ## Build
 
-Visual Studio 2022 (toolset v143) solution: `psg-tools/psg-tools.sln`. Configurations are `Debug`/`Release`; solution platforms are `x86`/`x64` (the projects call x86 `Win32`). No CMake, tests, or linter.
+Visual Studio 2022 (toolset v143) solution: `psg-tools/psg-tools.sln`. Configurations are
+`Debug`/`Release`; solution platforms are `x86`/`x64` (the projects call x86 `Win32`). No CMake,
+tests, or linter.
 
 ```bash
 "/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe" psg-tools/psg-tools.sln -p:Configuration=Release -p:Platform=x64 -m
 ```
 
 - Intermediates and `.lib` files go to `psg-tools/.vsbuild/<Config>_<Platform>/` (gitignored).
-- The executable is written to the **repo root**: `psg-tools-x64.exe` / `psg-tools-x86.exe` for Release, `psg-tools-x64d.exe` / `psg-tools-x86d.exe` for Debug. The Release executables are committed, so a Release build changes tracked files.
-- Every `.vcxproj` lists its source files explicitly. A new `.cpp`/`.h` must be added to the project's `.vcxproj` (and to `.vcxproj.filters` so it shows up in the right VS folder), or it won't build.
-- Include roots are `psg-tools/libraries/sources` and the project's own `sources/`, so includes look like `"stream/Stream.h"` or `"argparse/argparse.hpp"`.
-- The executables must run on Windows 7. That is why all projects link the static CRT (`/MT`, `/MTd`), which means no redistributable is needed, and define `_WIN32_WINNT=0x0601`, so newer APIs do not compile. Keep the v143 toolset: newer MSVC runtimes drop Windows 7. Keep sources ASCII-only, using escapes such as `wchar_t(0x2800)`, because MSVC reads them as cp1252.
+- The executable is written to the **repo root**: `psg-tools-x64.exe` / `psg-tools-x86.exe` for
+  Release, `psg-tools-x64d.exe` / `psg-tools-x86d.exe` for Debug. The Release executables are
+  committed, so a Release build changes tracked files.
+- Every `.vcxproj` lists its source files explicitly. A new `.cpp`/`.h` must be added to the
+  project's `.vcxproj` (and to `.vcxproj.filters` so it shows up in the right VS folder), or it
+  won't build.
+- Include roots are `psg-tools/libraries/sources` and the project's own `sources/`, so includes look
+  like `"stream/Stream.h"` or `"argparse/argparse.hpp"`.
+- The executables must run on Windows 7. That is why all projects link the static CRT (`/MT`,
+  `/MTd`), which means no redistributable is needed, and define `_WIN32_WINNT=0x0601`, so newer APIs
+  do not compile. Keep the v143 toolset: newer MSVC runtimes drop Windows 7. Keep sources
+  ASCII-only, using escapes such as `wchar_t(0x2800)`, because MSVC reads them as cp1252.
 
 ## Running
 
@@ -38,55 +56,223 @@ Run from the repo root (the VS debugger also uses the repo root as its working d
 ./psg-tools-x64.exe chiptunes/Mmcm -w rec.wav          # play silently, recording everything played to one WAV file
 ```
 
-Other options: `--duration Original|Playback` (which frames an encoder gets, see Pipeline), `--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`, `--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample tunes are in `chiptunes/` and `sample.pt3`.
+Other options: `--duration Original|Playback` (which frames an encoder gets, see Pipeline),
+`--chip-model <M> [<M2>]` (names from `Chip::Model`: `AY8910`, `YM2149`, `AY8930`, `Compatible`; two
+values mean TurboSound), `--chip-clock <MHz>`, `--chip-output Mono|Stereo [ABC|ACB|...]`,
+`--shuffle`, `--favorites <path>`, `--ui-test` (draws a fake playlist to check console rendering, no
+audio). With no input, it plays `favorites.m3u`. `shortcuts/*.bat` show typical invocations. Sample
+tunes are in `chiptunes/` and `sample.pt3`.
 
 ## Architecture
 
 Three projects in the solution:
-- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5` + `lha/lzh` (LH5 compressor/decompressor and LZH container for YM/VTX, from ar002), argparse, glob, magic_enum.
+- **libraries** (static lib): vendored third-party code: zlib (VGZ), `lha/lh5` + `lha/lzh` (LH5
+  compressor/decompressor and LZH container for YM/VTX, from ar002), argparse, glob, magic_enum.
 - **psg_audio** (static lib): all format, processing and playback logic.
-- **psg_console** (exe): CLI parsing in `PSGTools.cpp`, interactive TUI player (`FilelistPlayer`, `ConsoleGUI`), batch converter (`FilelistConverter`).
+- **psg_console** (exe): CLI parsing in `PSGTools.cpp`, interactive TUI player (`FilelistPlayer`,
+  `ConsoleGUI`), batch converter (`FilelistConverter`).
 
 ### Console output (`psg_console/sources/`)
 
-All output goes through the classic Win32 Console API, with no VT sequences, so it stays compatible with Windows 7. Under ConPTY (Windows Terminal), conhost translates these calls. The code never changes the console window size and lays everything out for the current size.
-- `Console`: thin wrappers over the API (own screen buffer, cell writes, line output, input mode, title).
-- `Screen`: while the program runs, it draws the whole window into a screen buffer of its own (`CreateConsoleScreenBuffer`). On its own, under ConPTY, that buffer is drawn on the terminal's main screen, and the terminal reflows it into its scrollback on resize. So where the console takes VT (Windows 10 and later), the buffer also sends `ESC[?1049h` for the alternate screen. If the process is killed, the console closes the buffer, and the terminal gets its main screen back by itself (checked in Windows Terminal). The history is at the top, and the live view of the current file is right below it. Nothing is drawn in the last column (`Screen::GetWidth()` is one less than the window), so there is a one column margin at the right edge like the one at the left edge. Every frame the program redraws the whole window in its own buffer. Do not go back to redrawing a region in the standard output buffer: under ConPTY conhost keeps only the window rows, the terminal keeps the scrollback, and each reflows its own copy on resize, which garbled the history.
-  - **History.** The program keeps the history itself as entries: one row each. Text lines are cut at the window edge, and rows such as headers and rulers are drawn anew for each width. The wheel and PgUp/PgDn scroll it, and End goes to its end; a page is the history rows on screen, less the "[ N rows below ]" line shown in the last history row while it is scrolled. In the player the live view is pinned to the bottom of the window. The converter unpins it (`SetLivePinned(false)`): the live view is then the last rows of the history, seen only at its end, and a history scrolled up stays still while files are added. `Close()` switches back to the standard output buffer and prints the history there as plain lines, so after the program ends it stays in the console scrollback.
-  - **Checking changes.** After changing it, check `--ui-test` in Windows Terminal and `conhost.exe`: resize the window and scroll the history in between.
-- `ConsoleGUI`: lays out the current file (header, properties, register dump, progress) for the window size. The register dump has the trails of the level meters at both sides, drawn every frame from a history of levels (one column per written frame). `S` in the player swaps the dump and the trails for a spectrum analyzer over the full width: columns of 1 to 4 semitones (the fewest that fit, 30 columns at least), colored by sound like the dump, with falling peaks; `H` hides the whole area. The bars are left half blocks; the trail ends and the analyzer peaks are quarter blocks, two levels in a cell. `CommitFile` adds the header and the properties to the history. The player reads the input through `gui::Update` every frame; the converter calls `gui::UpdateBusy` from its progress callbacks, which reads it at most every 20 ms, so the history scrolls during a conversion too.
-- `KeyboardInput`: key state built from console input events (`ReadConsoleInput`), so keys work in any console host and only while it has focus. It also counts mouse wheel notches. The mouse input mode is on, so the terminal sends the wheel to the program instead of turning it into arrow keys. To select text in Windows Terminal while the program runs, hold Shift.
-- `gui::Shutdown` closes the screen, which prints the history. It also restores the input mode and the title and drops unread keys. It runs on abnormal exits too: `exit()` from a library, `abort`/`std::terminate` in any thread, and crashes. If the process is killed outright, the console switches back to the standard output buffer by itself, but the history is lost. Ctrl+C sets the termination flag, which the player and the converter check, including during decoding through `IsAbortRequested`.
-- Colors set no background: `console::MapAttributes` takes the console's own background and default text color, so themes and non-black consoles work.
-- When stdout is redirected, there is no screen, and the history (banner, file headers with full properties, errors) goes out as plain text.
+All output goes through the classic Win32 Console API, with no VT sequences, so it stays compatible
+with Windows 7. Under ConPTY (Windows Terminal), conhost translates these calls. The code never
+changes the console window size and lays everything out for the current size.
+- `Console`: thin wrappers over the API (own screen buffer, cell writes, line output, input mode,
+  title).
+- `Screen`: while the program runs, it draws the whole window into a screen buffer of its own
+  (`CreateConsoleScreenBuffer`). On its own, under ConPTY, that buffer is drawn on the terminal's
+  main screen, and the terminal reflows it into its scrollback on resize. So where the console takes
+  VT (Windows 10 and later), the buffer also sends `ESC[?1049h` for the alternate screen. If the
+  process is killed, the console closes the buffer, and the terminal gets its main screen back by
+  itself (checked in Windows Terminal). The history is at the top, and the live view of the current
+  file is right below it. Nothing is drawn in the last column (`Screen::GetWidth()` is one less than
+  the window), so there is a one column margin at the right edge like the one at the left edge.
+  Every frame the program redraws the whole window in its own buffer. Do not go back to redrawing a
+  region in the standard output buffer: under ConPTY conhost keeps only the window rows, the
+  terminal keeps the scrollback, and each reflows its own copy on resize, which garbled the history.
+  - **History.** The program keeps the history itself as entries: one row each. Text lines are cut
+    at the window edge, and rows such as headers and rulers are drawn anew for each width. The wheel
+    and PgUp/PgDn scroll it, and End goes to its end; a page is the history rows on screen, less the
+    "[ N rows below ]" line shown in the last history row while it is scrolled. In the player the
+    live view is pinned to the bottom of the window. The converter unpins it
+    (`SetLivePinned(false)`): the live view is then the last rows of the history, seen only at its
+    end, and a history scrolled up stays still while files are added. `Close()` switches back to the
+    standard output buffer and prints the history there as plain lines, so after the program ends it
+    stays in the console scrollback.
+  - **Checking changes.** After changing it, check `--ui-test` in Windows Terminal and
+    `conhost.exe`: resize the window and scroll the history in between.
+- `ConsoleGUI`: lays out the current file (header, properties, register dump, progress) for the
+  window size. The register dump has the trails of the level meters at both sides, drawn every frame
+  from a history of levels (one column per written frame). `S` in the player swaps the dump and the
+  trails for a spectrum analyzer over the full width: columns of 1 to 4 semitones (the fewest that
+  fit, 30 columns at least), colored by sound like the dump, with falling peaks; `H` hides the whole
+  area. The bars are left half blocks; the trail ends and the analyzer peaks are quarter blocks, two
+  levels in a cell. `CommitFile` adds the header and the properties to the history. The player reads
+  the input through `gui::Update` every frame; the converter calls `gui::UpdateBusy` from its
+  progress callbacks, which reads it at most every 20 ms, so the history scrolls during a conversion
+  too.
+- `KeyboardInput`: key state built from console input events (`ReadConsoleInput`), so keys work in
+  any console host and only while it has focus. It also counts mouse wheel notches. The mouse input
+  mode is on, so the terminal sends the wheel to the program instead of turning it into arrow keys.
+  To select text in Windows Terminal while the program runs, hold Shift.
+- `gui::Shutdown` closes the screen, which prints the history. It also restores the input mode and
+  the title and drops unread keys. It runs on abnormal exits too: `exit()` from a library,
+  `abort`/`std::terminate` in any thread, and crashes. If the process is killed outright, the
+  console switches back to the standard output buffer by itself, but the history is lost. Ctrl+C
+  sets the termination flag, which the player and the converter check, including during decoding
+  through `IsAbortRequested`.
+- Colors set no background: `console::MapAttributes` takes the console's own background and default
+  text color, so themes and non-black consoles work.
+- When stdout is redirected, there is no screen, and the history (banner, file headers with full
+  properties, errors) goes out as plain text.
 
 ### Core data model (`psg_audio/sources/stream/`)
 
-- `Stream` is the whole song: a vector of `Frame`s (one per interrupt, usually 50 Hz), `info` (title/artist/...), `play` (frame rate, loop), plus two chip configs. `schip` is the source chip as the file describes it; `dchip` is the destination chip the user asked for on the command line.
-- `Frame` holds registers for up to two chips (TurboSound). Each chip has 25 registers: bank A `0x00–0x0D` is the standard AY set, bank B `0x10–0x1A` is the AY8930 expanded mode (see `Register.h`). A frame tracks both the register data and a per-register "changed" diff. Encoders and outputs only emit changed registers, so `ResetChanges()`, `operator+=` and `SetChanges()` matter.
-- `ChipEncoder` / `ChipDecoder` (`stream/Chip.h`) convert between a frame and the writes to a chip: a `ChipPacket` of `ChipRecord`s (`addr`, `data`). Like `Chip`, one object holds both chips, and the calls take the chip index first; `ChipEncoder::Init` takes the `Chip`. The AY8930 has 16 addresses and selects bank B through bit `0x10` of R13, and each write to R13 restarts envelope A. The encoder sends R13 first on a mode change (the switch clears the registers; the mode is unknown after `Init`), else last, after the periods and the return to bank A. The decoder takes only these 16 addresses: the flat bank B addresses `0x10-0x1A` that old Furnace versions wrote to VGM are not supported (`chiptunes/AY8930/bounce_to_the_ounce.vgm` was rewritten with bank switching). `Output`, `LevelMeter`, `SimAY8910` and the PSG and VGM formats use them; do not write bank switching anywhere else.
-- `Property<T>` / `ReadOnlyProperty<T>` (`utils/Property.h`) are C#-style properties that wrap private members through getter/setter lambdas. They can't be copied, so classes holding them (such as `Chip`) define their own copy constructor and assignment operator.
+- `Stream` is the whole song: a vector of `Frame`s (one per interrupt, usually 50 Hz), `info`
+  (title/artist/...), `play` (frame rate, loop), plus two chip configs. `schip` is the source chip
+  as the file describes it; `dchip` is the destination chip the user asked for on the command line.
+- `Frame` holds registers for up to two chips (TurboSound). Each chip has 25 registers: bank A
+  `0x00–0x0D` is the standard AY set, bank B `0x10–0x1A` is the AY8930 expanded mode (see
+  `Register.h`). A frame tracks both the register data and a per-register "changed" diff. Encoders
+  and outputs only emit changed registers, so `ResetChanges()`, `operator+=` and `SetChanges()`
+  matter.
+- `ChipEncoder` / `ChipDecoder` (`stream/Chip.h`) convert between a frame and the writes to a chip:
+  a `ChipPacket` of `ChipRecord`s (`addr`, `data`). Like `Chip`, one object holds both chips, and
+  the calls take the chip index first; `ChipEncoder::Init` takes the `Chip`. The AY8930 has 16
+  addresses and selects bank B through bit `0x10` of R13, and each write to R13 restarts envelope A.
+  The encoder sends R13 first on a mode change (the switch clears the registers; the mode is unknown
+  after `Init`), else last, after the periods and the return to bank A. The decoder takes only these
+  16 addresses: the flat bank B addresses `0x10-0x1A` that old Furnace versions wrote to VGM are not
+  supported (`chiptunes/AY8930/bounce_to_the_ounce.vgm` was rewritten with bank switching).
+  `Output`, `LevelMeter`, `SimAY8910` and the PSG and VGM formats use them; do not write bank
+  switching anywhere else.
+- `Property<T>` / `ReadOnlyProperty<T>` (`utils/Property.h`) are C#-style properties that wrap
+  private members through getter/setter lambdas. They can't be copied, so classes holding them (such
+  as `Chip`) define their own copy constructor and assignment operator.
 
 ### Pipeline
 
-1. **Decode**: `FileDecoder::Decode` in `PSGAudio.cpp` tries each registered decoder in order. The first whose `Open()` accepts the file (by extension and signature) yields frames one at a time into `Stream::AddFrame`.
-   - `decoders/modules/`: tracker-module decoders built on `ModuleDecoder` (`Init`/`Play`/`Loop`). They are ports of the original Z80 player routines and compute AY registers every tick.
-   - `decoders/streams/`: register-dump formats. `DecodeVGM` feeds non-AY chips' writes through the simulators in `simulation/` (`SimRP2A03`, `SimSN76489`, `SimLR35902` for the Game Boy, `SimAY8910`), which convert another chip's state into AY frames with clock-ratio period scaling. `ChipSim.cpp` holds what the simulators share: the level tables of the destination chips, the duty gains of pulses, the noise and periodic noise conversions. A VGM with two different supported chips plays on two PSGs through `SimHybrid`, one simulator on each; a VGM with a chip that has no simulator, or with more chips than the PSGs can take, is rejected.
-   - `decoders/machines/`: formats with the code of a player, which a machine in `emulation/machines/` runs (`DecodeAY` on `AYMachine`). A `Machine` is a `Bus` (a page table of 256 pages of 256 bytes for reads and writes, unmapped pages and the Z80 ports go to virtual handlers) with a CPU (`Z80Cpu`, `RP2A03Cpu`: instruction-level cores with cycle counts) and a `ChipSim`: the CPU writes to the chips with the cycle of the write and reads them back through `ChipSim::Read` (the state in the simulator, as `ChipDecoder::Read` gives it), and `RunFrame` gives the frame from the simulator. The CPU runs without a break, ahead of the simulator up to its next write or interrupt. While the CPU takes the interrupts, the player runs on them and each interrupt ends a frame. While it takes none for longer than 1.5 frames (a player with its own timing, with interrupts disabled), `FrameCutter` (`decoders/`, shared with `DecodeVGM`) cuts the frames: at the start of the long pause after each burst of writes (an update of the player), and every frame while nothing is written. The times between the updates give the frame rate of the stream (200 Hz at most); without a clear rate, the mean rate of the frames keeps the tempo. The formats that keep a whole number take the rounded rate. `AYMachine` sets up the memory and the loader at address 0 as the format describes; the format has no timing, so the machine takes a Z80 at 3.5 MHz with 50 frames a second (70000 T-states a frame) and an interrupt of 32 T-states, the same for ZX and CPC songs. The Z80 has the T-states of the real chip (Ay_Emul differs in a few instructions and in the interrupt, so its PSG differs in songs with writes near the frame end). The ports are those of the ZX and the Amstrad CPC with auto detection; beeper and TurboSound are not supported. Several writes of a register in a frame keep the last one, except the volumes: a player can write a volume many times over a frame as a sound of its own (Locomotion gates the tone of channel C at about its own frequency, a pulse of a sweeping width; digital players). When there are at least 3 writes spread over at least half of the frame, `SimAY8910` gives the volume of the same loudness: it follows the phase of each tone and takes the level of the fundamental of the gated tone, or the mean level when the tone is off or above 5 kHz. All decoding is one pass: no decoder runs a song in advance to learn something about it. `DecodeAY` knows the frame rate only at `Close`: a player with its own timing updates more often than the interrupts (Koledy: every 33200 T-states, 105.4 Hz), and each update gets a frame; a rate within 0.5 Hz of 50 is taken as 50. It plays a song two times its length from the file (10 minutes at most, 5 minutes without a length) and calls `Finalize(0, true, length)`: without a loop, the stream is cut to the length. `NSFMachine` (next) and `VGMMachine` are drafts.
-   - Container files (AY, later NSF) hold several tracks. `Filelist` gives each track as its own path, the file path with `#N` after it (`TrackPath`), and the playlists keep these paths. `FileDecoder::CountTracks` counts the tracks. The decoder of a container takes the track from the path and sets `Stream::trackNumber`/`tracksCount`; the converter names the output `<container>_#<track name>`, or the number with leading zeros for a track without a name (`TrackPath::k_nameSeparator`).
-   - Any register stream (PSG, RSF, VGM, VTX, YM) can hold more than one pass of a looped song: other players record so, and so does `--duration Playback`. The stream decoders call `Stream::Finalize(loop, true)`, which searches for the repeats at the end (`FindLoop`, a Z-function over frame keys), sets the loop and cuts the extra passes. It accepts only a loop body at least as long as the intro and at least 4 seconds long. A loop from the file (past frame 2) stays: then only whole periods after it are cut, so a one-pass file keeps its length. Without a loop in the file, a one-pass song that ends with an exact repeat of its own part gets a loop too; that loop sounds the same, only the length changes.
-2. **Process**: `FrameProcessor` subclasses in `processing/` turn source-chip frames into destination-chip frames: `ChannelsOutputEnable`, `ChipClockRateConvert`, `ChannelsLayoutChange` (stereo layout), `AY8930EnvelopeFix`. Playback chains them in a `ProcessingChain` inside `Output::Init`. Encoding builds its own array in `FileEncoder::Encode`, without `ChannelsOutputEnable`.
+1. **Decode**: `FileDecoder::Decode` in `PSGAudio.cpp` tries each registered decoder in order. The
+   first whose `Open()` accepts the file (by extension and signature) yields frames one at a time
+   into `Stream::AddFrame`.
+   - `decoders/modules/`: tracker-module decoders built on `ModuleDecoder` (`Init`/`Play`/`Loop`).
+     They are ports of the original Z80 player routines and compute AY registers every tick.
+   - `decoders/streams/`: register-dump formats. `DecodeVGM` feeds non-AY chips' writes through the
+     simulators in `simulation/` (`SimRP2A03`, `SimSN76489`, `SimLR35902` for the Game Boy,
+     `SimAY8910`), which convert another chip's state into AY frames with clock-ratio period
+     scaling. `ChipSim.cpp` holds what the simulators share: the level tables of the destination
+     chips, the duty gains of pulses, the noise and periodic noise conversions. A VGM with two
+     different supported chips plays on two PSGs through `SimHybrid`, one simulator on each; a VGM
+     with a chip that has no simulator, or with more chips than the PSGs can take, is rejected.
+   - `decoders/machines/`: formats with the code of a player, which a machine in
+     `emulation/machines/` runs (`DecodeAY` on `AYMachine`). `NSFMachine` (next) and `VGMMachine`
+     are drafts. All decoding is one pass: no decoder runs a song in advance to learn something
+     about it.
+     - **Machine.** A `Machine` is a `Bus` (a page table of 256 pages of 256 bytes for reads and
+       writes; unmapped pages and the Z80 ports go to virtual handlers) with a CPU (`Z80Cpu`,
+       `RP2A03Cpu`: instruction-level cores with cycle counts) and a `ChipSim`. The CPU writes to
+       the chips with the cycle of the write and reads them back through `ChipSim::Read` (the state
+       in the simulator); `RunFrame` gives the frame from the simulator.
+     - **Frames.** The CPU runs without a break, ahead of the simulator up to its next write or
+       interrupt. While the CPU takes the interrupts, the player runs on them, and each interrupt
+       ends a frame. While it takes none for longer than 1.5 frames (a player with its own timing,
+       with interrupts disabled), `FrameCutter` (`decoders/`, shared with `DecodeVGM`) cuts the
+       frames: at the start of the long pause after each burst of writes (an update of the player),
+       and every frame while nothing is written. The times between the updates give the frame rate
+       of the stream (200 Hz at most); without a clear rate, the mean rate of the frames keeps the
+       tempo. The formats that keep a whole number take the rounded rate.
+     - **AYMachine.** It sets up the memory and the loader at address 0 as the format describes. The
+       format has no timing, so the machine takes a Z80 at 3.5 MHz with 50 frames a second (70000
+       T-states a frame) and an interrupt of 32 T-states, the same for ZX and CPC songs. The Z80 has
+       the T-states of the real chip (Ay_Emul differs in a few instructions and in the interrupt, so
+       its PSG differs in songs with writes near the frame end). The ports are those of the ZX and
+       the Amstrad CPC with auto detection; beeper and TurboSound are not supported.
+     - **Several writes in a frame.** A frame keeps the last write of a register, except the
+       volumes: a player can write a volume many times over a frame as a sound of its own
+       (Locomotion gates the tone of channel C at about its own frequency, a pulse of a sweeping
+       width; digital players). When there are at least 3 writes spread over at least half of the
+       frame, `SimAY8910` gives the volume of the same loudness: it follows the phase of each tone
+       and takes the level of the fundamental of the gated tone, or the mean level when the tone is
+       off or above 5 kHz.
+     - **DecodeAY.** It knows the frame rate only at `Close`: a player with its own timing updates
+       more often than the interrupts (Koledy: every 33200 T-states, 105.4 Hz), and each update gets
+       a frame; a rate within 0.5 Hz of 50 is taken as 50. It plays a song two times its length from
+       the file (10 minutes at most, 5 minutes without a length) and calls `Finalize(0, true,
+       length)`: without a loop, the stream is cut to the length.
+   - Container files (AY, later NSF) hold several tracks. `Filelist` gives each track as its own
+     path, the file path with the track number after it (`TrackPath`: `file.ay#03`, two digits at
+     least), and the playlists keep these paths. `FileDecoder::CountTracks` counts the tracks. The
+     decoder of a container takes the track from the path. The converter names the output
+     `<container>_#03` (`TrackPath::k_nameSeparator`), and the file header of the GUI shows the
+     number after the extension in bright magenta.
+   - Any register stream (PSG, RSF, VGM, VTX, YM) can hold more than one pass of a looped song:
+     other players record so, and so does `--duration Playback`. The stream decoders call
+     `Stream::Finalize(loop, true)`, which searches for the repeats at the end (`FindLoop`, a
+     Z-function over frame keys), sets the loop and cuts the extra passes. It accepts only a loop
+     body at least as long as the intro and at least 4 seconds long. A loop from the file (past
+     frame 2) stays: then only whole periods after it are cut, so a one-pass file keeps its length.
+     Without a loop in the file, a one-pass song that ends with an exact repeat of its own part gets
+     a loop too; that loop sounds the same, only the length changes.
+2. **Process**: `FrameProcessor` subclasses in `processing/` turn source-chip frames into
+   destination-chip frames: `ChannelsOutputEnable`, `ChipClockRateConvert`, `ChannelsLayoutChange`
+   (stereo layout), `AY8930EnvelopeFix`. Playback chains them in a `ProcessingChain` inside
+   `Output::Init`. Encoding builds its own array in `FileEncoder::Encode`, without
+   `ChannelsOutputEnable`.
 3. **Output**, one of:
-   - **Encode**: `FileEncoder::Encode` selects an encoder by output extension (`Encoder::CheckFileExt` in `Open`). An encoder gets either the original frames with the stream's loop (`Duration::Original`, the default for the register-stream encoders) or the frames as the player plays them, with the extra loops or the cut silence and without a loop (`Duration::Playback`, the default for `EncodeWAV`); `--duration` overrides it, and encoders take the frame count and loop from `Encoder::m_framesCount`/`m_loopFrameId`, not from the stream. `EncodeWAV` has its own processing (`HasOwnProcessing`): it gets unprocessed frames and writes them through a `WaveFile` output, which processes them like the player does, so `FileEncoder` must not process them too. With `Original` and a loop, the WAV gets a `smpl` loop chunk. `WaveFile` writes `LIST/INFO` after the `data` chunk, because Windows Explorer does not read it in front of the data.
-   - **Play**: `Player` runs a thread that steps frames into an `Output`. The player does not wait: each output keeps the frame times itself, and `Output::Write` returns when the device can take the next frame. `Emulator` plays on the clock of the sound device (a short frame queue that the audio thread takes every `44100 / frameRate` samples); `Streamer` and the real-time `WaveFile` (`-w`) wait with `FrameTimer`. `Emulator` is the software output (`emulation/AY89XXPsg` plus `WaveAudio` over winmm, 44.1 kHz); `Streamer` writes register pairs to the serial port; `WaveFile` (`-w`) renders each frame to a 16-bit stereo WAV as it plays. `Emulator` and `WaveFile` share the chip emulation through `PCMOutput`. The WAV file covers the whole player session, and its header sizes are updated about every second, so a killed process still leaves a playable file. `Output::Write` gives the devices the writes of `ChipEncoder`.
-   - **Meters**: `Output::Write` also measures each processed frame with `LevelMeter` (`player/`). It works from the writes to the chips (it decodes them into registers of its own with `ChipDecoder`), so it works for every output, the hardware one too, and sees each restart of the envelope. It models each channel as the DAC level (volume or envelope, with the envelope phase followed from frame to frame) switched by the tone and noise gates, and spreads the power over 120 semitone bands (E0 to D#10) by the spectrum of each sound: pulse harmonics for the tone, the DFT of the steps for a periodic envelope, sinc² for the noise. The output levels L/R are the K-weighted (BS.1770) panned powers on a 30 dB scale; `GetBands` gives the band levels and the loudest sound of each band. The tables are built once in floating point, the per-frame code is integer only, because `psg_audio` is meant to run on embedded targets (ESP32) too. The player thread publishes the levels and the bands into small rings that the GUI reads with `Output::GetLevels`/`GetBands`. Each frame also gets the time it sounds (the write plus `GetDeviceLatency`, smoothed over the jitter of the writes), and the GUI takes only the frames heard by then: the levels, the bands and `Output::GetPosition`, the frame the player view shows.
+   - **Encode**: `FileEncoder::Encode` selects an encoder by output extension
+     (`Encoder::CheckFileExt` in `Open`). An encoder gets either the original frames with the
+     stream's loop (`Duration::Original`, the default for the register-stream encoders) or the
+     frames as the player plays them, with the extra loops or the cut silence and without a loop
+     (`Duration::Playback`, the default for `EncodeWAV`); `--duration` overrides it, and encoders
+     take the frame count and loop from `Encoder::m_framesCount`/`m_loopFrameId`, not from the
+     stream. `EncodeWAV` has its own processing (`HasOwnProcessing`): it gets unprocessed frames and
+     writes them through a `WaveFile` output, which processes them like the player does, so
+     `FileEncoder` must not process them too. With `Original` and a loop, the WAV gets a `smpl` loop
+     chunk. `WaveFile` writes `LIST/INFO` after the `data` chunk, because Windows Explorer does not
+     read it in front of the data.
+   - **Play**: `Player` runs a thread that steps frames into an `Output`. The player does not wait:
+     each output keeps the frame times itself, and `Output::Write` returns when the device can take
+     the next frame. `Emulator` plays on the clock of the sound device (a short frame queue that the
+     audio thread takes every `44100 / frameRate` samples); `Streamer` and the real-time `WaveFile`
+     (`-w`) wait with `FrameTimer`. `Emulator` is the software output (`emulation/AY89XXPsg` plus
+     `WaveAudio` over winmm, 44.1 kHz); `Streamer` writes register pairs to the serial port;
+     `WaveFile` (`-w`) renders each frame to a 16-bit stereo WAV as it plays. `Emulator` and
+     `WaveFile` share the chip emulation through `PCMOutput`. The WAV file covers the whole player
+     session, and its header sizes are updated about every second, so a killed process still leaves
+     a playable file. `Output::Write` gives the devices the writes of `ChipEncoder`.
+   - **Meters**: `Output::Write` also measures each processed frame with `LevelMeter` (`player/`).
+     It works from the writes to the chips (it decodes them into registers of its own with
+     `ChipDecoder`), so it works for every output, the hardware one too, and sees each restart of
+     the envelope. It models each channel as the DAC level (volume or envelope, with the envelope
+     phase followed from frame to frame) switched by the tone and noise gates, and spreads the power
+     over 120 semitone bands (E0 to D#10) by the spectrum of each sound: pulse harmonics for the
+     tone, the DFT of the steps for a periodic envelope, sinc² for the noise. The output levels L/R
+     are the K-weighted (BS.1770) panned powers on a 30 dB scale; `GetBands` gives the band levels
+     and the loudest sound of each band. The tables are built once in floating point, the per-frame
+     code is integer only, because `psg_audio` is meant to run on embedded targets (ESP32) too. The
+     player thread publishes the levels and the bands into small rings that the GUI reads with
+     `Output::GetLevels`/`GetBands`. Each frame also gets the time it sounds (the write plus
+     `GetDeviceLatency`, smoothed over the jitter of the writes), and the GUI takes only the frames
+     heard by then: the levels, the bands and `Output::GetPosition`, the frame the player view
+     shows.
 
 ### Adding or enabling a format
 
-Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and playlist traversal. Some classes exist but aren't registered yet (work in progress): `DecodeAYM`, `DecodeMID`. `EncodeVGM` writes the AY8910 commands of VGM 1.71 (`.vgm`, or gzipped `.vgz`); it writes through `ChipEncoder`, so AY8930 bank B goes through R13. At the end of a looped stream it writes the registers back to their state before the loop frame, so the jump sounds as the first pass did.
+Register the class in the decoder or encoder array in `PSGAudio.cpp`. For decoders, also add the
+extension to `FileDecoder::FileTypes`; that pipe-separated list filters files during directory and
+playlist traversal. Some classes exist but aren't registered yet (work in progress): `DecodeAYM`,
+`DecodeMID`. `EncodeVGM` writes the AY8910 commands of VGM 1.71 (`.vgm`, or gzipped `.vgz`); it
+writes through `ChipEncoder`, so AY8930 bank B goes through R13. At the end of a looped stream it
+writes the registers back to their state before the loop frame, so the jump sounds as the first pass
+did.
 
-AYM is the project's own compressed streaming format (`EncodeAYM`, with selectable compression profiles and LZ78). It is under active development. `documents/output_file_formats.md` has the RSF spec and a feature/compression comparison of the output formats.
+AYM is the project's own compressed streaming format (`EncodeAYM`, with selectable compression
+profiles and LZ78). It is under active development. `documents/output_file_formats.md` has the RSF
+spec and a feature/compression comparison of the output formats.
 
 ### Debug output
 
-`debug/DebugConfig.h` holds compile-time switches (`DBG_DECODING`, `DBG_DECODE_VGM`, `DBG_PROCESSING`, `DBG_ENCODE_AYM`). `DebugOutput<flag>` writes `dbg_<tag>.txt` to the working directory, and only in `_DEBUG` builds. `Stream` and `Frame` implement `DebugPayload` to dump their state.
+`debug/DebugConfig.h` holds compile-time switches (`DBG_DECODING`, `DBG_DECODE_VGM`,
+`DBG_PROCESSING`, `DBG_ENCODE_AYM`). `DebugOutput<flag>` writes `dbg_<tag>.txt` to the working
+directory, and only in `_DEBUG` builds. `Stream` and `Frame` implement `DebugPayload` to dump their
+state.
