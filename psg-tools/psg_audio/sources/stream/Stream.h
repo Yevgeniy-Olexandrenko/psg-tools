@@ -61,7 +61,7 @@ public:
 
     private:
         size_t GetFramesCount() const;
-        void Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId);
+        void Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId, bool loopFound);
 
     private:
         FrameRate m_frameRate;
@@ -127,6 +127,7 @@ public:
 private:
     Frames  m_frames;
     FrameId m_loopFrameId;
+    bool    m_loopFound; // the loop search found the loop, the file did not give it
     bool m_isSecondChipUsed;
     bool m_isExpandedModeUsed[2];
 };

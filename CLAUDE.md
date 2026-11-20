@@ -248,8 +248,13 @@ changes the console window size and lays everything out for the current size.
    - Any register stream (PSG, RSF, VGM, VTX, YM) can hold more than one pass of a looped song:
      other players record so, and so does `--duration Playback`. The stream decoders call
      `Stream::Finalize(loop, true)`, which searches for the repeats at the end (`FindLoop`, a
-     Z-function over frame keys), sets the loop and cuts the extra passes. It accepts only a loop
-     body at least as long as the intro and at least 4 seconds long. A loop from the file (past
+     Z-function over frame keys), sets the loop and cuts the extra passes. The loop body is at least
+     4 seconds long and at least as long as the intro: a recorded song can end with a pattern played
+     some times (Terminator 2 "Drainage Canal": 4 s, 3 times). With the keys of a machine, which
+     plays its song for minutes, a shorter loop is accepted when it repeats two more times to the
+     end (Mega Man 2 #3: 38 s intro, 25.6 s loop). `Play::Prepare` adds passes of a loop from a file
+     only when its body is longer than the intro; a loop that `FindLoop` found
+     (`Stream::m_loopFound`, not from the file) repeats in any case. A loop from the file (past
      frame 5) stays: then only whole periods after it are cut, so a one-pass file keeps its length.
      Without a loop in the file, a one-pass song that ends with an exact repeat of its own part gets
      a loop too; that loop sounds the same, only the length changes. A loop at frame 5 or before

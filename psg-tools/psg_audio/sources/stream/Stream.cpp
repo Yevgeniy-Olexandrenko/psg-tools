@@ -107,7 +107,7 @@ size_t Stream::Play::GetFramesCount() const
     return size_t(m_lastFrameId + 1);
 }
 
-void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId)
+void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId lastFrameId, bool loopFound)
 {
     m_loopFrameId = loopFrameId;
     m_loopFramesCount = loopFramesCount;
@@ -116,7 +116,10 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
     // an empty stream has no frames to loop or to cut
     if (!m_stream.framesCount) return;
 
-    if (m_loopFrameId < m_stream.framesCount / 2)
+    // A loop from the file plays again only when its body is longer than the
+    // intro. A loop found in the frames repeats to the end of the recording,
+    // so a shorter body is a loop too.
+    if (m_loopFrameId < m_stream.framesCount / 2 || loopFound)
     {
         // playback loop available, compute new duration using maximum extra loops amount
         auto maxPlaybackFrames = size_t((k_prefDurationMM * 60 + k_prefDurationSS) * frameRate);
@@ -146,6 +149,7 @@ void Stream::Play::Prepare(FrameId loopFrameId, size_t loopFramesCount, FrameId 
 Stream::Stream()
     : info(*this)
     , play(*this)
+    , m_loopFound(false)
     , m_isSecondChipUsed(false)
     , m_isExpandedModeUsed{}
     , framesCount([this]() { return m_frames.size(); })
@@ -258,14 +262,18 @@ const Frame& Stream::GetFrame(FrameId frameId) const
 
 void Stream::Finalize(FrameId loopFrameId, bool findLoop, size_t length, const std::vector<uint64_t>* loopKeys)
 {
-    if (findLoop && !FindLoop(loopFrameId, loopKeys) && length && length < m_frames.size())
+    // a loop from the file stays a loop from the file when FindLoop keeps it
+    const bool fileLoop = (loopFrameId > k_noLoopFrame && loopFrameId < m_frames.size());
+    const bool found = (findLoop && FindLoop(loopFrameId, loopKeys));
+    if (findLoop && !found && length && length < m_frames.size())
     {
         m_frames.resize(length);
     }
     m_loopFrameId = (loopFrameId > k_noLoopFrame && loopFrameId < framesCount ? loopFrameId : 0);
+    m_loopFound = (found && !fileLoop && m_loopFrameId > 0);
     loopFrameId = (m_loopFrameId ? m_loopFrameId : FrameId(framesCount));
 
-    play.Prepare(loopFrameId, framesCount - loopFrameId, lastFrameId);
+    play.Prepare(loopFrameId, framesCount - loopFrameId, lastFrameId, m_loopFound);
     ConfigureDestinationChip();
 }
 
@@ -328,9 +336,12 @@ bool Stream::FindLoop(FrameId& loopFrameId, const std::vector<uint64_t>* loopKey
         }
     }
 
-    // In a song, the loop is longer than the intro. A short repeat
-    // late in a song is a pattern played two times, not a loop.
-    if (!bestPeriod || bestPeriod < bestLoop) return false;
+    // A pattern played some times at the end of a recorded song is not a
+    // loop: it is shorter than the part before it. A machine plays its song
+    // for minutes, and a repeat to the end of that is the loop: there, a loop
+    // shorter than the intro is accepted when it repeats two times at least.
+    if (!bestPeriod) return false;
+    if (bestPeriod < bestLoop && !(loopKeys && count - bestLoop >= 3 * bestPeriod)) return false;
 
     if (loopFrameId > k_noLoopFrame && loopFrameId < count)
     {
