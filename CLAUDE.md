@@ -325,3 +325,12 @@ spec and a feature/compression comparison of the output formats.
 `DBG_PROCESSING`, `DBG_ENCODE_AYM`). `DebugOutput<flag>` writes `dbg_<tag>.txt` to the working
 directory, and only in `_DEBUG` builds. `Stream` and `Frame` implement `DebugPayload` to dump their
 state.
+
+## Related project: AYM Streamer firmware (device side)
+
+The hardware that `Streamer` (`player/streamer/Streamer.cpp`, `-p <port>`) talks to is developed
+next to this repo at `D:\projects\github\aym-streamer` (ATmega328P firmware in `firmware/`, board in
+`hardware/v1.2/`, its own `CLAUDE.md`). The serial protocol (banner at 9600 baud on open, then
+57600 8N1; per frame `0xFF`/`0xFE` chip markers followed by `addr, data` pairs of `ChipEncoder`) is
+implemented on both sides: a change to it in `Streamer.cpp` or `ChipEncoder` needs the matching
+change in the firmware's `firmware/src/uart/`, and the other way round.
